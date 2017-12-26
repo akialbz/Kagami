@@ -4,7 +4,7 @@
 """
 logConfig: config logging system
 
-author(s): Albert
+author(s): Albert (aki) Zhou
 origin: 12-11-2014
 
 """

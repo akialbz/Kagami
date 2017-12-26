@@ -4,7 +4,7 @@
 """
 build: compile and pack kagami package
 
-author(s): Albert
+author(s): Albert (aki) Zhou
 origin: 05-19-2017
 
 """

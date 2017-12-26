@@ -4,7 +4,7 @@
 """
 prelim: preliminary functions
 
-author(s): Albert Zhou
+author(s): Albert (aki) Zhou
 origin: 06-07-2016
 
 """
@@ -21,6 +21,7 @@ NA = _NA() # fixed object
 
 hasvalue = lambda x: x is not NA
 optional = lambda x, default: x if hasvalue(x) else default
+isna = lambda x: x is NA
 
 
 # iterable
@@ -30,21 +31,19 @@ mappable = lambda x: isinstance(x, Mapping)
 
 def peek(rest, default = None):
     if not iterable(rest): raise ValueError('source is not iterable')
-    if isinstance(rest, GeneratorType): return next(rest, default), rest
-    else: return (default, rest) if (not rest) else (rest[0], rest[1:])
+    return (next(rest, default), rest) if isinstance(rest, GeneratorType) else \
+           (default, rest) if (not rest) else (rest[0], rest[1:])
 
 
 # check
 def checkall(itr, cond):
     if not iterable(itr): raise ValueError('source is not iterable')
     for x in itr:
-        istrue = cond(x)
-        if not istrue: return False
+        if not cond(x):return False
     return True
 
 def checkany(itr, cond):
     if not iterable(itr): raise ValueError('source is not iterable')
     for x in itr:
-        istrue = cond(x)
-        if istrue: return True
+        if cond(x): return True
     return False

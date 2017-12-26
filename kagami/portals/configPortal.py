@@ -4,7 +4,7 @@
 """
 configPortal: portal to access config files
 
-author(s): Albert Zhou
+author(s): Albert (aki) Zhou
 origin: 06-03-2014
 
 """

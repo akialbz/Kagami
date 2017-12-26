@@ -6,14 +6,14 @@ execPortal: portals to manipulate binary executables
 
 WARNING: designed for macOS / linux, may encounter problems in windows
 
-author(s): Albert Zhou
+author(s): Albert (aki) Zhou
 origin: 01-25-2016
 
 """
 
 
 import logging, os
-from multiprocessing.pool import ThreadPool, cpu_count
+from multiprocessing import pool, cpu_count
 from string import join, strip
 from subprocess import Popen, PIPE
 from ..prelim import checkany, NA, optional, hasvalue
@@ -57,10 +57,10 @@ def execBinaryBatch(exe, paramsList, inStreamList = NA, inShell = False, mute = 
     if not hasvalue(procs): procs = cpu_count() - 1
 
     def _poolmap(ps):
-        pool = ThreadPool(processes = procs)
-        jobs = [pool.apply_async(execBinary, p) for p in ps]
-        pool.close()
-        pool.join()
+        ppool = pool.ThreadPool(processes = procs)
+        jobs = [ppool.apply_async(execBinary, p) for p in ps]
+        ppool.close()
+        ppool.join()
         return [j.get() for j in jobs]
 
     def _singlemap(ps):

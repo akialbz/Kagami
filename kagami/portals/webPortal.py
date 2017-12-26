@@ -4,7 +4,7 @@
 """
 webPortal: portals to access basic web service
 
-author(s): Albert Zhou
+author(s): Albert (aki) Zhou
 origin: Jun. 28, 2014
 
 """

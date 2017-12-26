@@ -4,7 +4,7 @@
 """
 textPortal: portals to access plain text files
 
-author(s): Albert Zhou
+author(s): Albert (aki) Zhou
 origin: 06-28-2014
 
 """
@@ -39,5 +39,5 @@ def saveTextLines(tlines, fpath, autoReturn = True):
     if checkany(tlines, lambda x: not isinstance(x, (StringType, UnicodeType))):
         raise TypeError('export object is not a string list')
     checkOutputFile(fpath)
-    with open(fpath, 'w') as ofile: ofile.writelines(
-        pipe(tlines | (do(lambda x: x + ('' if x.endswith('\n') else '\n')) if autoReturn else skip)))
+    with open(fpath, 'w') as ofile:
+        ofile.writelines(pipe(tlines | (do(lambda x: x + ('' if x.endswith('\n') else '\n')) if autoReturn else skip)))

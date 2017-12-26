@@ -6,7 +6,7 @@ profile: decorators to profile and debug program
 
 ref: http://coolshell.cn/articles/10822.html
 
-author(s): Albert Zhou
+author(s): Albert (aki) Zhou
 origin: 08-06-2016
 
 """

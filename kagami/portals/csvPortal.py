@@ -4,7 +4,7 @@
 """
 csvPortal: portals to access csv / tsv files
 
-author(s): Albert Zhou
+author(s): Albert (aki) Zhou
 origin: 06-28-2014
 
 """

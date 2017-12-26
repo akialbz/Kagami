@@ -4,7 +4,7 @@
 """
 filesys: convenient file system operations
 
-author(s): Albert Zhou
+author(s): Albert (aki) Zhou
 origin: 06-06-2016
 
 """

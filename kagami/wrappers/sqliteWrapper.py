@@ -4,7 +4,7 @@
 """
 sqliteWrapper: wrapper for SQLite3 database
 
-author(s): Albert
+author(s): Albert (aki) Zhou
 origin: 04-12-2017
 
 """

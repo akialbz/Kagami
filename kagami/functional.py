@@ -2,9 +2,9 @@
 #  -*- coding: utf-8 -*-
 
 """
-functional: functional programming interfaces
+functional: functional programming
 
-author(s): Albert
+author(s): Albert (aki) Zhou
 origin: 06-07-2016
 
 """

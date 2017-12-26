@@ -4,7 +4,7 @@
 """
 rWrapper: wrapper for R language
 
-author(s): Albert
+author(s): Albert (aki) Zhou
 origin: 12-19-2017
 
 """
