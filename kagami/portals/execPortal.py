@@ -41,7 +41,7 @@ def execBinary(exe, params = NA, inStream = NA, inShell = False, mute = False, n
     logging.debug('cmd = [%s]' % (cmd if type(cmd) == str else join(cmd, ' ')))
 
     proc = Popen(cmd, stdin = PIPE, stdout = PIPE, stderr = PIPE, shell = inShell)
-    rstrs = proc.communicate(input = optional(inStream))
+    rstrs = proc.communicate(input = optional(inStream, None))
     rmsgs = pipe(rstrs | do(lambda x: '' if x is None else x.strip()), partial(join, sep = ''))
     rcode = proc.returncode
 

@@ -22,7 +22,7 @@ from ..fileSys import checkInputFile
 class _NoConvConfigParser(ConfigParser):
     def optionxform(self, optionstr): return optionstr
 
-def loadConfig(cfgFile, autoEval = True, dictType = OrderedDict):
+def loadConfig(cfgFile, autoEval = True, dictType = OrderedDict, emptyAsNA = True):
     logging.debug('loading config file [%s]' % cfgFile)
     checkInputFile(cfgFile)
 
@@ -34,6 +34,8 @@ def loadConfig(cfgFile, autoEval = True, dictType = OrderedDict):
             return literal_eval(x)
         except (ValueError, SyntaxError):
             val = str(x).strip()
-            return NA if val == 'NA' else val # make NA a valid value in config
+            if val == 'NA': val = NA # make NA a valid value in config
+            if val == '' and emptyAsNA: val = NA
+            return val
     _packsect = lambda s: (s, pipe(cfg.items(s) | do(unpack(lambda k,v: (k, _eval(v) if autoEval else v))), dictType))
     return pipe(cfg.sections() | do(_packsect), dictType)
