@@ -13,14 +13,15 @@ origin: 12-19-2017
 import numpy as np
 import rpy2.robjects as robj
 import rpy2.robjects.numpy2ri as np2ri
-from ..prelim import NA, hasvalue, optional
+from rpy2.robjects import NULL
+from ..prelim import NA, optional, isna
 
 
 class RWrapper(object):
-    def __init__(self, libraries = NA):
+    def __init__(self, *libraries):
         np2ri.activate() # enable numpy <-> R object conversions
         robj.r('Sys.setenv(LANG = "en")')
-        if hasvalue(libraries): self.library(*libraries)
+        self.library(*libraries)
 
     # methods
     @staticmethod
@@ -37,4 +38,10 @@ class RWrapper(object):
 
     @staticmethod
     def apply(func, *args, **kwargs):
-        return np.array(getattr(robj.r, func)(*args, **kwargs))
+        args = map(lambda x: NULL if x is None or isna(x) else x, args)
+        kwargs = {k: (NULL if v is None or isna(v) else v) for k,v in kwargs.items()}
+        return getattr(robj.r, func)(*args, **kwargs)
+
+    @staticmethod
+    def run(cmd):
+        return robj.r(cmd)
