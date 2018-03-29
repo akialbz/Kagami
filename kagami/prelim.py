@@ -17,11 +17,12 @@ from types import GeneratorType
 # optional type
 class _NA(object):
     def __nonzero__(self): return False
+    def __eq__(self, other): return isinstance(other, _NA)
 NA = _NA() # fixed object
 
-hasvalue = lambda x: x is not NA
+hasvalue = lambda x: x != NA
 optional = lambda x, default: x if hasvalue(x) else default
-isna = lambda x: x is NA
+isna = lambda x: x == NA
 
 
 # iterable
