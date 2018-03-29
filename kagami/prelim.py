@@ -20,10 +20,9 @@ class _NA(object):
     def __eq__(self, other): return isinstance(other, _NA)
 NA = _NA() # fixed object
 
-hasvalue = lambda x: x != NA
+isna = lambda x: isinstance(x, _NA)
+hasvalue = lambda x: not isna(x)
 optional = lambda x, default: x if hasvalue(x) else default
-isna = lambda x: x == NA
-
 
 # iterable
 iterable = lambda x: isinstance(x, Iterable)
