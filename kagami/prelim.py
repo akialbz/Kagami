@@ -26,7 +26,7 @@ optional = lambda x, default: x if hasvalue(x) else default
 
 # iterable
 iterable = lambda x: isinstance(x, Iterable)
-listable = lambda x: iterable(x) and type(x) not in (str, unicode)
+listable = lambda x: iterable(x) and not isinstance(x, (str, unicode))
 mappable = lambda x: isinstance(x, Mapping)
 
 def peek(rest, default = None):
