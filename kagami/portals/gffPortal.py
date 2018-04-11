@@ -2,7 +2,7 @@
 #  -*- coding: utf-8 -*-
 
 """
-gffPortal: 
+gffPortal: portal to access GFF (General Feature Format) files
 
 author(s): Albert (aki) Zhou
 origin: 01-26-2018
