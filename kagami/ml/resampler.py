@@ -25,15 +25,14 @@ class Bootstrap(MLModel):
         self._fids = NA
 
     def fit(self, *dss):
-        if len(dss) < 2: raise ValueError('not enough datasets provided')
         self._dss = list(dss)
-        lens = map(len, dss)
+        lens = map(len, self._dss)
         maxl = max(lens)
 
         def _cv():
             lids = [(np.random.permutation(l) if self._shuffle else np.arange(l)) for l in lens]
             fblk = np.array_split(np.array(zip(*map(lambda x: x if len(x) == maxl else cycle(x), lids))).T, self._fold, axis = 1)
-            return [(np.hstack(fblk[:i] + fblk[i+1:]), fblk[i]) for i in range(fblk)]
+            return [(np.hstack(fblk[:i] + fblk[i+1:]), fblk[i]) for i in range(self._fold)]
         self._fids = reduce(lambda x,y: x+y, [_cv() for _ in range(self._runs)])
 
         self.trained = True
@@ -60,14 +59,13 @@ class LabelBootstrap(MLModel):
         return ds[[(i if n else np.random.choice(nid[d == np.min(d)])) for i,n,d in zip(ids,inds,ndm)],]
 
     def fit(self, ndmatx = NA, *dss):
-        if len(self._dss) < 2: raise ValueError('not enough datasets provided')
         self._dss = list(dss)
         unams = list(set.union(*map(lambda x: getattr(x, 'rownames'), self._dss)))
 
         def _cv():
             if self._shuffle: np.random.shuffle(unams)
             fblk = np.array_split(unams, self._fold)
-            return [(np.hstack(fblk[:i] + fblk[i+1:]), fblk[i]) for i in range(fblk)]
+            return [(np.hstack(fblk[:i] + fblk[i+1:]), fblk[i]) for i in range(self._fold)]
         self._fids = reduce(lambda x,y: x+y, [_cv() for _ in range(self._runs)])
 
         self._ndmx = optional(ndmatx, np.ones((len(unams),len(unams))))
