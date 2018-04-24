@@ -33,6 +33,24 @@ class RWrapper(object):
         return robj.r.library(*args)
 
     @staticmethod
+    def asVector(val):
+        val = np.array(val)
+        _pack = {
+            'i': robj.IntVector, 'u': robj.IntVector,
+            'f': robj.FloatVector,
+            'b': robj.BoolVector,
+            'S': robj.StrVector, 'U': robj.StrVector,
+        }.get(val.dtype.kind, NA)
+        if isna(_pack): raise TypeError('unknown vector type [%s]' % val.dtype.kind)
+        return _pack(val)
+
+    @staticmethod
+    def asMatrix(val, nrow = NA, ncol = NA):
+        val = np.array(val)
+        if isna(nrow) and isna(ncol): nrow, ncol = val.shape
+        return robj.r.matrix(val, nrow = nrow, ncol = ncol)
+
+    @staticmethod
     def assign(val, name, dtype = NA):
         return robj.r.assign(name, np.array(val, dtype = optional(dtype, None)))
 
