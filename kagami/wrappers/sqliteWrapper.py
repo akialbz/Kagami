@@ -38,6 +38,10 @@ class SQLiteWrapper(object):
             self._dbconn = sqlite3.connect(self._dbfile, **self._dbpams)
         return self
 
+    def commit(self):
+        if self._dbconn is None: raise IOError('database not connected')
+        self._dbconn.commit()
+
     def close(self):
         if self._dbconn is None:
             logging.warning('connection to database [%s] already closed, ignore' % fileTitle(self._dbfile))
@@ -47,6 +51,12 @@ class SQLiteWrapper(object):
             self._dbconn.close()
             self._dbconn = None
         return self
+
+    def execute(self, query):
+        if self._dbconn is None: raise IOError('database not connected')
+        logging.debug('exec command = [%s]' % query)
+        try: self._dbconn.execute(query)
+        except Exception, e: logging.warning('sqlite query failed: ' + str(e))
 
     def query(self, query):
         if self._dbconn is None: raise IOError('database not connected')
