@@ -42,12 +42,12 @@ class SQLiteWrapper(object):
         if self._dbconn is None: raise IOError('database not connected')
         self._dbconn.commit()
 
-    def close(self):
+    def close(self, commit = True):
         if self._dbconn is None:
             logging.warning('connection to database [%s] already closed, ignore' % fileTitle(self._dbfile))
         else:
             logging.debug('closing connection to SQLite database [%s]' % fileTitle(self._dbfile))
-            self._dbconn.commit()
+            if commit: self._dbconn.commit()
             self._dbconn.close()
             self._dbconn = None
         return self

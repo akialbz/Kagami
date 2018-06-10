@@ -18,6 +18,8 @@ from types import GeneratorType
 class _NA(object):
     def __nonzero__(self): return False
     def __eq__(self, other): return isinstance(other, _NA)
+    def __str__(self): return 'NA'
+    def __repr__(self): return self.__str__()
 NA = _NA() # fixed object
 
 isna = lambda x: isinstance(x, _NA)
