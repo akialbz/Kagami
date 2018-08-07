@@ -1,6 +1,0 @@
-.idea/
-dist/
-legacy/
-.gitignore
-.DS_Store
-build.py
