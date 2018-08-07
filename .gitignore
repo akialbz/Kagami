@@ -1,3 +1,5 @@
 .idea/
-dist/lib/
+dist/
 legacy/
+.gitignore
+build.py
