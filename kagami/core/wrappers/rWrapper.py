@@ -14,8 +14,7 @@ import numpy as np
 import rpy2.robjects as robj
 import rpy2.robjects.numpy2ri as np2ri
 from rpy2.robjects import NULL
-from rpy2.rinterface import RRuntimeError
-from ..prelim import NA, optional, isna
+from kagami.core.prelim import NA, optional, isna
 
 
 class RWrapper(object):

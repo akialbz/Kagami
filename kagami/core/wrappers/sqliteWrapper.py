@@ -11,7 +11,7 @@ origin: 04-12-2017
 
 
 import logging, sqlite3, os
-from ..fileSys import fileTitle
+from kagami.core.fileSys import fileTitle
 
 
 class SQLiteWrapper(object):

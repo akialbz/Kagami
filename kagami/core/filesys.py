@@ -2,7 +2,7 @@
 #  -*- coding: utf-8 -*-
 
 """
-filesys: convenient file system operations
+filesys
 
 author(s): Albert (aki) Zhou
 origin: 06-06-2016
@@ -11,15 +11,19 @@ origin: 06-06-2016
 
 
 import logging, os, shutil
-from prelim import NA, hasvalue
-from functional import pipe, pick, drop, skip
+from kagami.core.prelim import NA, hasvalue
+from kagami.core.functional import pick, drop
 
 
-# name
+# file name manipulations
+def filePath(fpath, absolute = True):
+    p = fpath.rsplit(os.sep, 1)[0]
+    return os.path.abspath(p) if absolute else p
+
 def fileName(fpath):
     return fpath.rsplit(os.sep, 1)[-1]
 
-def fileHead(fpath):
+def filePrefix(fpath):
     pts = fpath.rsplit('.', 1)
     return pts[0] if len(pts) == 1 or os.sep not in pts[-1] else fpath
 
@@ -28,11 +32,24 @@ def fileSuffix(fpath):
     return pts[1] if len(pts) > 1 and os.sep not in pts[-1] else ''
 
 def fileTitle(fpath):
-    return fileHead(fileName(fpath))
+    return filePrefix(fileName(fpath))
 
-def filePath(fpath, absolute = True):
-    p = fpath.rsplit(os.sep, 1)[0]
-    return os.path.abspath(p) if absolute else p
+
+# search path
+def listPath(path, recursive = False, fileOnly = False, folderOnly = False, visibleOnly = True, prefix = NA, suffix = NA):
+    if fileOnly and folderOnly: logging.warning('nothing to expect after removing both dirs and files')
+
+    fds = [os.path.join(root, name) for root, dirs, files in os.walk(path) for name in files + dirs] if recursive else \
+          [os.path.join(path, name) for name in os.listdir(path)]
+
+    if fileOnly: fds = pick(fds, os.path.isfile)
+    if folderOnly: fds = pick(fds, os.path.isdir)
+    if visibleOnly: fds = drop(fds, lambda x: fileName(x).startswith(('.', '~')))
+    if hasvalue(prefix): fds = pick(fds, lambda x: fileName(x).startswith(prefix))
+    if hasvalue(suffix): fds = pick(fds, lambda x: x.endswith(suffix))
+
+    return fds
+
 
 # check
 def checkInputFile(fpath):
@@ -64,18 +81,4 @@ def checkOutputDir(dpath, override = False):
         os.makedirs(dpath)
         if not os.path.isdir(dpath): raise IOError('fail to create output dir [%s]' % dpath)
     return dpath
-
-# search path
-def listPath(path, recursive = True, dirOnly = False, fileOnly = False, visibleOnly = True, prefix = NA, suffix = NA):
-    checkInputDir(path)
-    if dirOnly and fileOnly: logging.warning('nothing to expect after removing both dirs and files')
-
-    fds = [os.path.join(root, name) for root, dirs, files in os.walk(path) for name in files + dirs] if recursive else \
-          [os.path.join(path, name) for name in os.listdir(path)]
-
-    return pipe(fds | (pick(os.path.isdir) if dirOnly else skip)
-                    | (pick(os.path.isfile) if fileOnly else skip)
-                    | (drop(lambda x: fileName(x).startswith(('.', '~'))) if visibleOnly else skip) # ~ for temp files (office, vim, etc)
-                    | (pick(lambda x: fileName(x).startswith(prefix)) if hasvalue(prefix) else skip)
-                    | (pick(lambda x: x.endswith(suffix)) if hasvalue(suffix) else skip))
 

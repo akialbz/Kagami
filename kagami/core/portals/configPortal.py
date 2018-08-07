@@ -2,7 +2,7 @@
 #  -*- coding: utf-8 -*-
 
 """
-configPortal: portal to access config files
+configPortal
 
 author(s): Albert (aki) Zhou
 origin: 06-03-2014
@@ -14,22 +14,22 @@ import logging
 from ConfigParser import ConfigParser
 from ast import literal_eval
 from collections import OrderedDict
-from ..prelim import NA
-from ..functional import pipe, do, unpack
-from ..fileSys import checkInputFile
+from kagami.core.prelim import NA
+from kagami.core.filesys import checkInputFile
 
 
 class _NoConvConfigParser(ConfigParser):
     def optionxform(self, optionstr): return optionstr
 
 def loadConfig(cfgFile, autoEval = True, dictType = OrderedDict, emptyAsNA = True):
-    logging.debug('loading config file [%s]' % cfgFile)
+    logging.debug('loading configs from [%s]' % cfgFile)
     checkInputFile(cfgFile)
 
     cfg = _NoConvConfigParser()
     cfg.read(cfgFile)
 
     def _eval(x):
+        if not autoEval: return x
         try:
             return literal_eval(x)
         except (ValueError, SyntaxError):
@@ -37,5 +37,5 @@ def loadConfig(cfgFile, autoEval = True, dictType = OrderedDict, emptyAsNA = Tru
             if val == 'NA': val = NA # make NA a valid value in config
             if val == '' and emptyAsNA: val = NA
             return val
-    _packsect = lambda s: (s, pipe(cfg.items(s) | do(unpack(lambda k,v: (k, _eval(v) if autoEval else v))), dictType))
-    return pipe(cfg.sections() | do(_packsect), dictType)
+    return dictType([(sect, dictType([(k, _eval(v)) for k,v in cfg.items(sect)])) for sect in cfg.sections()])
+

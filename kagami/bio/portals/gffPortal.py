@@ -14,9 +14,9 @@ import logging
 from string import join
 from collections import namedtuple
 from operator import itemgetter
-from ..prelim import NA, optional
-from ..functional import pipe, do, pick, drop
-from ..portals.textPortal import loadTextLines, saveTextLines
+from kagami.core.prelim import NA, optional
+from kagami.core.functional import pipe, do, pick, drop
+from kagami.core.portals.textPortal import loadTextLines, saveTextLines
 
 
 _GFFCols = ('seqName', 'source', 'feature', 'start', 'end', 'score', 'strand', 'frame', 'attributes')
