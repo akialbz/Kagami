@@ -2,7 +2,7 @@
 #  -*- coding: utf-8 -*-
 
 """
-gffPortal: portal to access GFF (General Feature Format) files
+gffPortal
 
 author(s): Albert (aki) Zhou
 origin: 01-26-2018
@@ -21,6 +21,7 @@ from kagami.core.portals.textPortal import loadTextLines, saveTextLines
 
 _GFFCols = ('seqName', 'source', 'feature', 'start', 'end', 'score', 'strand', 'frame', 'attributes')
 GFFFeature = namedtuple('GFFFeature', _GFFCols)
+
 
 def _checkFeature(seqn, src, feat, st, ed, scor, strd, fram, attr):
     if not st.isdigit(): logging.warning('invalid start position [%s]' % st); return False
