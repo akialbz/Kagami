@@ -9,6 +9,3 @@ origin: 08-07-2018
 
 """
 
-
-#import portals.csvPortal as csvPortal
-

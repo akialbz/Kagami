@@ -17,19 +17,19 @@ from kagami.core.functional import smap, drop, pickmap
 
 
 # raw text string
-def loadText(txtFile, striping = True):
+def load(txtFile, striping = True):
     logging.debug('loading text from [%s]' % txtFile)
     checkInputFile(txtFile)
     with open(txtFile, 'r') as f: txt = f.read()
     return strip(txt) if striping else txt
 
-def saveText(txt, txtFile):
+def save(txt, txtFile):
     logging.debug('saving text to [%s]' % txtFile)
     checkOutputFile(txtFile)
     with open(txtFile, 'w') as f: f.write(str(txt))
 
 # raw text lines
-def loadTextLines(txtFile, striping = True, removeBlanks = True):
+def loadLines(txtFile, striping = True, removeBlanks = True):
     logging.debug('loading textlines from [%s]' % txtFile)
     checkInputFile(txtFile)
 
@@ -40,7 +40,7 @@ def loadTextLines(txtFile, striping = True, removeBlanks = True):
 
     return tlines
 
-def saveTextLines(tlines, txtFile, autoReturn = True):
+def saveLines(tlines, txtFile, autoReturn = True):
     logging.debug('saving textlines to [%s]' % txtFile)
     checkOutputFile(txtFile)
 

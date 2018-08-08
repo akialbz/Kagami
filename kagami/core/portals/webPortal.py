@@ -40,12 +40,12 @@ def _request(req, wait, tries, manualRetry):
     try: return json.loads(res)
     except ValueError: return res.strip()
 
-def getUrl(url, params = NA, headers = NA, timeout = 3.05, wait = 1, tries = 1, manualRetry = False, **kwargs):
+def get(url, params = NA, headers = NA, timeout = 3.05, wait = 1, tries = 1, manualRetry = False, **kwargs):
     logging.debug('getting url [%s]' % url)
     req = partial(requests.get, url, params = optional(params, None), headers = optional(headers, None), timeout = timeout, **kwargs)
     return _request(req, wait, tries, manualRetry)
 
-def postUrl(url, data = NA, headers = NA, timeout = 3.05, wait = 1, tries = 1, manualRetry = False, **kwargs):
+def post(url, data = NA, headers = NA, timeout = 3.05, wait = 1, tries = 1, manualRetry = False, **kwargs):
     logging.debug('posting url [%s]' % url)
     req = partial(requests.post, url, data = optional(data, None), headers = optional(headers, None), timeout = timeout, **kwargs)
     return _request(req, wait, tries, manualRetry)

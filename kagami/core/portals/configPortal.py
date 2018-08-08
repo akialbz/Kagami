@@ -21,7 +21,7 @@ from kagami.core.filesys import checkInputFile
 class _NoConvConfigParser(ConfigParser):
     def optionxform(self, optionstr): return optionstr
 
-def loadConfig(cfgFile, autoEval = True, dictType = OrderedDict, emptyAsNA = True):
+def load(cfgFile, autoEval = True, dictType = OrderedDict, emptyAsNA = True):
     logging.debug('loading configs from [%s]' % cfgFile)
     checkInputFile(cfgFile)
 

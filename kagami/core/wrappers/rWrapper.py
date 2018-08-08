@@ -2,7 +2,7 @@
 #  -*- coding: utf-8 -*-
 
 """
-rWrapper: wrapper for R language
+rWrapper
 
 author(s): Albert (aki) Zhou
 origin: 12-19-2017
@@ -14,12 +14,12 @@ import numpy as np
 import rpy2.robjects as robj
 import rpy2.robjects.numpy2ri as np2ri
 from rpy2.robjects import NULL
-from kagami.core.prelim import NA, optional, isna
+from kagami.core.prelim import NA, isna
 
 
 class RWrapper(object):
     def __init__(self, *libraries):
-        np2ri.activate() # enable numpy <-> R object conversions
+        np2ri.activate() # enable numpy <-> R conversions
         robj.r('Sys.setenv(LANG = "en")')
         self.library(*libraries)
 
@@ -51,8 +51,8 @@ class RWrapper(object):
         return robj.r.matrix(val, nrow = nrow, ncol = ncol)
 
     @staticmethod
-    def assign(val, name, dtype = NA):
-        return robj.r.assign(name, np.array(val, dtype = optional(dtype, None)))
+    def assign(val, name):
+        return robj.r.assign(name, np.array(val))
 
     @staticmethod
     def apply(func, *args, **kwargs):

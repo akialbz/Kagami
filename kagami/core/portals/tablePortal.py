@@ -42,9 +42,9 @@ def saveCSV(table, tabFile, heads = NA, **kwargs):
 
     return os.path.isfile(tabFile)
 
-def loadTable(tabFile, delimiter = '\t', headRows = NA, autoEval = False, **kwargs):
+def load(tabFile, delimiter = '\t', headRows = NA, autoEval = False, **kwargs):
     return loadCSV(tabFile, headRows, autoEval, delimiter = delimiter, **kwargs)
 
-def saveTable(table, tabFile, delimiter = '\t', heads = NA, **kwargs):
+def save(table, tabFile, delimiter = '\t', heads = NA, **kwargs):
     return saveCSV(table, tabFile, heads, delimiter = delimiter, **kwargs)
 
