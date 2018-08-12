@@ -5,11 +5,8 @@
 __init__
 
 author(s): Albert (aki) Zhou
-origin: 03-18-2017
+origin: 08-07-2018
 
 """
 
-
-__version__ = '2.0.0'
-__version_name__ = 'Izumo'
 

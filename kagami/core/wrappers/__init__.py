@@ -10,3 +10,7 @@ origin: 03-18-2017
 """
 
 
+from rWrapper import RWrapper
+from sqliteWrapper import SQLiteWrapper
+
+

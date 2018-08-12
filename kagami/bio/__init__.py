@@ -2,14 +2,11 @@
 #  -*- coding: utf-8 -*-
 
 """
-kagami lib interface
+__init__.py: 
 
 author(s): Albert (aki) Zhou
-origin: 12-26-2017
+origin: 08-07-2018
 
 """
 
-
-import sys
-sys.path.insert(0, 'libkagami.zlib')
 

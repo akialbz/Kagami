@@ -2,7 +2,7 @@
 #  -*- coding: utf-8 -*-
 
 """
-sqliteWrapper: wrapper for SQLite3 database
+sqliteWrapper
 
 author(s): Albert (aki) Zhou
 origin: 04-12-2017
@@ -11,7 +11,7 @@ origin: 04-12-2017
 
 
 import logging, sqlite3, os
-from ..fileSys import fileTitle
+from kagami.core.filesys import fileTitle
 
 
 class SQLiteWrapper(object):
@@ -20,18 +20,10 @@ class SQLiteWrapper(object):
         self._dbpams = kwargs
         self._dbconn = None
 
-    # using with ... as
-    def __enter__(self):
-        self.connect()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
-
-    # methods
+    # operations
     def connect(self):
         if self._dbconn is not None:
-            logging.warning('database [%s] already connected, ignore' % fileTitle(self._dbfile))
+            logging.debug('database [%s] already connected, ignore' % fileTitle(self._dbfile))
         else:
             logging.debug('%s SQLite database [%s]' %
                 ('connecting' if os.path.isfile(self._dbfile) else 'creating', fileTitle(self._dbfile)))
@@ -44,7 +36,7 @@ class SQLiteWrapper(object):
 
     def close(self, commit = True):
         if self._dbconn is None:
-            logging.warning('connection to database [%s] already closed, ignore' % fileTitle(self._dbfile))
+            logging.debug('connection to database [%s] already closed, ignore' % fileTitle(self._dbfile))
         else:
             logging.debug('closing connection to SQLite database [%s]' % fileTitle(self._dbfile))
             if commit: self._dbconn.commit()
@@ -54,13 +46,15 @@ class SQLiteWrapper(object):
 
     def execute(self, query):
         if self._dbconn is None: raise IOError('database not connected')
-        logging.debug('exec command = [%s]' % query)
-        try: self._dbconn.execute(query)
-        except Exception, e: logging.warning('sqlite query failed: ' + str(e))
+        logging.debug('exec = [%s]' % query)
+        try:
+            self._dbconn.execute(query)
+        except Exception, e:
+            logging.warning('sqlite query failed: ' + str(e))
 
     def query(self, query):
         if self._dbconn is None: raise IOError('database not connected')
-        logging.debug('query command = [%s]' % query)
+        logging.debug('query = [%s]' % query)
         try:
             res = self._dbconn.execute(query).fetchall()
         except Exception, e:
@@ -68,6 +62,7 @@ class SQLiteWrapper(object):
             res = []
         return res
 
+    # routines
     def tableExists(self, tableName):
         res = self.query("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';" % tableName)
         return len(res) > 0
@@ -85,4 +80,19 @@ class SQLiteWrapper(object):
 
     def toList(self, tableName):
         return self.query("SELECT * FROM '%s';" % tableName)
+
+
+# with ... as statement
+class createSQLiteWrapper:
+    def __init__(self, dbfile, **kwargs):
+        self._dbfile = dbfile
+        self._params = kwargs
+        self._db = None
+
+    def __enter__(self):
+        self._db = SQLiteWrapper(self._dbfile, **self._params).connect()
+        return self._db
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._db.close()
 
