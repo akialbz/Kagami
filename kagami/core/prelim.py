@@ -10,7 +10,7 @@ origin: 06-07-2016
 """
 
 
-from collections import Iterable, Mapping
+from collections import Iterable, Mapping, Hashable
 from types import GeneratorType
 
 
@@ -28,9 +28,11 @@ optional = lambda x, default: x if hasvalue(x) else default
 
 
 # iterable
+isstring = lambda x: isinstance(x, basestring)
 mappable = lambda x: isinstance(x, Mapping)
+hashable = lambda x: isinstance(x, Hashable)
 iterable = lambda x: isinstance(x, Iterable)
-listable = lambda x: iterable(x) and not isinstance(x, (str, unicode))
+listable = lambda x: iterable(x) and not isstring(x)
 
 
 # check
