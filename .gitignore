@@ -2,5 +2,4 @@
 dist/
 legacy/
 .gitignore
-*.pyc
-
+build.py
