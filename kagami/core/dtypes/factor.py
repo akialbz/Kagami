@@ -12,6 +12,7 @@ origin: 08-08-2018
 
 import numpy as np
 from string import join
+from copy import deepcopy
 from bidict import FrozenOrderedBidict
 from kagami.core.prelim import NA, hasvalue, optional, checkany, listable, mappable
 
@@ -21,29 +22,19 @@ class _Factor(object):
 
     def __init__(self, array = NA, arrValues = NA):
         if hasvalue(array):
-            self._array = np.array(self._mapLevel(array), dtype = self._enctype)
+            self._array = self.encode(array)
         elif hasvalue(arrValues):
-            if checkany(arrValues, lambda x: x not in self._levdct.values()): raise ValueError('array values not recognised')
+            if checkany(set(arrValues), lambda x: x not in self._levdct.values()): raise ValueError('array values not recognised')
             self._array = np.array(arrValues, dtype = self._enctype)
         else:
             self._array = np.array([], dtype = self._enctype)
-
-    # privates
-    def _mapLevel(self, levels):
-        if isinstance(levels, self.__class__):
-            arr = levels.arrValues
-        elif listable(levels):
-            arr = [self._levdct[v] for v in levels]
-        else:
-            arr = self._levdct[levels]
-        return arr
 
     # build-ins
     def __getitem__(self, item):
         return self.__class__(arrValues = self._array[item])
 
     def __setitem__(self, key, value):
-        self._array.__setitem__(key, self._mapLevel(value))
+        self._array.__setitem__(key, self.encode(value))
 
     def __iter__(self):
         return iter(self.array)
@@ -82,7 +73,7 @@ class _Factor(object):
 
     @property
     def array(self):
-        return np.array([self._levdct.inv[v] for v in self._array])
+        return self.decode(self._array)
 
     @property
     def arrValues(self):
@@ -95,17 +86,26 @@ class _Factor(object):
     # publics
     @classmethod
     def encode(cls, array):
-        return np.array([cls._levdct[v] for v in array], dtype = cls._enctype)
+        if isinstance(array, cls.__class__):
+            arr = array.arrValues
+        elif listable(array):
+            arr = [cls._levdct[v] for v in array]
+        else:
+            arr = cls._levdct[array]
+        return np.array(arr, dtype = cls._enctype)
 
     @classmethod
     def decode(cls, arrValues):
         return np.array([cls._levdct.inv[v] for v in arrValues])
 
     def insert(self, other, ids = NA):
-        return self.__class__(arrValues = np.insert(self._array, optional(ids, self.size), self._mapLevel(other)))
+        return self.__class__(arrValues = np.insert(self._array, optional(ids, self.size), self.encode(other)))
 
     def drop(self, ids):
         return self.__class__(arrValues = np.delete(self._array, ids))
+
+    def copy(self):
+        return deepcopy(self)
 
 
 def factor(name, levels, enctype = np.uint32):
