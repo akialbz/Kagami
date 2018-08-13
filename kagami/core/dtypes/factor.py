@@ -42,21 +42,34 @@ class _Factor(object):
     def __contains__(self, item):
         return item in self._levdct.keys()
 
+    def __add__(self, other):
+        return self.insert(self, other)
+
     def __len__(self):
         return self.size
 
     def __str__(self):
         arr = self.array
         if len(arr) > 10: arr = list(arr[:8]) + ['...'] + list(arr[-2:])
-        s = 'Factor[' + join(arr, ', ') + ']\n' + \
-            'levels [%d]: %s' % (len(self._levdct), self.levels)
+        s = '%s([%s], levels [%d] = %s)' % (self.__class__.__name__, join(arr, ', '), len(self._levdct), str(self.levels))
         return s
 
     def __repr__(self):
         return str(self)
 
+    # for numpy operators
     def __array__(self):
         return self.array
+
+    def __array_wrap__(self, arr):
+        return self.__class__(array = arr)
+
+    # for pickle
+    def __getstate__(self):
+        return dict([(k, getattr(self, k)) for k in self.__slots__])
+
+    def __setstate__(self, dct):
+        for k in filter(lambda x: x in self.__slots__, dct.keys()): setattr(self, k, dct[k])
 
     # properties
     @property
@@ -122,4 +135,5 @@ def factor(name, levels, enctype = np.uint32):
 
     fct._enctype = enctype
     return fct
+
 

@@ -10,3 +10,5 @@ origin: 08-07-2018
 """
 
 
+from factor import factor
+
