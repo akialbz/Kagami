@@ -12,6 +12,7 @@ scikit-learn = "*"
 requests = "*"
 tables = "*"
 bidict = "*"
+pytest = "*"
 
 [requires]
 python_version = "2.7"

@@ -10,10 +10,11 @@ origin: 08-08-2018
 """
 
 
+import sys
 import numpy as np
 from string import join
 from bidict import FrozenOrderedBidict
-from kagami.core.prelim import NA, hasvalue, optional, checkany, listable, mappable
+from kagami.core.prelim import NA, hasvalue, optional, checkany, listable, mappable, hashable
 
 
 class _Factor(object):
@@ -39,17 +40,23 @@ class _Factor(object):
         return iter(self.array)
 
     def __eq__(self, other):
-        oval = self._levdct.get(other) # None if not exists
-        return self._array == oval
+        if isinstance(other, self.__class__):
+            return self._array == other.arrValues
+        elif listable(other):
+            return self._array == self.encode(other)
+        elif hashable(other):
+            return self._array == self._levdct.get(other)
+        else: raise TypeError('unsupported data type for comparison')
 
     def __ne__(self, other):
         return ~self.__eq__(other)
 
     def __contains__(self, item):
-        return item in self._levdct.keys()
+        oval = self._levdct.get(item)
+        return oval in self._array
 
     def __add__(self, other):
-        return self.insert(self, other)
+        return self.insert(other)
 
     def __len__(self):
         return self.size
@@ -57,15 +64,17 @@ class _Factor(object):
     def __str__(self):
         arr = self.array
         if len(arr) > 10: arr = list(arr[:8]) + ['...'] + list(arr[-2:])
-        s = '%s([%s], levels [%d] = %s)' % (self.__class__.__name__, join(arr, ', '), len(self._levdct), str(self.levels))
+        s = '%s([%s], levels [%d] = %s)' % (self.__class__.__name__, join(arr, ', '), len(self._levdct), str(self.levels()))
         return s
 
     def __repr__(self):
         return str(self)
 
     # for numpy operators
-    def __array__(self):
-        return self.array
+    def __array__(self, dtype = None):
+        arr = self.array
+        if dtype is not None: arr = arr.astype(dtype)
+        return arr
 
     def __array_wrap__(self, arr):
         return self.__class__(array = arr)
@@ -79,18 +88,6 @@ class _Factor(object):
 
     # properties
     @property
-    def levels(self):
-        return self._levdct.keys()
-
-    @property
-    def values(self):
-        return self._levdct.values()
-
-    @property
-    def items(self):
-        return self._levdct.items()
-
-    @property
     def array(self):
         return self.decode(self._array)
 
@@ -103,6 +100,18 @@ class _Factor(object):
         return self._array.shape[0]
 
     # publics
+    @classmethod
+    def levels(cls):
+        return cls._levdct.keys()
+
+    @classmethod
+    def values(cls):
+        return cls._levdct.values()
+
+    @classmethod
+    def items(cls):
+        return cls._levdct.items()
+
     @classmethod
     def encode(cls, array):
         if isinstance(array, cls.__class__):
@@ -134,17 +143,17 @@ class _Factor(object):
 
 def factor(name, levels, enctype = np.uint32):
     fct = type(name, (_Factor,), {})
+    fct._enctype = enctype
 
-    if listable(levels):
-        if len(levels) != len(set(levels)): raise ValueError('levels have duplications')
-        fct._levdct = FrozenOrderedBidict([(v, i) for i, v in enumerate(levels)])
-    elif mappable(levels):
+    if mappable(levels): # dict is also listable
         if checkany(levels.values(), lambda x: not isinstance(x, int)): raise TypeError('level values are not integers')
         fct._levdct = FrozenOrderedBidict([(v, i) for v, i in levels.items()])
+    elif listable(levels):
+        if len(levels) != len(set(levels)): raise ValueError('levels have duplications')
+        fct._levdct = FrozenOrderedBidict([(v, i) for i, v in enumerate(levels)])
     else:
         raise TypeError('unknown levels type: %s' % str(type(levels)))
 
-    fct._enctype = enctype
+    setattr(sys.modules[__name__], name, fct) # register to factor
     return fct
-
 
