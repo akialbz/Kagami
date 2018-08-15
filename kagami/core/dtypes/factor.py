@@ -12,7 +12,6 @@ origin: 08-08-2018
 
 import numpy as np
 from string import join
-from copy import deepcopy
 from bidict import FrozenOrderedBidict
 from kagami.core.prelim import NA, hasvalue, optional, checkany, listable, mappable
 
@@ -38,6 +37,13 @@ class _Factor(object):
 
     def __iter__(self):
         return iter(self.array)
+
+    def __eq__(self, other):
+        oval = self._levdct.get(other) # None if not exists
+        return self._array == oval
+
+    def __ne__(self, other):
+        return ~self.__eq__(other)
 
     def __contains__(self, item):
         return item in self._levdct.keys()
@@ -111,6 +117,11 @@ class _Factor(object):
     def decode(cls, arrValues):
         return np.array([cls._levdct.inv[v] for v in arrValues])
 
+    @classmethod
+    def stack(cls, fct1, fct2):
+        if not isinstance(fct1, cls) or not isinstance(fct2, cls): raise TypeError('unknown factor type(s)')
+        return cls(arrValues = np.hstack((fct1.arrValues, fct2.arrValues)))
+
     def insert(self, other, ids = NA):
         return self.__class__(arrValues = np.insert(self._array, optional(ids, self.size), self.encode(other)))
 
@@ -118,7 +129,7 @@ class _Factor(object):
         return self.__class__(arrValues = np.delete(self._array, ids))
 
     def copy(self):
-        return deepcopy(self)
+        return self.__class__(arrValues = self._array)
 
 
 def factor(name, levels, enctype = np.uint32):
