@@ -18,36 +18,39 @@ from string import join
 from kagami.core.prelim import NA, optional, isna, hasvalue, listable, hashable, checkany
 from kagami.core.functional import partial
 from kagami.core.filesys import checkInputFile, checkOutputFile
+from kagami.core.dtypes.factor import _Factor
 
 
 # table index class
 class _Index(dict):
-    def __init__(self, seq = NA, ndim = NA, **kwargs):
+    def __init__(self, seq = NA, size = NA, **kwargs):
         if hasvalue(seq):
             super(_Index, self).__init__(seq)
         else:
             super(_Index, self).__init__(**kwargs)
 
-        if hasvalue(ndim):
-            self._ndim = ndim
+        if hasvalue(size):
+            self._size = size
         elif len(self) > 0:
-            self._ndim = len(self.values()[0])
+            self._size = len(self.values()[0])
         else:
             raise ValueError('must provide index size or initial values')
-        if checkany(self.values(), lambda x: len(x) != self._ndim): raise ValueError('index values size not match')
 
-    # build-ins
+        for k,v in self.items(): self[k] = v if isinstance(v, _Factor) else np.array(v)
+
+    # built-ins
     def __getitem__(self, item):
         if hashable(item) and self.has_key(item): return super(_Index, self).__getitem__(item)
-        return _Index([(k,v[item]) for k,v in self.items()])
+        _pack = lambda x: x.reshape((1,)) if x.ndim == 0 else x
+        return _Index([(k,_pack(v[item])) for k,v in self.items()])
 
     def __setitem__(self, key, value):
         if isinstance(value, _Index):
             if checkany(self.keys(), lambda x: not value.has_key(x)): raise KeyError('index has different keys')
-            for k in self.keys(): np.put(self[k], key, value[k])
+            for k in self.keys(): self[k][key] = value[k]
         else:
-            if len(value) != self._ndim: raise ValueError('index values size not match')
-            super(_Index, self).__setitem__(key, value)
+            if len(value) != self._size: raise ValueError('index values size not match')
+            super(_Index, self).__setitem__(key, value if isinstance(value, _Factor) else np.array(value))
 
     def __add__(self, other):
         return self.insert(other)
@@ -62,12 +65,12 @@ class _Index(dict):
 
     # properties
     @property
-    def ndim(self):
-        return self._ndim
+    def size(self):
+        return self._size
 
     @property
     def shape(self):
-        return len(self), self._ndim
+        return len(self), self._size
 
     # publics
     @classmethod
@@ -78,30 +81,34 @@ class _Index(dict):
     def insert(self, other, ids = NA):
         if not isinstance(other, _Index): raise TypeError('insert object is not Index')
         if checkany(self.keys(), lambda x: not other.has_key(x)): raise KeyError('index has different keys')
-        pos = optional(ids, self._ndim)
+        pos = optional(ids, self._size)
         return _Index([(k, np.insert(v, pos, other[k])) for k,v in self.items()])
 
     def drop(self, ids = NA):
-        pos = optional(ids, self._ndim)
+        pos = optional(ids, self._size)
         return _Index([(k, np.delete(v, pos)) for k,v in self.items()])
 
+    def toList(self, transpose = False):
+        olst = [[k] + list(v) for k,v in self.items()]
+        return olst if not transpose else zip(*olst)
+
     def copy(self):
-        return _Index(self.items(), ndim = self.ndim)
+        return _Index(self.items(), ndim = self._size)
 
 
 # table class
 class Table(object):
     def __init__(self, X, dtype = float, rownames = NA, colnames = NA, rowindex = NA, colindex = NA, metadata = NA):
         self._dmatx = np.array(X).astype(dtype)
-        self._dtype = dtype
+        self._dtype = dtype # careful do not use _dmatx.dtype -> str converted to fix length S##
         self._metas = {} if isna(metadata) else dict(metadata)
 
         self._rndct = NA
         self.rownames = rownames
         self._cndct = NA
-        self.colnames = colnames
 
         self._rindx = NA
+        self.colnames = colnames
         self.rowindex = rowindex
         self._cindx = NA
         self.colindex = colindex
@@ -160,13 +167,14 @@ class Table(object):
     def __len__(self):
         return self.nrow
 
-    # def __str__(self):
-    #     s = self.toStr(delimiter = '\t') + '\n' + \
-    #         '[%s]: %d x %d' % (str(self._dtype), self.nrow, self.ncol)
-    #     return s
-    #
-    # def __repr__(self):
-    #     return str(self)
+    def __str__(self):
+        slns = self.toStr(delimiter = '\t', withIndex = True, asLines = True)
+        if len(slns) > 20: slns = slns[:15] + ['', '...', ''] + slns[-2:]
+        slns += ['table([%s], shape = (%d x %d))' % (str(self._dtype), self.nrow, self.ncol)]
+        return join(slns, '\n')
+
+    def __repr__(self):
+        return self.__str__()
 
     def __array__(self):
         return self._dmatx # for np.array conversion
@@ -197,6 +205,10 @@ class Table(object):
         return self._dmatx.shape
 
     @property
+    def ndim(self):
+        return 2
+
+    @property
     def rownames(self):
         return np.array(self._rndct.keys()) if hasvalue(self._rndct) else NA
 
@@ -206,9 +218,9 @@ class Table(object):
             self._rndct = NA
         elif listable(value):
             if len(value) != self.nrow: raise KeyError('row names and data matrix size not match')
-            if len(value) != len(set(value)): raise KeyError('row names have duplications')
             self._rndct = OrderedDict([(n,i) for i,n in enumerate(value)])
-        else: raise TypeError('unknown names value type')
+            if len(value) != len(self._rndct): raise KeyError('row names have duplications')
+        else: raise TypeError('unknown row names data type')
 
     @property
     def colnames(self):
@@ -220,9 +232,9 @@ class Table(object):
             self._cndct = NA
         elif listable(value):
             if len(value) != self.ncol: raise KeyError('column names and data matrix size not match')
-            if len(value) != len(set(value)): raise KeyError('column names have duplications')
             self._cndct = OrderedDict([(n,i) for i,n in enumerate(value)])
-        else: raise TypeError('unknown names value type')
+            if len(value) != len(self._cndct): raise KeyError('column names have duplications')
+        else: raise TypeError('unknown column names data type')
 
     @property
     def rowindex(self):
@@ -230,10 +242,7 @@ class Table(object):
 
     @rowindex.setter
     def rowindex(self, value):
-        if isinstance(value, _Index) and value.ndim == self.nrow:
-            self._rindx = value.copy()
-        else:
-            self._rindx = _Index(value, ndim = self.nrow)
+        self._rindx = value.copy() if isinstance(value, _Index) and value.size == self.nrow else _Index(value, ndim = self.nrow)
 
     @property
     def colindex(self):
@@ -241,10 +250,7 @@ class Table(object):
 
     @colindex.setter
     def colindex(self, value):
-        if isinstance(value, _Index) and value.ndim == self.ncol:
-            self._cindx = value.copy()
-        else:
-            self._cindx = _Index(value, ndim = self.ncol)
+        self._cindx = value.copy() if isinstance(value, _Index) and value.size == self.ncol else _Index(value, ndim = self.ncol)
 
     @property
     def metadata(self):
@@ -303,6 +309,27 @@ class Table(object):
 
         return tab
 
+
+
+    def toList(self, transpose = False):
+        olst = list(map(list,(self._dmatx.T if transpose else self._dmatx)))
+        return olst if not transpose else zip(*olst)
+
+    def toStr(self, delimiter = ',', transpose = False, withIndex = False, asLines = False):
+        smtx = [[''] + list(self.colnames)] + [[rn] + ln for rn, ln in zip(self.rownames, self.toList())]
+
+        if withIndex:
+            rindx = self.rowindex.toList(transpose = True)
+            cindx = self.colindex.toList(transpose = False)
+            if len(rindx) > 0: smtx = [ri + sl for ri,sl in zip(rindx, smtx)]
+            if len(cindx) > 0: smtx = [[''] * len(self.rowindex) + ci for ci in cindx] + smtx
+
+        if transpose: smtx = zip(*smtx)
+        smtx = map(lambda x: join(map(str,x), delimiter), smtx)
+
+        return smtx if asLines else join(smtx, '\n')
+
+
     # def insert(self, other, ids = NA, axis = 0):
     #     if not isinstance(other, tables):
     #
@@ -326,14 +353,6 @@ class Table(object):
     #
     #     return deepcopy(self)
     #
-    # def toList(self, transpose = False):
-    #     return list(map(list, (self.values.T if transpose else self.values)))
-    #
-    # def toStr(self, delimiter = ',', transpose = False):
-    #     rn, cn = (self.rownames, self.colnames) if not transpose else (self.colnames, self.rownames)
-    #     omtx = [[' '] + list(cn)] + \
-    #            [[n] + list(l) for n,l in zip(rn, self.toList(transpose))]
-    #     return join([join(map(str,ln), delimiter) for ln in omtx], '\n')
     #
     # def toFile(self, fname):
     #     checkOutputFile(fname)

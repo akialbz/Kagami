@@ -30,7 +30,7 @@ optional = lambda x, default: x if hasvalue(x) else default
 # iterable
 isstring = lambda x: isinstance(x, basestring)
 mappable = lambda x: isinstance(x, Mapping)
-hashable = lambda x: isinstance(x, Hashable)
+hashable = lambda x: isinstance(x, Hashable) and not isinstance(x, slice)
 iterable = lambda x: isinstance(x, Iterable)
 listable = lambda x: iterable(x) and not isstring(x)
 

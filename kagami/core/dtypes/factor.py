@@ -29,9 +29,11 @@ class _Factor(object):
         else:
             self._array = np.array([], dtype = self._enctype)
 
-    # build-ins
+    # built-ins
     def __getitem__(self, item):
-        return self.__class__(arrValues = self._array[item])
+        arr = self._array[item]
+        if arr.ndim == 0: arr = arr.reshape((1,))
+        return self.__class__(arrValues = arr)
 
     def __setitem__(self, key, value):
         self._array.__setitem__(key, self.encode(value))
@@ -99,6 +101,10 @@ class _Factor(object):
     def size(self):
         return self._array.shape[0]
 
+    @property
+    def ndim(self):
+        return 1
+
     # publics
     @classmethod
     def levels(cls):
@@ -119,7 +125,7 @@ class _Factor(object):
         elif listable(array):
             arr = [cls._levdct[v] for v in array]
         else:
-            arr = cls._levdct[array]
+            arr = [cls._levdct[array]]
         return np.array(arr, dtype = cls._enctype)
 
     @classmethod
@@ -136,6 +142,10 @@ class _Factor(object):
 
     def drop(self, ids):
         return self.__class__(arrValues = np.delete(self._array, ids))
+
+    def put(self, ind, v, mode = 'raise'): # for np.array.put
+        v = self.encode(v)
+        np.put(self._array, ind, v, mode = mode)
 
     def copy(self):
         return self.__class__(arrValues = self._array)
