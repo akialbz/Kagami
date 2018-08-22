@@ -12,8 +12,8 @@ origin: 06-28-2014
 
 import logging
 from string import strip
-from kagami.core.filesys import checkInputFile, checkOutputFile
-from kagami.core.functional import smap, drop, pickmap
+from kagami.filesys import checkInputFile, checkOutputFile
+from kagami.functional import smap, drop, pickmap
 
 
 # raw text string

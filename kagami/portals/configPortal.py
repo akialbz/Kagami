@@ -14,8 +14,8 @@ import logging
 from ConfigParser import ConfigParser
 from ast import literal_eval
 from collections import OrderedDict
-from kagami.core.prelim import NA
-from kagami.core.filesys import checkInputFile
+from kagami.prelim import NA
+from kagami.filesys import checkInputFile
 
 
 class _NoConvConfigParser(ConfigParser):

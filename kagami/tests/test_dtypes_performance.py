@@ -2,10 +2,10 @@
 #  -*- coding: utf-8 -*-
 
 """
-__init__.py: 
+test_core_dtypes_performance
 
 author(s): Albert (aki) Zhou
-origin: 08-07-2018
+origin: 08-21-2018
 
 """
 

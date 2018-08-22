@@ -13,7 +13,7 @@ origin: 08-15-2018
 import cPickle as cp
 import numpy as np
 from bidict import bidict
-from kagami.core.dtypes import factor
+from kagami.dtypes import factor
 
 
 # factor

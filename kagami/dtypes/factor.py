@@ -14,7 +14,7 @@ import sys
 import numpy as np
 from string import join
 from bidict import FrozenOrderedBidict
-from kagami.core.prelim import NA, hasvalue, optional, checkany, listable, mappable, hashable
+from kagami.prelim import NA, hasvalue, optional, checkany, listable, mappable, hashable
 
 
 class _Factor(object):

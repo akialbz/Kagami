@@ -14,7 +14,7 @@ import numpy as np
 import rpy2.robjects as robj
 import rpy2.robjects.numpy2ri as np2ri
 from rpy2.robjects import NULL
-from kagami.core.prelim import NA, isna
+from kagami.prelim import NA, isna
 
 
 class RWrapper(object):

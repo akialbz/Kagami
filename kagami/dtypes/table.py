@@ -10,15 +10,15 @@ origin: 02-18-2017
 """
 
 
-import os, tables
-import cPickle as cp
+import os
 import numpy as np
+import tables as pytb
 from collections import OrderedDict
 from string import join
-from kagami.core.prelim import NA, optional, isna, hasvalue, listable, hashable, checkany
-from kagami.core.functional import partial
-from kagami.core.filesys import checkInputFile, checkOutputFile
-from kagami.core.dtypes.factor import _Factor
+from kagami.prelim import NA, optional, isna, hasvalue, listable, hashable, checkany
+from kagami.filesys import checkInputFile, checkOutputFile
+from kagami.dtypes.factor import _Factor
+from kagami.portals import textPortal, tablePortal
 
 
 # table index class
@@ -84,16 +84,15 @@ class _Index(dict):
         pos = optional(ids, self._size)
         return _Index([(k, np.insert(v, pos, other[k])) for k,v in self.items()])
 
-    def drop(self, ids = NA):
-        pos = optional(ids, self._size)
-        return _Index([(k, np.delete(v, pos)) for k,v in self.items()])
+    def drop(self, ids):
+        return _Index([(k, np.delete(v, ids)) for k,v in self.items()])
 
     def toList(self, transpose = False):
         olst = [[k] + list(v) for k,v in self.items()]
-        return olst if not transpose else zip(*olst)
+        return olst if not transpose else list(map(list,zip(*olst)))
 
     def copy(self):
-        return _Index(self.items(), ndim = self._size)
+        return _Index(self.items(), size = self._size)
 
 
 # table class
@@ -106,9 +105,9 @@ class Table(object):
         self._rndct = NA
         self.rownames = rownames
         self._cndct = NA
+        self.colnames = colnames
 
         self._rindx = NA
-        self.colnames = colnames
         self.rowindex = rowindex
         self._cindx = NA
         self.colindex = colindex
@@ -164,6 +163,13 @@ class Table(object):
     def __add__(self, other):
         return Table.vstack(self, other)
 
+    def __eq__(self, other):
+        if isinstance(other, Table):
+            return self._dmatx == other.values
+        elif isinstance(other, np.ndarray):
+            return self._dmatx == other
+        else: raise TypeError('comparison not supported')
+
     def __len__(self):
         return self.nrow
 
@@ -192,6 +198,11 @@ class Table(object):
     def dtype(self):
         return self._dtype
 
+    @dtype.setter
+    def dtype(self, value):
+        self._dmatx = self._dmatx.astype(value)
+        self._dtype = value
+
     @property
     def nrow(self):
         return self.shape[0]
@@ -218,7 +229,7 @@ class Table(object):
             self._rndct = NA
         elif listable(value):
             if len(value) != self.nrow: raise KeyError('row names and data matrix size not match')
-            self._rndct = OrderedDict([(n,i) for i,n in enumerate(value)])
+            self._rndct = OrderedDict([(str(n),i) for i,n in enumerate(value)])
             if len(value) != len(self._rndct): raise KeyError('row names have duplications')
         else: raise TypeError('unknown row names data type')
 
@@ -232,7 +243,7 @@ class Table(object):
             self._cndct = NA
         elif listable(value):
             if len(value) != self.ncol: raise KeyError('column names and data matrix size not match')
-            self._cndct = OrderedDict([(n,i) for i,n in enumerate(value)])
+            self._cndct = OrderedDict([(str(n),i) for i,n in enumerate(value)])
             if len(value) != len(self._cndct): raise KeyError('column names have duplications')
         else: raise TypeError('unknown column names data type')
 
@@ -242,7 +253,7 @@ class Table(object):
 
     @rowindex.setter
     def rowindex(self, value):
-        self._rindx = value.copy() if isinstance(value, _Index) and value.size == self.nrow else _Index(value, ndim = self.nrow)
+        self._rindx = value.copy() if isinstance(value, _Index) and value.size == self.nrow else _Index(value, size = self.nrow)
 
     @property
     def colindex(self):
@@ -250,7 +261,7 @@ class Table(object):
 
     @colindex.setter
     def colindex(self, value):
-        self._cindx = value.copy() if isinstance(value, _Index) and value.size == self.ncol else _Index(value, ndim = self.ncol)
+        self._cindx = value.copy() if isinstance(value, _Index) and value.size == self.ncol else _Index(value, size = self.ncol)
 
     @property
     def metadata(self):
@@ -259,61 +270,98 @@ class Table(object):
     @property
     def T(self):
         tab = Table(self._dmatx.T, dtype = self._dtype, metadata = self._metas, rowindex = self.colindex, colindex = self.rowindex)
-        tab._rndct, tab._cndct = self._cndct.copy(), self._rndct.copy()
+        tab._rndct = self._rndct.copy() if hasvalue(self._rndct) else NA
+        tab._cndct = self._cndct.copy() if hasvalue(self._cndct) else NA
         return tab
 
     # publics
+    # class methods
     @classmethod
-    def hstack(cls, tab1, tab2, force = False):
-        if not isinstance(tab1, Table) or not isinstance(tab2, Table): raise TypeError('unknown table type(s)')
+    def hstack(cls, tab1, tab2, ids = NA, force = False):
+        return tab1.insert(tab2, ids = ids, axis = 1, force = force)
 
-        if tab1.nrow != tab2.nrow: raise ValueError('input table has different number of rows')
-        if not force and (np.any(tab1.rownames != tab2.rownames) or tab1.rowindex != tab2.rowindex):
-           raise ValueError('input table has different row names / indices')
+    @classmethod
+    def vstack(cls, tab1, tab2, ids = NA, force = False):
+        return tab1.insert(tab2, ids = ids, axis = 0, force = force)
 
-        tab = Table(np.hstack((tab1.values, tab2.values)), dtype = tab1._dtype,
-                    rowindex = tab1.rowindex, colindex = tab1.colindex + tab2.colindex,
-                    metadata = tab1._metas.items() + tab2._metas.items())
-        tab._rndct = tab1._rndct.copy() if hasvalue(tab1._rndct) else NA
+    @classmethod
+    def fromCSVFile(cls, fname):
+        dm = tablePortal.load(fname, delimiter = ',')
 
-        if isna(tab1._cndct) and isna(tab2._cndct):
-            tab._cndct = NA
-        elif hasvalue(tab1._cndct) and hasvalue(tab2._cndct):
-            tab._cndct = tab1._cndct.copy()
-            for k,v in tab2._cndct.items(): tab._cndct[k] = v + tab1.ncol
-            if len(tab._cndct) != len(tab1._cndct) + len(tab2._cndct): raise KeyError('input table has duplicate column names')
-        else: raise KeyError('input table missing column names')
+    @classmethod
+    def fromHDF5(cls, fname):
+        pass
+
+    # object methods
+    def insert(self, other, ids = NA, axis = 0, force = False):
+        if not isinstance(other, Table): raise TypeError('unknown table type')
+        if axis not in (0, 1): raise IndexError('unsupport axis [%d]' % axis)
+
+        pos = optional(ids, (self.nrow, self.ncol)[axis])
+        ndm = np.insert(self.values, pos, other.values, axis = axis)
+
+        if axis == 0:
+            if not force and (np.any(self.colnames != other.colnames) or self.colindex != other.colindex):
+               raise ValueError('input table has different column names / indices')
+
+            tab = Table(ndm, dtype = self._dtype, metadata = self._metas.items() + other._metas.items(),
+                        rowindex = self.rowindex.insert(other.rowindex, pos), colindex = self.colindex)
+
+            tab._cndct = self._cndct.copy() if hasvalue(self._cndct) else NA
+
+            if isna(self._rndct) and isna(other._rndct):
+                tab._rndct = NA
+            elif hasvalue(self._rndct) and hasvalue(other._rndct):
+                tab._rndct = OrderedDict([(str(n),i) for i, n in enumerate(np.insert(self.rownames, pos, other.rownames))])
+                if len(tab._rndct) != len(self._rndct) + len(other._rndct): raise KeyError('input table has duplicate row names')
+            else: raise KeyError('input table missing row names')
+        else:
+            if not force and (np.any(self.rownames != other.rownames) or self.rowindex != other.rowindex):
+               raise ValueError('input table has different row names / indices')
+
+            tab = Table(ndm, dtype = self._dtype, metadata = self._metas.items() + other._metas.items(),
+                        rowindex = self.rowindex, colindex = self.colindex.insert(other.colindex, pos))
+
+            tab._rndct = self._rndct.copy() if hasvalue(self._rndct) else NA
+
+            if isna(self._cndct) and isna(other._cndct):
+                tab._cndct = NA
+            elif hasvalue(self._cndct) and hasvalue(other._cndct):
+                tab._cndct = OrderedDict([(str(n),i) for i, n in enumerate(np.insert(self.colnames, pos, other.colnames))])
+                if len(tab._cndct) != len(self._cndct) + len(other._cndct): raise KeyError('input table has duplicate column names')
+            else: raise KeyError('input table missing column names')
 
         return tab
 
-    @classmethod
-    def vstack(cls, tab1, tab2, force = False):
-        if not isinstance(tab1, Table) or not isinstance(tab2, Table): raise TypeError('unknown table type(s)')
+    def drop(self, ids, axis = 0):
+        if axis not in (0, 1): raise IndexError('unsupport axis [%d]' % axis)
 
-        if tab1.ncol != tab2.ncol: raise ValueError('input table has different number of columns')
-        if not force and (np.any(tab1.colnames != tab2.colnames) or tab1.colindex != tab2.colindex):
-           raise ValueError('input table has different column names / indices')
-
-        tab = Table(np.vstack((tab1.values, tab2.values)), dtype = tab1._dtype,
-                    rowindex = tab1.rowindex + tab2.rowindex, colindex = tab1.colindex,
-                    metadata = tab1._metas.items() + tab2._metas.items())
-        tab._cndct = tab1._cndct.copy() if hasvalue(tab1._cndct) else NA
-
-        if isna(tab1._rndct) and isna(tab2._rndct):
-            tab._rndct = NA
-        elif hasvalue(tab1._rndct) and hasvalue(tab2._rndct):
-            tab._rndct = tab1._rndct.copy()
-            for k,v in tab2._rndct.items(): tab._rndct[k] = v + tab1.nrow
-            if len(tab._rndct) != len(tab1._rndct) + len(tab2._rndct): raise KeyError('input table has duplicate row names')
-        else: raise KeyError('input table missing row names')
+        if axis == 0:
+            tab = Table(np.delete(self.values, ids, axis = 0), dtype = self._dtype, metadata = self._metas,
+                        rowindex = self.rowindex.drop(ids), colindex = self.colindex)
+            tab._rndct = OrderedDict([(str(n),i) for i,n in enumerate(np.delete(self.rownames, ids))])
+            tab._cndct = self._cndct.copy()
+        else:
+            tab = Table(np.delete(self.values, ids, axis = 1), dtype = self._dtype, metadata = self._metas,
+                        rowindex = self.rowindex, colindex = self.colindex.drop(ids))
+            tab._rndct = self._rndct.copy()
+            tab._cndct = OrderedDict([(str(n),i) for i,n in enumerate(np.delete(self.colnames, ids))])
 
         return tab
 
+    def astype(self, dtype):
+        ds = self.copy()
+        ds.dtype = dtype
+        return ds
 
+    def copy(self):
+        tab = Table(self._dmatx.copy(), dtype = self._dtype, metadata = self._metas, rowindex = self.rowindex, colindex = self.colindex)
+        tab._rndct, tab._cndct = self._rndct.copy(), self._cndct.copy()
+        return tab
 
     def toList(self, transpose = False):
         olst = list(map(list,(self._dmatx.T if transpose else self._dmatx)))
-        return olst if not transpose else zip(*olst)
+        return olst if not transpose else list(map(list,zip(*olst)))
 
     def toStr(self, delimiter = ',', transpose = False, withIndex = False, asLines = False):
         smtx = [[''] + list(self.colnames)] + [[rn] + ln for rn, ln in zip(self.rownames, self.toList())]
@@ -329,57 +377,30 @@ class Table(object):
 
         return smtx if asLines else join(smtx, '\n')
 
+    def toCSVFile(self, fname, delimiter = ',', transpose = False, withIndex = False):
+        checkOutputFile(fname)
+        odm = self.toStr(delimiter = delimiter, transpose = transpose, withIndex = withIndex, asLines = True)
+        textPortal.saveLines(fname, odm)
+        return os.path.isfile(fname)
 
-    # def insert(self, other, ids = NA, axis = 0):
-    #     if not isinstance(other, tables):
-    #
-    #
-    # def drop(self, ids, axis = 0):
-    #     if axis == 0:
-    #         return NamedArray(np.delete(self.values, ids, axis = 0), dtype = self.dtype, strfmt = self._sfmt,
-    #                           rownames = np.delete(self.rownames, ids), colnames = self.colnames)
-    #     elif axis == 1:
-    #         return NamedArray(np.delete(self.values, ids, axis = 1), dtype = self.dtype, strfmt = self._sfmt,
-    #                           rownames = self.rownames, colnames = np.delete(self.colnames, ids))
-    #     else: raise IndexError('unsupported axis %d' % axis)
-    #
-    # def astype(self, dtype):
-    #     ds = self.copy()
-    #     ds.dtype = dtype
-    #     return ds
-    #
-    # def copy(self):
-    #     return Table(self._dmatx.copy(), self.)
-    #
-    #     return deepcopy(self)
-    #
-    #
-    # def toFile(self, fname):
-    #     checkOutputFile(fname)
-    #     with open(fname, 'w') as f: cp.dump(self, f, protocol = cp.HIGHEST_PROTOCOL)
-    #     return os.path.isfile(fname)
-    #
-    #
-    #
-    #
-    #
-    #
-    #
-# class _old():
-#
-#     def _newRowArray(self, other, dmtx, rnams):
-#         if self.ncol != other.ncol: raise ValueError('array have different column numbers')
-#         if not np.all(self.colnames == other.colnames): raise ValueError('array have different column names')
-#         return NamedArray(dmtx, dtype = self.dtype, strfmt = self._sfmt,
-#                           rownames = rnams, colnames = self.colnames)
-#
-#     def _newColArray(self, other, dmtx, cnams):
-#         if self.nrow != other.nrow: raise ValueError('array have different row numbers')
-#         if not np.all(self.rownames == other.rownames): raise ValueError('arrays have different row names')
-#         return NamedArray(dmtx, dtype = self.dtype, strfmt = self._sfmt,
-#                           rownames = self.rownames, colnames = cnams)
-#
-#
-#
+    def toHDF5(self, fname):
+        checkOutputFile(fname)
+        h5file = pytb.open_file(fname, mode = 'w')
 
+        RowIndexTable = type('RowIndexTable', (pytb.IsDescription,), {k: pytb.Col.from_dtype(v.dtype) for k,v in self.rowindex.items()})
+        ridtable = h5file.create_table('/', 'rowindex', RowIndexTable)
+        ridlists = self.rowindex.toList(transpose = True)
+        for ril in ridlists: ridtable.append(ril)
+
+        ColIndexTable = type('ColIndexTable', (pytb.IsDescription,), {k: pytb.Col.from_dtype(v.dtype) for k,v in self.colindex.items()})
+        cidtable = h5file.create_table('/', 'colindex', ColIndexTable)
+        cidlists = self.colindex.toList(transpose = True)
+        for cil in cidlists: cidtable.append(cil)
+
+        values = h5file.create_array('/', 'values', self._dmatx)
+
+        for k,v in self._metas.items(): setattr(values.attrs, k, v)
+
+        h5file.close()
+        return os.path.isfile(fname)
 
