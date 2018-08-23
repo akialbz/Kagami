@@ -11,7 +11,7 @@ origin: 06-06-2016
 
 
 import logging, os, shutil
-from kagami.prelim import NA, hasvalue
+from kagami.core import NA, hasvalue
 from kagami.functional import pick, drop
 
 

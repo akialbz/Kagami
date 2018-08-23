@@ -14,18 +14,20 @@ import sys
 import numpy as np
 from string import join
 from bidict import FrozenOrderedBidict
-from kagami.prelim import NA, hasvalue, optional, checkany, listable, mappable, hashable
+from kagami.core import NA, hasvalue, optional, checkany, listable, mappable, hashable
+from kagami.dtypes import CoreType
 
 
-class _Factor(object):
-    __slots__ = ('_array', '_levdct', '_enctype')
+# DO NOT call this class directly, use factor()
+class _Factor(CoreType):
+    __slots__ = ('_array', '_levdct', '_enctype', '_sfmt')
 
-    def __init__(self, array = NA, arrValues = NA):
-        if hasvalue(array):
-            self._array = self.encode(array)
-        elif hasvalue(arrValues):
-            if checkany(set(arrValues), lambda x: x not in self._levdct.values()): raise ValueError('array values not recognised')
-            self._array = np.array(arrValues, dtype = self._enctype)
+    def __init__(self, labels = NA, array = NA):
+        if hasvalue(labels):
+            self._array = self.encode(labels)
+        elif hasvalue(array):
+            self._array = np.array(array, dtype = self._enctype)
+            if checkany(np.unique(self._array), lambda x: x not in self._levdct.values()): raise ValueError('array values not recognised')
         else:
             self._array = np.array([], dtype = self._enctype)
 
@@ -33,25 +35,25 @@ class _Factor(object):
     def __getitem__(self, item):
         arr = self._array[item]
         if arr.ndim == 0: arr = arr.reshape((1,))
-        return self.__class__(arrValues = arr)
+        return self.__class__(array = arr)
 
     def __setitem__(self, key, value):
         self._array.__setitem__(key, self.encode(value))
 
+    def __delitem__(self, key):
+        self._array = np.delete(self._array, key)
+
     def __iter__(self):
-        return iter(self.array)
+        return iter(self.labels)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return self._array == other.arrValues
+            return self._array == other.array
         elif listable(other):
             return self._array == self.encode(other)
         elif hashable(other):
             return self._array == self._levdct.get(other)
         else: raise TypeError('unsupported data type for comparison')
-
-    def __ne__(self, other):
-        return ~self.__eq__(other)
 
     def __contains__(self, item):
         oval = self._levdct.get(item)
@@ -64,7 +66,7 @@ class _Factor(object):
         return self.size
 
     def __str__(self):
-        arr = self.array
+        arr = self.labels
         if len(arr) > 10: arr = list(arr[:8]) + ['...'] + list(arr[-2:])
         s = '%s([%s], levels [%d] = %s)' % (self.__class__.__name__, join(arr, ', '), len(self._levdct), str(self.levels()))
         return s
@@ -74,12 +76,12 @@ class _Factor(object):
 
     # for numpy operators
     def __array__(self, dtype = None):
-        arr = self.array
+        arr = self.labels
         if dtype is not None: arr = arr.astype(dtype)
         return arr
 
     def __array_wrap__(self, arr):
-        return self.__class__(array = arr)
+        return self.__class__(labels = arr)
 
     # for pickle
     def __getstate__(self):
@@ -90,16 +92,20 @@ class _Factor(object):
 
     # properties
     @property
-    def array(self):
+    def labels(self):
         return self.decode(self._array)
 
     @property
-    def arrValues(self):
+    def array(self):
         return self._array.copy()
 
     @property
     def size(self):
         return self._array.shape[0]
+
+    @property
+    def shape(self):
+        return self._array.shape
 
     @property
     def ndim(self):
@@ -119,36 +125,36 @@ class _Factor(object):
         return cls._levdct.items()
 
     @classmethod
-    def encode(cls, array):
-        if isinstance(array, cls.__class__):
-            arr = array.arrValues
-        elif listable(array):
-            arr = [cls._levdct[v] for v in array]
+    def encode(cls, labels):
+        if isinstance(labels, cls.__class__):
+            arr = labels.array
+        elif listable(labels):
+            arr = [cls._levdct[v] for v in labels]
         else:
-            arr = [cls._levdct[array]]
+            arr = [cls._levdct[labels]]
         return np.array(arr, dtype = cls._enctype)
 
     @classmethod
-    def decode(cls, arrValues):
-        return np.array([cls._levdct.inv[v] for v in arrValues])
+    def decode(cls, array):
+        return np.array([cls._levdct.inv[v] for v in array], dtype = cls._sfmt)
 
     @classmethod
     def stack(cls, fct1, fct2):
         if not isinstance(fct1, cls) or not isinstance(fct2, cls): raise TypeError('unknown factor type(s)')
-        return cls(arrValues = np.hstack((fct1.arrValues, fct2.arrValues)))
+        return cls(array = np.hstack((fct1.array, fct2.array)))
 
-    def insert(self, other, ids = NA):
-        return self.__class__(arrValues = np.insert(self._array, optional(ids, self.size), self.encode(other)))
+    def insert(self, other, pos = NA):
+        return self.__class__(array = np.insert(self._array, optional(pos, self.size), self.encode(other)))
 
-    def drop(self, ids):
-        return self.__class__(arrValues = np.delete(self._array, ids))
+    def drop(self, pos):
+        return self.__class__(array = np.delete(self._array, pos))
 
-    def put(self, ind, v, mode = 'raise'): # for np.array.put
+    def put(self, ind, v, mode = 'raise'): # for np.narray.put
         v = self.encode(v)
         np.put(self._array, ind, v, mode = mode)
 
     def copy(self):
-        return self.__class__(arrValues = self._array)
+        return self.__class__(array = self._array)
 
 
 def factor(name, levels, enctype = np.uint32):
@@ -164,6 +170,7 @@ def factor(name, levels, enctype = np.uint32):
     else:
         raise TypeError('unknown levels type: %s' % str(type(levels)))
 
+    fct._sfmt = 'S%d' % max(map(len,levels))
     setattr(sys.modules[__name__], name, fct) # register to factor
     return fct
 

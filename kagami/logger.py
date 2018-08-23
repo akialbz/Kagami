@@ -11,7 +11,7 @@ origin: 12-11-2014
 
 
 import logging, sys
-from kagami.prelim import NA, hasvalue, optional
+from kagami.core import NA, hasvalue, optional
 
 
 # default formats

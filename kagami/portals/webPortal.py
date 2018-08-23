@@ -12,7 +12,7 @@ origin: Jun. 28, 2014
 
 import logging, requests, json
 from time import sleep
-from kagami.prelim import NA, optional, hasvalue, isna
+from kagami.core import NA, optional, hasvalue, isna
 from kagami.functional import partial
 
 

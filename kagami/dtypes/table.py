@@ -15,84 +15,21 @@ import numpy as np
 import tables as pytb
 from collections import OrderedDict
 from string import join
-from kagami.prelim import NA, optional, isna, hasvalue, listable, hashable, checkany
+from kagami.core import NA, optional, isna, hasvalue, listable, hashable, checkany
 from kagami.filesys import checkInputFile, checkOutputFile
 from kagami.dtypes.factor import _Factor
 from kagami.portals import textPortal, tablePortal
 
 
+def _packArray(val):
+    if isinstance(val, _Factor): return val
+    if not isinstance(val, np.ndarray): val = np.array(val)
+    if val.ndim == 0: val = val.reshape((1,))
+    if val.dtype.kind == 'U': val = val.astype(str)
+    return val
+
+
 # table index class
-class _Index(dict):
-    def __init__(self, seq = NA, size = NA, **kwargs):
-        if hasvalue(seq):
-            super(_Index, self).__init__(seq)
-        else:
-            super(_Index, self).__init__(**kwargs)
-
-        if hasvalue(size):
-            self._size = size
-        elif len(self) > 0:
-            self._size = len(self.values()[0])
-        else:
-            raise ValueError('must provide index size or initial values')
-
-        for k,v in self.items(): self[k] = v if isinstance(v, _Factor) else np.array(v)
-
-    # built-ins
-    def __getitem__(self, item):
-        if hashable(item) and self.has_key(item): return super(_Index, self).__getitem__(item)
-        _pack = lambda x: x.reshape((1,)) if x.ndim == 0 else x
-        return _Index([(k,_pack(v[item])) for k,v in self.items()])
-
-    def __setitem__(self, key, value):
-        if isinstance(value, _Index):
-            if checkany(self.keys(), lambda x: not value.has_key(x)): raise KeyError('index has different keys')
-            for k in self.keys(): self[k][key] = value[k]
-        else:
-            if len(value) != self._size: raise ValueError('index values size not match')
-            super(_Index, self).__setitem__(key, value if isinstance(value, _Factor) else np.array(value))
-
-    def __add__(self, other):
-        return self.insert(other)
-
-    def __eq__(self, other):
-        if len(self) != len(other) or set(self.keys()) != set(other.keys()) or \
-           checkany(self.keys(), lambda x: np.any(self[x] != other[x])): return False
-        return True
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    # properties
-    @property
-    def size(self):
-        return self._size
-
-    @property
-    def shape(self):
-        return len(self), self._size
-
-    # publics
-    @classmethod
-    def stack(cls, idx1, idx2):
-        if not isinstance(idx1, _Index) or not isinstance(idx2, _Index): raise TypeError('unknown index type(s)')
-        return idx1.insert(idx2)
-
-    def insert(self, other, ids = NA):
-        if not isinstance(other, _Index): raise TypeError('insert object is not Index')
-        if checkany(self.keys(), lambda x: not other.has_key(x)): raise KeyError('index has different keys')
-        pos = optional(ids, self._size)
-        return _Index([(k, np.insert(v, pos, other[k])) for k,v in self.items()])
-
-    def drop(self, ids):
-        return _Index([(k, np.delete(v, ids)) for k,v in self.items()])
-
-    def toList(self, transpose = False):
-        olst = [[k] + list(v) for k,v in self.items()]
-        return olst if not transpose else list(map(list,zip(*olst)))
-
-    def copy(self):
-        return _Index(self.items(), size = self._size)
 
 
 # table class
@@ -124,8 +61,7 @@ class Table(object):
             if ids.shape[0] == 0: return []
             if ids.dtype.kind == 'i': return ids
             if ids.dtype.kind == 'b': return np.where(ids)[0]
-            if hasvalue(ndct) and ids.dtype.kind in ('S', 'U'): return np.array([ndct[v] for v in ids])
-
+            if hasvalue(ndct) and ids.dtype.kind in ('S','U'): return np.array([ndct[str(v)] for v in ids])
             raise IndexError('unknown index type')
 
         rids = _parse(rids, self._rndct) if not isinstance(rids, slice) else np.arange(self.nrow)[rids]
@@ -146,14 +82,16 @@ class Table(object):
 
             if hasvalue(self._rndct):
                 if isna(value._rndct): raise KeyError('input table does not have row names')
-                nams = self.rownames
-                nams[rids] = value.rownames
-                self.rownames = nams
+                snams, vnams = self.rownames, value.rownames
+                if snams.dtype.itemsize < vnams.dtype.itemsize: snams = snams.astype('S%d' % vnams.dtype.itemsize)
+                snams[rids] = vnams
+                self.rownames = snams
             if hasvalue(self._cndct):
                 if isna(value._cndct): raise KeyError('input table does not have column names')
-                nams = self.colnames
-                nams[cids] = value.colnames
-                self.colnames = nams
+                snams, vnams = self.colnames, value.colnames
+                if snams.dtype.itemsize < vnams.dtype.itemsize: snams = snams.astype('S%d' % vnams.dtype.itemsize)
+                snams[cids] = vnams
+                self.colnames = snams
 
             self.rowindex[rids] = value.rowindex
             self.colindex[cids] = value.colindex
@@ -182,8 +120,15 @@ class Table(object):
     def __repr__(self):
         return self.__str__()
 
-    def __array__(self):
-        return self._dmatx # for np.array conversion
+    def __array__(self, dtype = None):
+        dm = self._dmatx
+        if dtype is not None: arr = dm.astype(dtype)
+        return dm
+
+    def __array_wrap__(self, arr):
+        tab = self.copy()
+        tab.values = arr
+        return tab
 
     # properties
     @property
@@ -192,7 +137,7 @@ class Table(object):
 
     @values.setter
     def values(self, value):
-        self._dmatx[:] = np.array(value, dtype = self._dtype)
+        self._dmatx[:] = value
 
     @property
     def dtype(self):

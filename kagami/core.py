@@ -65,4 +65,3 @@ def partition(itr, pos, *funcs):
     if len(funcs) != len(parts): raise ValueError('partitions and funcs have different lengths')
     if checkany(funcs, lambda x: not callable(x)): raise TypeError('not all funcs are callable')
     return map(lambda x: x[0](x[1]), zip(funcs, parts))
-

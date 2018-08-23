@@ -12,7 +12,7 @@ origin: 06-28-2014
 
 import logging, os, csv
 from ast import literal_eval
-from kagami.prelim import NA, hasvalue
+from kagami.core import NA, hasvalue
 from kagami.functional import smap, pickmap
 from kagami.filesys import checkInputFile, checkOutputFile
 

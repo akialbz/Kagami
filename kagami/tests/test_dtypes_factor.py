@@ -12,6 +12,7 @@ origin: 08-15-2018
 
 import cPickle as cp
 import numpy as np
+from copy import deepcopy
 from bidict import bidict
 from kagami.dtypes import factor
 
@@ -24,24 +25,28 @@ def _create_factor():
     arr1 = np.array([2, 3, 2, 1, 3, 1, 2])
     arr2 = np.array([1, 1, 3, 1, 3])
 
-    col1 = Color(arrValues = arr1)
-    col2 = Color(array = [cdct.inv[v] for v in arr2])
+    col1 = Color(array = arr1)
+    col2 = Color(labels = [cdct.inv[v] for v in arr2])
     return cdct, (arr1, arr2), (col1, col2)
 
 def test_factor_built_ints():
     cdct, (arr1, arr2), (col1, col2) = _create_factor()
 
-    # getitem & setitem
-    assert np.all(col1[1:4].arrValues == arr1[1:4])
-    assert np.all(col2.arrValues == arr2)
+    # getitem & setitem & delitem
+    assert np.all(col1[1:4].array == arr1[1:4])
+    assert np.all(col2.array == arr2)
 
     col1[-1:] = 'r'
     arr1[-1] = 1
-    assert np.all(col1[-2:] == np.array(['r', 'r']))
-    assert np.all(col1.arrValues == arr1)
+    assert np.all(col1[-2:] == ['r', 'r'])
+    assert np.all(col1.array == arr1)
+
+    _col = deepcopy(col1)
+    del _col[-1]
+    assert np.all(_col == col1[:-1])
 
     # iter
-    assert np.all(np.array([cdct[v] for v in col2]) == arr2)
+    assert np.all(arr2 == [cdct[v] for v in col2])
 
     # eq & ne
     assert np.all((col1 == 'g') == (arr1 == 2))
@@ -54,12 +59,12 @@ def test_factor_built_ints():
     assert 'g' not in col2
 
     # add & len
-    assert np.all((col1+col2).arrValues == np.hstack((arr1, arr2)))
+    assert np.all((col1+col2).array == np.hstack((arr1, arr2)))
     assert len(col1+col2) == arr1.shape[0] + arr2.shape[0]
 
     # numpy interface
-    assert np.all(np.insert(col1, 2, 'b').array == np.array([cdct.inv[v] for v in np.insert(arr1, 2, 3)]))
-    assert np.all(np.delete(col1, 3).arrValues == np.delete(arr1, 3))
+    assert np.all(np.insert(col1, 2, 'b').labels == np.array([cdct.inv[v] for v in np.insert(arr1, 2, 3)]))
+    assert np.all(np.delete(col1, 3).array == np.delete(arr1, 3))
 
     # pickle
     assert np.all(cp.loads(cp.dumps(col1)) == col1)
@@ -67,15 +72,17 @@ def test_factor_built_ints():
 def test_factor_properties():
     cdct, (arr1, arr2), (col1, col2) = _create_factor()
 
-    # array
-    assert np.all(col1.array == np.array([cdct.inv[v] for v in arr1]))
+    # labels
+    assert np.all(col1.labels == np.array([cdct.inv[v] for v in arr1]))
 
-    # arrValues
-    assert np.all(col2.arrValues == arr2)
+    # array
+    assert np.all(col2.array == arr2)
 
     # size
     assert col1.size == len(arr1) == len(col1)
     assert col2.size == len(arr2) == len(col2)
+    assert col1.shape == (len(arr1),)
+    assert col1.ndim == col2.ndim == 1
 
 def test_factor_methods():
     cdct, (arr1, arr2), (col1, col2) = _create_factor()
@@ -98,18 +105,18 @@ def test_factor_methods():
     # piublic methods
     # insert
     assert np.all(col1.insert(col2, 3) == np.insert(col1, 3, col2))
-    assert np.all(col1.insert(col2).arrValues == np.hstack((arr1, arr2)))
+    assert np.all(col1.insert(col2).array == np.hstack((arr1, arr2)))
 
     # drop
-    assert np.all(col1.drop(2).arrValues == np.delete(col1, 2).arrValues)
+    assert np.all(col1.drop(2).array == np.delete(col1, 2).array)
 
     # put
     col2.put(2, 'r')
-    assert np.all(col2.arrValues == [1, 1, 1, 1, 3])
+    assert np.all(col2.array == [1, 1, 1, 1, 3])
     col2.put([0,1], 'b')
-    assert np.all(col2.arrValues == [3, 3, 1, 1, 3])
+    assert np.all(col2.array == [3, 3, 1, 1, 3])
     col2.put([2,3], ['g','g'])
-    assert np.all(col2.arrValues == [3, 3, 2, 2, 3])
+    assert np.all(col2.array == [3, 3, 2, 2, 3])
 
     # copy
     ccol1 = col1.copy()
