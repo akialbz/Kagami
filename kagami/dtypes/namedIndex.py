@@ -11,73 +11,88 @@ origin: 08-23-2018
 
 
 import numpy as np
-from collections import OrderedDict
-from kagami.core import NA, optional
-from kagami.dtypes import coreType
+from operator import itemgetter
+from kagami.core import NA, optional, listable
+from kagami.dtypes import CoreType
 
 
-class NamedIndex(coreType):
+class NamedIndex(CoreType):
+    __slots__ = ('_names', '_ndict')
+
     def __init__(self, names = NA):
-        self._ndict = NA
         self.names = optional(names, [])
 
     # built-ins
     def __getitem__(self, item):
-        return NamedIndex(self.names.__getitem__(item))
+        return NamedIndex(self._names.__getitem__(item))
 
     def __setitem__(self, key, value):
-        nams = np.array(self)
-        vals = np.array(value, dtype = str)
-        nams.__setitem__(key, vals)
-        self.names = nams
+        self._names.__setitem__(key, value)
+        self.names = self._names
 
     def __delitem__(self, key):
-        self.names = np.delete(self.names, key)
+        self.names = np.delete(self._names, key)
 
     def __iter__(self):
-        return iter(self._ndict.keys())
+        return iter(self._names)
 
     def __contains__(self, item):
         return self._ndict.has_key(item)
 
+    def __len__(self):
+        return self.size
+
     def __eq__(self, other):
-        return self.names == (other.names if isinstance(other, NamedIndex) else other)
+        return self._names == other
 
     def __add__(self, other):
         return self.append(other)
 
     def __iadd__(self, other):
-        bn = self.size
-        for i,n in enumerate(other): self._ndict[str(n)] = bn + i
-
-    def __len__(self):
-        return self.size
+        size = self.size
+        self._names = np.hstack((self._names, other))
+        for i,n in enumerate(other): self._ndict[n] = size + i
+        if self._names.shape[0] != len(self._ndict): raise KeyError('input names have duplications')
+        return self
 
     def __str__(self):
-        return self.names.__str__()
+        return str(self._names)
 
     def __repr__(self):
-        return self.names.__repr__()
+        return 'NamedIndex(' + str(self._names) + ', size = %d)' % self.size
 
+    # for numpy
     def __array__(self, dtype = None):
-        return np.array(self._ndict.keys(), dtype = (object if dtype is None else dtype)) # object to avoid string size cutoff
+        if dtype is None:
+            return self._names.copy()
+        else:
+            return self._names.astype(dtype)
 
     def __array_wrap__(self, arr):
         return NamedIndex(arr)
 
+    # for pickle
+    def __getstate__(self):
+        return {k: getattr(self, k) for k in self.__slots__}
+
+    def __setstate__(self, dct):
+        for k in filter(lambda x: x in self.__slots__, dct.keys()): setattr(self, k, dct[k])
+
     # properties
     @property
     def names(self):
-        return np.array(self, dtype = str)
+        return self._names.copy()
 
     @names.setter
     def names(self, value):
-        self._ndict = OrderedDict([(str(n),i) for i,n in enumerate(value)])
-        if len(value) != len(self._ndict): raise KeyError('input names have duplications')
+        self._names = np.array(value, dtype = object)
+        if self._names.ndim == 0: self._names = self._names.reshape((1,))
+        self._ndict = {n:i for i,n in enumerate(self._names)} # much faster than dict()
+        if self._names.shape[0] != len(self._ndict): raise KeyError('input names have duplications')
 
     @property
     def size(self):
-        return len(self._ndict)
+        return self._names.shape[0]
 
     @property
     def shape(self):
@@ -88,25 +103,25 @@ class NamedIndex(coreType):
         return 1
 
     # public
-    def namesOf(self, ids):
-        return self.names[ids]
+    def namesof(self, ids):
+        return self._names[ids]
 
-    def indicesOf(self, nams):
-        return np.array([self._ndict[n] for n in nams])
+    def idsof(self, nams):
+        if not listable(nams): nams = [nams]
+        return np.array(itemgetter(*nams)(self._ndict))
 
     def append(self, other):
-        idx = self.copy()
-        idx += other
-        return idx
+        return NamedIndex(np.hstack((self._names, other)))
 
     def insert(self, other, pos = NA):
-        return NamedIndex(np.insert(np.array(self), optional(pos, self.size), other))
+        return NamedIndex(np.insert(self._names, optional(pos, self.size), other))
 
     def drop(self, pos):
-        return NamedIndex(np.delete(np.array(self), optional(pos, self.size)))
+        return NamedIndex(np.delete(self._names, optional(pos, self.size)))
 
     def copy(self):
         idx = NamedIndex()
+        idx._names = self._names.copy()
         idx._ndict = self._ndict.copy()
         return idx
 

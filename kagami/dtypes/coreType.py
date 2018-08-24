@@ -31,10 +31,10 @@ class CoreType(object):
     def __contains__(self, item):
         raise NotImplementedError('method not implemented for Kagami CoreType')
 
-    def __eq__(self, other):
+    def __len__(self):
         raise NotImplementedError('method not implemented for Kagami CoreType')
 
-    def __len__(self):
+    def __eq__(self, other):
         raise NotImplementedError('method not implemented for Kagami CoreType')
 
     def __str__(self):

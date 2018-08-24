@@ -46,6 +46,10 @@ class _Factor(CoreType):
     def __iter__(self):
         return iter(self.labels)
 
+    def __contains__(self, item):
+        oval = self._levdct.get(item)
+        return oval in self._array
+
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self._array == other.array
@@ -54,10 +58,6 @@ class _Factor(CoreType):
         elif hashable(other):
             return self._array == self._levdct.get(other)
         else: raise TypeError('unsupported data type for comparison')
-
-    def __contains__(self, item):
-        oval = self._levdct.get(item)
-        return oval in self._array
 
     def __add__(self, other):
         return self.insert(other)
@@ -85,7 +85,7 @@ class _Factor(CoreType):
 
     # for pickle
     def __getstate__(self):
-        return dict([(k, getattr(self, k)) for k in self.__slots__])
+        return {k: getattr(self, k) for k in self.__slots__}
 
     def __setstate__(self, dct):
         for k in filter(lambda x: x in self.__slots__, dct.keys()): setattr(self, k, dct[k])
@@ -157,6 +157,7 @@ class _Factor(CoreType):
         return self.__class__(array = self._array)
 
 
+# factor interface
 def factor(name, levels, enctype = np.uint32):
     fct = type(name, (_Factor,), {})
     fct._enctype = enctype

@@ -114,7 +114,7 @@ class Table(object):
     def __str__(self):
         slns = self.toStr(delimiter = '\t', withIndex = True, asLines = True)
         if len(slns) > 20: slns = slns[:15] + ['', '...', ''] + slns[-2:]
-        slns += ['table([%s], shape = (%d x %d))' % (str(self._dtype), self.nrow, self.ncol)]
+        slns += ['Table([%s], shape = (%d x %d))' % (str(self._dtype), self.nrow, self.ncol)]
         return join(slns, '\n')
 
     def __repr__(self):
