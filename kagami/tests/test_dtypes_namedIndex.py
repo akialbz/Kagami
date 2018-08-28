@@ -12,7 +12,6 @@ origin: 08-23-2018
 
 import pytest
 import cPickle as cp
-import cProfile as cpf
 import numpy as np
 from string import ascii_lowercase
 from copy import deepcopy
@@ -30,6 +29,7 @@ def test_namedIndex_creation():
     NamedIndex(['a', u'b', 3])
     with pytest.raises(TypeError): NamedIndex(['a', ['b', 'c']])
     with pytest.raises(KeyError): NamedIndex(['a', 'a', 'b'])
+    print '\n', repr(NamedIndex(['%s%d' % (c,n) for c in ascii_lowercase for n in range(5)]))
 
 def test_namedIndex_built_ins():
     idx, vals = _create_namedIndex()
@@ -90,13 +90,11 @@ def test_namedIndex_built_ins():
     print repr(idx)
 
     # numpy array interface
-    assert np.all(np.append(idx, 'ee') == np.append(vals, 'ee'))
     assert np.all(np.insert(idx, 1, 'ff') == np.insert(vals, 1, 'ff'))
     assert np.all(np.insert(idx, [2,3], ['ee','gg']) == np.insert(vals, [2,3], ['ee','gg']))
     assert np.all(np.delete(idx, -1) == np.delete(vals, -1))
     assert np.all(np.delete(idx, [0,2]) == np.delete(vals, [0,2]))
     assert len(np.delete(idx,[0,1,2,3])) == 0
-    assert np.all(np.hstack((idx, 'aa')) == np.hstack((vals, 'aa')))
 
     with pytest.raises(KeyError): np.insert(idx, -1, 'a')
 

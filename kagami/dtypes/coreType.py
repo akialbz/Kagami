@@ -37,6 +37,12 @@ class CoreType(object):
     def __eq__(self, other):
         raise NotImplementedError('method not implemented for Kagami CoreType')
 
+    def __add__(self, other):
+        raise NotImplementedError('method not implemented for Kagami CoreType')
+
+    def __iadd__(self, other):
+        raise NotImplementedError('method not implemented for Kagami CoreType')
+
     def __str__(self):
         raise NotImplementedError('method not implemented for Kagami CoreType')
 

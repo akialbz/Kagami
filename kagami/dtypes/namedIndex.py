@@ -12,6 +12,7 @@ origin: 08-23-2018
 
 import numpy as np
 from operator import itemgetter
+from string import join
 from kagami.core import NA, optional, listable
 from kagami.dtypes import CoreType
 
@@ -59,14 +60,14 @@ class NamedIndex(CoreType):
         return str(self._names)
 
     def __repr__(self):
-        return 'NamedIndex(' + str(self._names) + ', size = %d)' % self.size
+        rlns = str(self._names).split('\n')
+        rlns = ['NamedIndex(' + rlns[0]] + \
+               ['           ' + ln for ln in rlns[1:]]
+        return join(rlns, '\n') + ', size = %d)' % self.size
 
     # for numpy
     def __array__(self, dtype = None):
-        if dtype is None:
-            return self._names.copy()
-        else:
-            return self._names.astype(dtype)
+        return self._names.copy() if dtype is None else self._names.astype(dtype)
 
     def __array_wrap__(self, arr):
         return NamedIndex(arr)
@@ -96,7 +97,7 @@ class NamedIndex(CoreType):
 
     @property
     def shape(self):
-        return self.size,
+        return self._names.shape
 
     @property
     def ndim(self):

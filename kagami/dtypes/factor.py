@@ -13,6 +13,7 @@ origin: 08-08-2018
 import sys
 import numpy as np
 from string import join
+from operator import itemgetter
 from bidict import FrozenOrderedBidict
 from kagami.core import NA, hasvalue, optional, checkany, listable, mappable, hashable
 from kagami.dtypes import CoreType
@@ -22,20 +23,19 @@ from kagami.dtypes import CoreType
 class _Factor(CoreType):
     __slots__ = ('_array', '_levdct', '_enctype', '_sfmt')
 
-    def __init__(self, labels = NA, array = NA):
+    def __init__(self, labels = NA, array = NA, _fromCopy = False):
         if hasvalue(labels):
             self._array = self.encode(labels)
         elif hasvalue(array):
             self._array = np.array(array, dtype = self._enctype)
-            if checkany(np.unique(self._array), lambda x: x not in self._levdct.values()): raise ValueError('array values not recognised')
+            if self._array.ndim == 0: self._array = self._array.reshape((1,))
+            if not _fromCopy and checkany(self._array, lambda x: x not in self._levdct.values()): raise ValueError('array values not recognised')
         else:
             self._array = np.array([], dtype = self._enctype)
 
     # built-ins
     def __getitem__(self, item):
-        arr = self._array[item]
-        if arr.ndim == 0: arr = arr.reshape((1,))
-        return self.__class__(array = arr)
+        return self.__class__(array = self._array[item], _fromCopy = True)
 
     def __setitem__(self, key, value):
         self._array.__setitem__(key, self.encode(value))
@@ -50,35 +50,38 @@ class _Factor(CoreType):
         oval = self._levdct.get(item)
         return oval in self._array
 
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self._array == other.array
-        elif listable(other):
-            return self._array == self.encode(other)
-        elif hashable(other):
-            return self._array == self._levdct.get(other)
-        else: raise TypeError('unsupported data type for comparison')
-
-    def __add__(self, other):
-        return self.insert(other)
-
     def __len__(self):
         return self.size
 
+    def __eq__(self, other):
+        return self._array == self.encode(other)
+
+    def __add__(self, other):
+        return self.append(other)
+
+    def __iadd__(self, other):
+        self._array = np.hstack((self._array, self.encode(other)))
+        return self
+
     def __str__(self):
-        arr = self.labels
-        if len(arr) > 10: arr = list(arr[:8]) + ['...'] + list(arr[-2:])
-        s = '%s([%s], levels [%d] = %s)' % (self.__class__.__name__, join(arr, ', '), len(self._levdct), str(self.levels()))
-        return s
+        return str(self.labels)
 
     def __repr__(self):
-        return str(self)
+        rlns = str(self.labels).split('\n')
+
+        cnam = self.__class__.__name__ + '('
+        hdss = ' ' * len(cnam)
+        rlns = [cnam + rlns[0]] + \
+               [hdss + ln for ln in rlns[1:]] + \
+               [hdss + 'size = %d, levels[%d] = %s)' % (self.size, len(self._levdct), str(self.levels()))]
+        rlns[-2] += ','
+
+        return join(rlns, '\n')
 
     # for numpy operators
     def __array__(self, dtype = None):
         arr = self.labels
-        if dtype is not None: arr = arr.astype(dtype)
-        return arr
+        return arr if dtype is None else arr.astype(dtype)
 
     def __array_wrap__(self, arr):
         return self.__class__(labels = arr)
@@ -93,7 +96,7 @@ class _Factor(CoreType):
     # properties
     @property
     def labels(self):
-        return self.decode(self._array)
+        return np.array(itemgetter(*self._array)(self._levdct.inv), dtype = self._sfmt)
 
     @property
     def array(self):
@@ -126,35 +129,37 @@ class _Factor(CoreType):
 
     @classmethod
     def encode(cls, labels):
-        if isinstance(labels, cls.__class__):
-            arr = labels.array
+        if isinstance(labels, cls):
+            return labels.array
         elif listable(labels):
-            arr = [cls._levdct[v] for v in labels]
-        else:
-            arr = [cls._levdct[labels]]
-        return np.array(arr, dtype = cls._enctype)
+            arr = itemgetter(*labels)(cls._levdct) if len(labels) > 0 else []
+            return np.array(arr, dtype = cls._enctype)
+        elif hashable(labels):
+            return np.array([cls._levdct[labels]], dtype = cls._enctype)
+        else: raise TypeError('unsupported data type for labels')
 
     @classmethod
     def decode(cls, array):
-        return np.array([cls._levdct.inv[v] for v in array], dtype = cls._sfmt)
+        if isinstance(array, cls):
+            return array.labels
+        elif listable(array):
+            lab = itemgetter(*array)(cls._levdct.inv) if len(array) > 0 else []
+            return np.array(lab, dtype = cls._sfmt)
+        elif hashable(array):
+            return np.array([cls._levdct.inv[array]], dtype = cls._sfmt)
+        else: raise TypeError('unsupported data type for array')
 
-    @classmethod
-    def stack(cls, fct1, fct2):
-        if not isinstance(fct1, cls) or not isinstance(fct2, cls): raise TypeError('unknown factor type(s)')
-        return cls(array = np.hstack((fct1.array, fct2.array)))
+    def append(self, other):
+        return self.__class__(array = np.hstack((self._array, self.encode(other))), _fromCopy = True)
 
     def insert(self, other, pos = NA):
-        return self.__class__(array = np.insert(self._array, optional(pos, self.size), self.encode(other)))
+        return self.__class__(array = np.insert(self._array, optional(pos, self.size), self.encode(other)), _fromCopy = True)
 
     def drop(self, pos):
-        return self.__class__(array = np.delete(self._array, pos))
-
-    def put(self, ind, v, mode = 'raise'): # for np.narray.put
-        v = self.encode(v)
-        np.put(self._array, ind, v, mode = mode)
+        return self.__class__(array = np.delete(self._array, pos), _fromCopy = True)
 
     def copy(self):
-        return self.__class__(array = self._array)
+        return self.__class__(array = self._array, _fromCopy = True)
 
 
 # factor interface
