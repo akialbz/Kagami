@@ -28,7 +28,7 @@ class _Factor(CoreType):
             self._array = self.encode(labels)
         elif hasvalue(array):
             self._array = np.array(array, dtype = self._enctype)
-            if self._array.ndim == 0: self._array = self._array.reshape((1,))
+            if self._array.ndim != 1: self._array = self._array.reshape((1,-1))
             if not _fromCopy and checkany(self._array, lambda x: x not in self._levdct.values()): raise ValueError('array values not recognised')
         else:
             self._array = np.array([], dtype = self._enctype)

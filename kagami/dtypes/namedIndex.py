@@ -87,7 +87,7 @@ class NamedIndex(CoreType):
     @names.setter
     def names(self, value):
         self._names = np.array(value, dtype = object)
-        if self._names.ndim == 0: self._names = self._names.reshape((1,))
+        if self._names.ndim != 1: self._names = self._names.reshape((1,-1))
         self._ndict = {n:i for i,n in enumerate(self._names)} # much faster than dict()
         if self._names.shape[0] != len(self._ndict): raise KeyError('input names have duplications')
 

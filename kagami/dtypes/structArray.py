@@ -12,68 +12,95 @@ origin: 08-23-2018
 
 import numpy as np
 from collections import OrderedDict
-from kagami.core import NA, isna
-from kagami.dtypes import NamedIndex
+from kagami.core import NA, isna, hashable, checkany, listable
+from kagami.dtypes import CoreType
 
 
-class StructuredArray(object):
-    def __init__(self, valueNames = NA, fixedSize = NA, *args, **kwargs):
-        self._adict = OrderedDict(*args, **kwargs)
-        self._vnames = valueNames
-        self._fxsize = fixedSize
+class StructuredArray(CoreType):
+    __slots__ = ('_dict', '_size')
 
-        for k,v in self._adict.items():
-            if isna(self._fxsize): self._fxsize = len(v)
-            self._adict[k] = np.array()
+    def __init__(self, *args, **kwargs):
+        self._dict = OrderedDict(*args, **kwargs)
+        self._size = NA
+        for k,v in self._dict.items(): self[k] = v
 
+    # privates
+    def _parseIndices(self, idx):
+        sids, aids = (idx, slice(None)) if not isinstance(idx, tuple) else \
+                     (idx[0], slice(None)) if len(idx) == 1 else idx
 
+        def _parse(ids, lst, kinds):
+            if isinstance(ids, slice): return ids
+            ids = np.array(ids)
+            if ids.ndim != 1: ids = ids.reshape((1, -1))
+            return ids if ids.dtype.kind in kinds else lst[ids]
 
-        if hasvalue(seq):
-            super(StructuredArray, self).__init__(seq)
-        else:
-            super(StructuredArray, self).__init__(**kwargs)
-
-        if hasvalue(size):
-            self._size = size
-        elif len(self) > 0:
-            self._size = len(self.values()[0])
-        else:
-            raise ValueError('must provide index size or initial values')
-
-        for k,v in self.items(): self[k] = _packArray(v)
+        sids = _parse(sids, self.names(), ('S', 'U'))
+        aids = _parse(aids, np.arange(self.shape[0]), ('i',))
+        return sids, aids
 
     # built-ins
     def __getitem__(self, item):
-        if hashable(item) and self.has_key(item):
-            value = super(_Index, self).__getitem__(item)
+        if hashable(item) and self._dict.has_key(item):
+            value = self._dict[item]
         else:
-            _pack = lambda x: x.reshape((1,)) if x.ndim == 0 else x
-            value = _Index([(k,_pack(v[item])) for k,v in self.items()])
+            sids, aids = self._parseIndices(item)
+            if isinstance(sids, slice): sids = self.names()[sids]
+            value = StructuredArray([(k, self._dict[k][aids]) for k in sids])
         return value
 
     def __setitem__(self, key, value):
-        if isinstance(value, _Index):
-            if checkany(self.keys(), lambda x: not value.has_key(x)): raise KeyError('index has different keys')
-            for k in self.keys():
-                if self[k].dtype.kind == value[k].dtype.kind == 'S':
-                    sdl, vdl = self[k].dtype.itemsize, value[k].dtype.itemsize
-                    if sdl < vdl: self[k] = self[k].astype('S%d' % vdl)
-                self[k][key] = value[k]
+        if isinstance(value, StructuredArray):
+            sids, aids = self._parseIndices(key)
+            if isinstance(sids, slice): sids = self.names()[sids]
+            for k in sids: self._dict[k][aids] = value[k]
         else:
-            value = _packArray(value)
-            if len(value) != self._size: raise ValueError('index values size not match')
-            super(_Index, self).__setitem__(key, value)
+            if not isinstance(value, CoreType): value = np.array(value)
+            if value.ndim != 1: value = value.reshape((1,-1))
+            if isna(self._size): self._size = len(value)
+            elif len(value) != self._size: raise ValueError('index values size not match')
+            self._dict[key] = value
 
-    def __add__(self, other):
-        return self.insert(other)
+    def __delitem__(self, key):
+        sids, aids = self._parseIndices(key)
+        if isinstance(sids, slice) and sids == slice(None): sids = []
+        if isinstance(aids, slice) and aids == slice(None): aids = []
+
+        if sids == [] and aids == []:
+            self._dict = OrderedDict()
+            self._size = NA
+        else:
+            if isinstance(sids, slice): sids = self.names()[sids]
+            for k in sids: del self._dict[k]
+            for k, v in self._dict.items(): self._dict[k] = np.delete(v, aids)
+
+    def __iter__(self):
+        return iter(self._dict.keys())
+
+    def __contains__(self, item):
+        return self._dict.has_key(item)
+
+    def __len__(self):
+        return len(self._dict)
+
+
 
     def __eq__(self, other):
-        if len(self) != len(other) or set(self.keys()) != set(other.keys()) or \
-           checkany(self.keys(), lambda x: np.any(self[x] != other[x])): return False
-        return True
+        raise NotImplementedError('method not implemented for Kagami CoreType')
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
+    def __add__(self, other):
+        raise NotImplementedError('method not implemented for Kagami CoreType')
+
+    def __iadd__(self, other):
+        raise NotImplementedError('method not implemented for Kagami CoreType')
+
+    def __str__(self):
+        raise NotImplementedError('method not implemented for Kagami CoreType')
+
+    def __repr__(self):
+        raise NotImplementedError('method not implemented for Kagami CoreType')
+
+
 
     # properties
     @property
@@ -85,10 +112,17 @@ class StructuredArray(object):
         return len(self), self._size
 
     # publics
-    @classmethod
-    def stack(cls, idx1, idx2):
-        if not isinstance(idx1, _Index) or not isinstance(idx2, _Index): raise TypeError('unknown index type(s)')
-        return idx1.insert(idx2)
+    def names(self):
+        return np.array(self._dict.keys())
+
+    def series(self):
+        return np.array(self._dict.values())
+
+
+
+
+
+
 
     def insert(self, other, pos = NA):
         if not isinstance(other, _Index): raise TypeError('insert object is not Index')
