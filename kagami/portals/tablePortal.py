@@ -11,8 +11,7 @@ origin: 06-28-2014
 
 
 import logging, os, csv
-from ast import literal_eval
-from kagami.core import NA, hasvalue
+from kagami.core import NA, hasvalue, autoeval
 from kagami.functional import smap, pickmap
 from kagami.filesys import checkInputFile, checkOutputFile
 
@@ -24,11 +23,7 @@ def loadCSV(tabFile, headRows = NA, autoEval = False, **kwargs):
     with open(tabFile, 'rU') as f:
         hd = [next(f).rstrip('\n') for _ in range(headRows)] if hasvalue(headRows) else None
         tb = list(csv.reader(f, **kwargs))
-
-    def _eval(x):
-        try: return literal_eval(x)
-        except (ValueError, SyntaxError): str(x)
-    if autoEval: tb = smap(tb, lambda x: smap(x, _eval))
+    if autoEval: tb = smap(tb, lambda x: smap(x, autoeval))
 
     return (tb, hd) if hasvalue(headRows) else tb
 

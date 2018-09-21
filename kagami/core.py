@@ -10,6 +10,7 @@ origin: 06-07-2016
 """
 
 
+from ast import literal_eval
 from collections import Iterable, Mapping, Hashable
 from types import GeneratorType
 
@@ -18,13 +19,22 @@ from types import GeneratorType
 class _NA(object):
     def __nonzero__(self): return False
     def __eq__(self, other): return isinstance(other, _NA)
+    def __float__(self): return float('nan')
     def __str__(self): return 'NA'
     def __repr__(self): return self.__str__()
 NA = _NA() # fixed object
+NAType = _NA # alias type
 
 isna = lambda x: isinstance(x, _NA)
 hasvalue = lambda x: not isna(x)
 optional = lambda x, default: x if hasvalue(x) else default
+
+
+# auto eval
+def autoeval(x):
+    if x == 'NA': return NA
+    try: return literal_eval(x)
+    except (ValueError, SyntaxError): return str(x)
 
 
 # iterable

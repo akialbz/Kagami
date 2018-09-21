@@ -38,7 +38,7 @@ class CoreType(object):
         raise NotImplementedError('method not implemented for Kagami CoreType')
 
     def __add__(self, other):
-        raise NotImplementedError('method not implemented for Kagami CoreType')
+        return self.append(other)
 
     def __iadd__(self, other):
         raise NotImplementedError('method not implemented for Kagami CoreType')
@@ -47,6 +47,10 @@ class CoreType(object):
         raise NotImplementedError('method not implemented for Kagami CoreType')
 
     def __repr__(self):
+        raise NotImplementedError('method not implemented for Kagami CoreType')
+
+    # for numpy
+    def __array__(self, dtype = None):
         raise NotImplementedError('method not implemented for Kagami CoreType')
 
     # properties

@@ -28,7 +28,7 @@ class _Factor(CoreType):
             self._array = self.encode(labels)
         elif hasvalue(array):
             self._array = np.array(array, dtype = self._enctype)
-            if self._array.ndim != 1: self._array = self._array.reshape((1,-1))
+            if self._array.ndim != 1: self._array = self._array.reshape((1,))
             if not _fromCopy and checkany(self._array, lambda x: x not in self._levdct.values()): raise ValueError('array values not recognised')
         else:
             self._array = np.array([], dtype = self._enctype)
@@ -38,7 +38,7 @@ class _Factor(CoreType):
         return self.__class__(array = self._array[item], _fromCopy = True)
 
     def __setitem__(self, key, value):
-        self._array.__setitem__(key, self.encode(value))
+        self._array[key] = self.encode(value)
 
     def __delitem__(self, key):
         self._array = np.delete(self._array, key)
@@ -55,9 +55,6 @@ class _Factor(CoreType):
 
     def __eq__(self, other):
         return self._array == self.encode(other)
-
-    def __add__(self, other):
-        return self.append(other)
 
     def __iadd__(self, other):
         self._array = np.hstack((self._array, self.encode(other)))

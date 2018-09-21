@@ -25,10 +25,10 @@ class NamedIndex(CoreType):
 
     # built-ins
     def __getitem__(self, item):
-        return NamedIndex(self._names.__getitem__(item))
+        return NamedIndex(self._names[item])
 
     def __setitem__(self, key, value):
-        self._names.__setitem__(key, value)
+        self._names[key] = value
         self.names = self._names
 
     def __delitem__(self, key):
@@ -45,9 +45,6 @@ class NamedIndex(CoreType):
 
     def __eq__(self, other):
         return self._names == other
-
-    def __add__(self, other):
-        return self.append(other)
 
     def __iadd__(self, other):
         size = self.size
@@ -87,7 +84,7 @@ class NamedIndex(CoreType):
     @names.setter
     def names(self, value):
         self._names = np.array(value, dtype = object)
-        if self._names.ndim != 1: self._names = self._names.reshape((1,-1))
+        if self._names.ndim != 1: self._names = self._names.reshape((1,))
         self._ndict = {n:i for i,n in enumerate(self._names)} # much faster than dict()
         if self._names.shape[0] != len(self._ndict): raise KeyError('input names have duplications')
 
