@@ -10,12 +10,14 @@ origin: 08-23-2018
 """
 
 
-import logging
+import logging, os
 import numpy as np
+import tables as ptb
 from string import join
 from collections import OrderedDict
 from types import NoneType
 from kagami.core import NA, NAType, isna, checkall, checkany, listable, isstring, mappable, autoeval
+from kagami.filesys import checkInputFile, checkOutputFile
 from kagami.portals import tablePortal
 from kagami.dtypes import CoreType
 
@@ -203,8 +205,25 @@ class StructuredArray(CoreType):
 
     @classmethod
     def loadFromHDF5(cls, fname):
-        pass
+        checkInputFile(fname)
+        hdf = ptb.open_file(fname, 'r')
+        tab = hdf.root.StructuredArray
 
-    def saveToHDF5(self, fname):
-        pass
+        nams = tab.colnames
+        vals = [np.array(tab.colinstances[n]) for n in nams]
 
+        hdf.close()
+        return StructuredArray(zip(nams, vals))
+
+    def saveToHDF5(self, fname, compression = 0):
+        nams, vals = self.names, self.values
+        tab = type('_table', (ptb.IsDescription,), {n: ptb.Col.from_dtype(v.dtype) for n,v in zip(nams,vals)})
+
+        checkOutputFile(fname)
+        hdf = ptb.open_file(fname, mode = 'w')
+
+        dat = hdf.create_table(hdf.root, 'StructuredArray', tab, filters = ptb.Filters(compression))
+        dat.append(vals)
+
+        hdf.close()
+        return os.path.isfile(hdf)
