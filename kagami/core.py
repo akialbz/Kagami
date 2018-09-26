@@ -22,6 +22,7 @@ class _NA(object):
     def __float__(self): return float('nan')
     def __str__(self): return 'NA'
     def __repr__(self): return self.__str__()
+    def copy(self): return self
 NA = _NA() # fixed object
 NAType = _NA # alias type
 
