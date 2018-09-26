@@ -47,6 +47,8 @@ def test_namedIndex_built_ins():
     assert np.all(cidx == NamedIndex(['aa', 'bb', 'cc', 'dd']))
     cidx[:] = ['a', 'bbb', 'cc', 'dddd']
     assert np.all(cidx == vals)
+    cidx[:2] = cidx[:2]
+    assert np.all(cidx == vals)
 
     with pytest.raises(Exception): cidx[:] = 1
     with pytest.raises(KeyError): cidx[1] = 'a'
@@ -138,6 +140,7 @@ def test_namedIndex_methods():
 
     assert np.all(idx.insert('ee', 1) == np.insert(vals, 1, 'ee'))
     assert np.all(idx.insert(['ff', 'gg'], [0,2]) == np.insert(vals, [0,2], ['ff', 'gg']))
+    assert np.all(idx.insert(NamedIndex(['ff', 'gg']), 1) == np.insert(vals, 1, ['ff', 'gg']))
     assert np.all(idx.insert(['ee']) == idx.append('ee'))
     with pytest.raises(KeyError): idx.insert(idx, 1)
 

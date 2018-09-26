@@ -44,6 +44,7 @@ class NamedIndex(CoreType):
         return self.size
 
     def __eq__(self, other):
+        if isinstance(other, NamedIndex): other = np.array(other)
         return self._names == other
 
     def __iadd__(self, other):
@@ -64,7 +65,7 @@ class NamedIndex(CoreType):
 
     # for numpy
     def __array__(self, dtype = None):
-        return self._names.copy() if dtype is None else self._names.astype(dtype)
+        return self._names.astype(str) if dtype is None else self._names.astype(dtype)
 
     def __array_wrap__(self, arr):
         return NamedIndex(arr)

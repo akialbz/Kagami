@@ -93,7 +93,8 @@ class _Factor(CoreType):
     # properties
     @property
     def labels(self):
-        return np.array(itemgetter(*self._array)(self._levdct.inv), dtype = self._sfmt)
+        arr = np.array(itemgetter(*self._array)(self._levdct.inv), dtype = self._sfmt)
+        return arr if arr.ndim == 1 else arr.reshape((1,))
 
     @property
     def array(self):

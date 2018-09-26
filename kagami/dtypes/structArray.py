@@ -34,7 +34,7 @@ class StructuredArray(CoreType):
 
         self._dict = OrderedDict()
         self._length = NA
-        for k,v in items(): self[k] = v
+        for k,v in items: self[k] = v
 
     # privates
     def _parseIndices(self, idx, mapNames = True):
@@ -48,7 +48,7 @@ class StructuredArray(CoreType):
             return ids
         sids, aids = map(_wrap, (sids, aids))
 
-        if (mapNames and isinstance(sids, slice)) or sids.dtype.kind not in ('S', 'U'): sids = self.names[sids]
+        if mapNames and (isinstance(sids, slice) or sids.dtype.kind not in ('S', 'U')): sids = self.names[sids]
         return sids, aids
 
     # built-ins
@@ -59,7 +59,7 @@ class StructuredArray(CoreType):
 
     def __setitem__(self, key, value):
         if isstring(key):
-            if not isinstance(value, CoreType): value = np.array(value)
+            value = value.copy() if isinstance(value, CoreType) else np.array(value)
             if value.ndim != 1: raise ValueError('input value not in 1-dimensional')
 
             if isna(self._length): self._length = len(value)
@@ -81,16 +81,18 @@ class StructuredArray(CoreType):
         if isstring(key): del self._dict[key]; return
 
         sids, aids = self._parseIndices(key, mapNames = False)
-        slic, alic = sids == slice(None), aids == slice(None)
+        slic = isinstance(sids, slice) and sids == slice(None)
+        alic = isinstance(aids, slice) and aids == slice(None)
 
         if slic and alic:
             self._dict = OrderedDict()
             self._length = NA
         elif slic and not alic:
-            for k in self.names: self._dict[k] = np.delete(self._dict[key], aids)
+            for k in self.names: self._dict[k] = np.delete(self._dict[k], aids)
             self._length = len(self._dict[self._dict.keys()[0]])
         elif not slic and alic:
-            for k in self.names[sids]: del self._dict[k]
+            if isinstance(sids, slice) or sids.dtype.kind not in ('S', 'U'): sids = self.names[sids]
+            for k in sids: del self._dict[k]
         else: raise IndexError('unable to delete portion of the array')
 
     def __iter__(self):
@@ -103,14 +105,13 @@ class StructuredArray(CoreType):
         return self.size
 
     def __eq__(self, other):
-        if not isinstance(other, CoreType): other = np.array(other)
-        if other.ndim == 2 and other.shape != self.shape: raise TypeError('comparison between data with different shapes')
+        if not isinstance(other, CoreType): other = np.array(other, dtype = object)
         if isinstance(other, StructuredArray): return np.all(self.names == other.names) and np.all(self.values == other.values)
         return self.values == other
 
     def __iadd__(self, other):
         if not isinstance(other, StructuredArray): raise TypeError('unknown input data type')
-        if self.size != other.size or not np.all(np.unique(self.names) == np.unique(other.names)): raise ValueError('input array has different names')
+        if self.size != other.size or not np.all(np.unique(self.names) == np.unique(other.names)): raise KeyError('input array has different names')
         for k, v in self._dict.items(): self._dict[k] = v.append(other[k]) if isinstance(v, CoreType) else np.r_[v, other[k].astype(v.dtype)]
         self._length += other.length
         return self
@@ -169,12 +170,12 @@ class StructuredArray(CoreType):
     # publics
     def append(self, other):
         if not isinstance(other, StructuredArray): raise TypeError('unknown input data type')
-        if self.size != other.size or not np.all(np.unique(self.names) == np.unique(other.names)): raise ValueError('input array has different names')
+        if self.size != other.size or not np.all(np.unique(self.names) == np.unique(other.names)): raise KeyError('input array has different names')
         return StructuredArray([(k, v.append(other[k]) if isinstance(v, CoreType) else np.r_[v, other[k].astype(v.dtype)]) for k,v in self._dict.items()])
 
     def insert(self, other, pos = NA):
         if not isinstance(other, StructuredArray): raise TypeError('unknown input data type')
-        if self.size != other.size or not np.all(np.unique(self.names) == np.unique(other.names)): raise ValueError('input array has different names')
+        if self.size != other.size or not np.all(np.unique(self.names) == np.unique(other.names)): raise KeyError('input array has different names')
         if isna(pos): pos = self.length
         return StructuredArray([(k, v.insert(other[k], pos) if isinstance(v, CoreType) else np.insert(v, pos, other[k])) for k,v in self._dict.items()])
 
@@ -191,11 +192,11 @@ class StructuredArray(CoreType):
     @classmethod
     def loadFromCSV(cls, fname, delimiter = ','):
         dm = np.array(tablePortal.load(fname, delimiter = delimiter))
-        nams, vals = dm[:,0].T[0], dm[:,1:]
+        nams, vals = dm[:,0], dm[:,1:]
 
         vdts = map(lambda x: type(autoeval(x[0])), vals)
         if checkany(vdts, lambda x: x in (NAType, NoneType)): logging.warning('invalid data type detected')
-        vals = map(lambda x: np.array(x[0]).astype(x[1]), zip(vals, vdts))
+        vals = map(lambda x: np.array(x[0]).astype(x[1]) if x[1] != bool else (np.array(x[0]) == 'True'), zip(vals, vdts))
 
         return StructuredArray([(k, v) for k,v in zip(nams, vals)])
 
@@ -207,8 +208,8 @@ class StructuredArray(CoreType):
     def loadFromHDF5(cls, fname):
         checkInputFile(fname)
         hdf = ptb.open_file(fname, 'r')
-        tab = hdf.root.StructuredArray
 
+        tab = hdf.root.StructuredArray
         nams = tab.colnames
         vals = [np.array(tab.colinstances[n]) for n in nams]
 
@@ -216,14 +217,13 @@ class StructuredArray(CoreType):
         return StructuredArray(zip(nams, vals))
 
     def saveToHDF5(self, fname, compression = 0):
-        nams, vals = self.names, self.values
-        tab = type('_table', (ptb.IsDescription,), {n: ptb.Col.from_dtype(v.dtype) for n,v in zip(nams,vals)})
-
         checkOutputFile(fname)
         hdf = ptb.open_file(fname, mode = 'w')
 
+        nams, vals = self.names, map(np.array, self.series)
+        tab = type('_table', (ptb.IsDescription,), {n: ptb.Col.from_dtype(v.dtype) for n,v in zip(nams,vals)})
         dat = hdf.create_table(hdf.root, 'StructuredArray', tab, filters = ptb.Filters(compression))
         dat.append(vals)
 
         hdf.close()
-        return os.path.isfile(hdf)
+        return os.path.isfile(fname)
