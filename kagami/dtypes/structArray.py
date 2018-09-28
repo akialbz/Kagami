@@ -194,13 +194,17 @@ class StructuredArray(CoreType):
     @classmethod
     def fromsarray(cls, array):
         nams, vals = array[:,0], array[:,1:]
+
+        nams = map(lambda x: x[1:-1] if x[0] == '<' and x[-1] == '>' else x, nams)
+
         vdts = map(lambda x: type(autoeval(x[0])), vals)
         if checkany(vdts, lambda x: x in (NAType, NoneType)): logging.warning('invalid data type detected')
         vals = map(lambda x: np.array(x[0]).astype(x[1]) if x[1] != bool else (np.array(x[0]) == 'True'), zip(vals, vdts))
+
         return StructuredArray([(k, v) for k,v in zip(nams, vals)])
 
     def tosarray(self):
-        return np.array([np.r_[[k], np.array(v, dtype = str)] for k,v in self._dict.items()])
+        return np.array([np.r_[['<%s>' % k], np.array(v, dtype = str)] for k,v in self._dict.items()])
 
     @classmethod
     def loadcsv(cls, fname, delimiter = ','):

@@ -14,5 +14,5 @@ from coreType import CoreType
 from factor import factor, asFactor
 from namedIndex import NamedIndex
 from structArray import StructuredArray
-#from table import _Index, Table
+from table import Table
 

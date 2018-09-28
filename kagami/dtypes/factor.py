@@ -130,8 +130,8 @@ class _Factor(CoreType):
         if isinstance(labels, cls):
             return labels.array
         elif listable(labels):
-            arr = itemgetter(*labels)(cls._levdct) if len(labels) > 0 else []
-            return np.array(arr, dtype = cls._enctype)
+            arr = np.array(itemgetter(*labels)(cls._levdct) if len(labels) > 0 else [], dtype = cls._enctype)
+            return arr if arr.ndim == 1 else arr.reshape((1,))
         elif hashable(labels):
             return np.array([cls._levdct[labels]], dtype = cls._enctype)
         else: raise TypeError('unsupported data type for labels')
@@ -141,8 +141,8 @@ class _Factor(CoreType):
         if isinstance(array, cls):
             return array.labels
         elif listable(array):
-            lab = itemgetter(*array)(cls._levdct.inv) if len(array) > 0 else []
-            return np.array(lab, dtype = cls._sfmt)
+            lab = np.array(itemgetter(*array)(cls._levdct.inv) if len(array) > 0 else [], dtype = cls._sfmt)
+            return lab if lab.ndim == 1 else lab.reshape((1,))
         elif hashable(array):
             return np.array([cls._levdct.inv[array]], dtype = cls._sfmt)
         else: raise TypeError('unsupported data type for array')

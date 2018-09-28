@@ -110,7 +110,8 @@ class NamedIndex(CoreType):
 
     def idsof(self, nams):
         if not listable(nams): nams = [nams]
-        return np.array(itemgetter(*nams)(self._ndict))
+        ids = np.array(itemgetter(*nams)(self._ndict))
+        return ids if ids.ndim == 1 else ids.reshape((1,))
 
     def append(self, other):
         return NamedIndex(np.hstack((self._names, other)))
