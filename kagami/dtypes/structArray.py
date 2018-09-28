@@ -192,40 +192,45 @@ class StructuredArray(CoreType):
 
     # file portals
     @classmethod
-    def loadFromCSV(cls, fname, delimiter = ','):
-        dm = np.array(tablePortal.load(fname, delimiter = delimiter))
-        nams, vals = dm[:,0], dm[:,1:]
-
+    def fromsarray(cls, array):
+        nams, vals = array[:,0], array[:,1:]
         vdts = map(lambda x: type(autoeval(x[0])), vals)
         if checkany(vdts, lambda x: x in (NAType, NoneType)): logging.warning('invalid data type detected')
         vals = map(lambda x: np.array(x[0]).astype(x[1]) if x[1] != bool else (np.array(x[0]) == 'True'), zip(vals, vdts))
-
         return StructuredArray([(k, v) for k,v in zip(nams, vals)])
 
-    def saveToCSV(self, fname, delimiter = ','):
-        odm = [[k] + map(str, self[k]) for k in self.names]
+    def tosarray(self):
+        return np.array([np.r_[[k], np.array(v, dtype = str)] for k,v in self._dict.items()])
+
+    @classmethod
+    def loadcsv(cls, fname, delimiter = ','):
+        idm = np.array(tablePortal.load(fname, delimiter = delimiter))
+        return cls.fromsarray(idm)
+
+    def savecsv(self, fname, delimiter = ','):
+        odm = self.tosarray()
         tablePortal.save(odm, fname, delimiter = delimiter)
 
     @classmethod
-    def loadFromHDF5(cls, fname):
-        checkInputFile(fname)
-        hdf = ptb.open_file(fname, 'r')
-
-        tab = hdf.root.StructuredArray
-        nams = tab.colnames
-        vals = [np.array(tab.colinstances[n]) for n in nams]
-
-        hdf.close()
+    def fromhtable(cls, hdftable):
+        nams = hdftable.colnames
+        vals = [np.array(hdftable.colinstances[n]) for n in nams]
         return StructuredArray(zip(nams, vals))
 
-    def saveToHDF5(self, fname, compression = 0):
-        checkOutputFile(fname)
-        hdf = ptb.open_file(fname, mode = 'w')
-
+    def tohtable(self, root, tabname, compression = 0):
         nams, vals = self.names, map(np.array, self.series)
-        tab = type('_table', (ptb.IsDescription,), {n: ptb.Col.from_dtype(v.dtype) for n,v in zip(nams,vals)})
-        dat = hdf.create_table(hdf.root, 'StructuredArray', tab, filters = ptb.Filters(compression))
-        dat.append(vals)
+        desc = type('_struct_array', (ptb.IsDescription,), {n: ptb.Col.from_dtype(v.dtype) for n,v in zip(nams,vals)})
+        tabl = ptb.Table(root, tabname, desc, filters = ptb.Filters(compression))
+        tabl.append(vals)
+        return tabl
 
-        hdf.close()
+    @classmethod
+    def loadhdf(cls, fname):
+        checkInputFile(fname)
+        with ptb.open_file(fname, mode = 'r') as hdf: arr = cls.fromhtable(hdf.root.StructuredArray)
+        return arr
+
+    def savehdf(self, fname, compression = 0):
+        checkOutputFile(fname)
+        with ptb.open_file(fname, mode = 'w') as hdf: self.tohtable(hdf.root, 'StructuredArray', compression)
         return os.path.isfile(fname)

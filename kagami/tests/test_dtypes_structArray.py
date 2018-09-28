@@ -146,13 +146,13 @@ def test_structArray_methods():
     # portals
     fname = 'test_structArray'
 
-    arr.saveToCSV(fname + '.csv')
-    larr = StructuredArray.loadFromCSV(fname + '.csv')
+    arr.savecsv(fname + '.csv')
+    larr = StructuredArray.loadcsv(fname + '.csv')
     print larr
     assert larr == arr
 
-    arr.saveToHDF5(fname + '.hdf5')
-    larr = StructuredArray.loadFromHDF5(fname + '.hdf5')
+    arr.savehdf(fname + '.hdf5')
+    larr = StructuredArray.loadhdf(fname + '.hdf5')
     print larr
     assert larr == arr
 
