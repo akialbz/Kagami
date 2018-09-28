@@ -26,7 +26,7 @@ def test_namedIndex_creation():
     NamedIndex()
     NamedIndex('aa')
     NamedIndex(['aa'])
-    NamedIndex(['a', u'b', 3])
+    NamedIndex(['a', u'b', 'cc'])
     with pytest.raises(TypeError): NamedIndex(['a', ['b', 'c']])
     with pytest.raises(KeyError): NamedIndex(['a', 'a', 'b'])
     print '\n', repr(NamedIndex(['%s%d' % (c,n) for c in ascii_lowercase for n in range(5)]))
@@ -50,8 +50,8 @@ def test_namedIndex_built_ins():
     cidx[:2] = cidx[:2]
     assert np.all(cidx == vals)
 
-    with pytest.raises(Exception): cidx[:] = 1
     with pytest.raises(KeyError): cidx[1] = 'a'
+    with pytest.raises(TypeError): cidx[:] = 1
 
     cidx = deepcopy(idx)
     del cidx[[1,2]]

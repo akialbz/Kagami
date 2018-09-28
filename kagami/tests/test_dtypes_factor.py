@@ -15,7 +15,7 @@ import cPickle as cp
 import numpy as np
 from copy import deepcopy
 from bidict import bidict
-from kagami.dtypes import factor
+from kagami.dtypes import factor, asFactor
 
 
 # factor
@@ -42,6 +42,8 @@ def test_factor_creation():
 
     with pytest.raises(KeyError): Color(['r', 'black', 'g', 'b'])
     with pytest.raises(ValueError): Color(array = [0, 2, 1, 3, 4])
+
+    assert set(asFactor(['a', 'a', 'b', 'a', 'c', 'b']).levels()) == {'a', 'b', 'c'}
 
 def test_factor_built_ints():
     cdct, (arr1, arr2), (col1, col2) = _create_factor()

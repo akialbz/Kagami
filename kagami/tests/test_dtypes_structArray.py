@@ -51,6 +51,8 @@ def test_structArray_built_ins():
     assert np.all(arr[0,[True, True, False, False, True]] == [1, 3, 9])
 
     carr = deepcopy(arr)
+    carr[:,2:] = arr[:,2:]
+    assert carr == arr
     carr['ser2'] = [1,3,5,7,9]
     assert np.all(carr['ser2'] == carr['ser1'])
     carr[:2,3:] = 0

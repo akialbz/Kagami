@@ -11,7 +11,7 @@ origin: 08-07-2018
 
 
 from coreType import CoreType
-from factor import factor
+from factor import factor, asFactor
 from namedIndex import NamedIndex
 from structArray import StructuredArray
 #from table import _Index, Table

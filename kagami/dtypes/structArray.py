@@ -74,6 +74,9 @@ class StructuredArray(CoreType):
                 for k in sids: self._dict[k][aids] = value
             elif value.ndim == 2:
                 if len(sids) != len(value): raise ValueError('input names and values size not match')
+                if isinstance(value, StructuredArray):
+                    if not np.all(value.names == self.names): raise KeyError('input array has different names')
+                    value = value.series
                 for k,nv in zip(sids, value): self._dict[k][aids] = nv
             else: raise IndexError('input values dimension too high')
 
@@ -105,13 +108,12 @@ class StructuredArray(CoreType):
         return self.size
 
     def __eq__(self, other):
-        if not isinstance(other, CoreType): other = np.array(other, dtype = object)
-        if isinstance(other, StructuredArray): return np.all(self.names == other.names) and np.all(self.values == other.values)
-        return self.values == other
+        if not isinstance(other, StructuredArray): return self.values == np.array(other, dtype = object)
+        return self.shape == other.shape and np.all(self.names == other.names) and np.all(self.values == other.values)
 
     def __iadd__(self, other):
         if not isinstance(other, StructuredArray): raise TypeError('unknown input data type')
-        if self.size != other.size or not np.all(np.unique(self.names) == np.unique(other.names)): raise KeyError('input array has different names')
+        if self.size != other.size or not np.all(self.names == other.names): raise KeyError('input array has different names')
         for k, v in self._dict.items(): self._dict[k] = v.append(other[k]) if isinstance(v, CoreType) else np.r_[v, other[k].astype(v.dtype)]
         self._length += other.length
         return self

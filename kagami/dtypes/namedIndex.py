@@ -13,7 +13,7 @@ origin: 08-23-2018
 import numpy as np
 from operator import itemgetter
 from string import join
-from kagami.core import NA, optional, listable
+from kagami.core import NA, optional, listable, isstring, checkany
 from kagami.dtypes import CoreType
 
 
@@ -44,12 +44,14 @@ class NamedIndex(CoreType):
         return self.size
 
     def __eq__(self, other):
-        if isinstance(other, NamedIndex): other = np.array(other)
-        return self._names == other
+        return self._names == np.array(other, dtype = object)
 
     def __iadd__(self, other):
+        if not listable(other): other = [other]
+        if checkany(other, lambda x: not isstring(x)): raise TypeError('index names must be string')
+
         size = self.size
-        self._names = np.hstack((self._names, other))
+        self._names = np.r_[self._names, other]
         for i,n in enumerate(other): self._ndict[n] = size + i
         if self._names.shape[0] != len(self._ndict): raise KeyError('input names have duplications')
         return self
@@ -86,6 +88,7 @@ class NamedIndex(CoreType):
     def names(self, value):
         self._names = np.array(value, dtype = object)
         if self._names.ndim != 1: self._names = self._names.reshape((1,))
+        if checkany(self._names, lambda x: not isstring(x)): raise TypeError('index names must be string')
         self._ndict = {n:i for i,n in enumerate(self._names)} # much faster than dict()
         if self._names.shape[0] != len(self._ndict): raise KeyError('input names have duplications')
 

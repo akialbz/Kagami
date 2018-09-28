@@ -46,8 +46,9 @@ class Table(CoreType):
         def _wrap(ids, nams):
             ids = np.array(ids)
             if ids.ndim != 1: ids = ids.reshape((1,))
-            if ids.dtype.kind not in ('i', 'u', 'b'): ids = nams.idsof(ids)
-            return ids
+            if ids.dtype.kind in ('i', 'u', 'b'): return ids
+            if isna(nams): raise KeyError('input names not recongnised')
+            return nams.idsof(ids)
         rids = np.arange(self.nrow)[rids] if isinstance(rids, slice) else _wrap(rids, self._rnames)
         cids = np.arange(self.ncol)[cids] if isinstance(cids, slice) else _wrap(cids, self._cnames)
 
@@ -56,13 +57,16 @@ class Table(CoreType):
     # built-ins
     def __getitem__(self, item):
         rids, cids = self._parseIndices(item)
-        return Table(self._dmatx[np.ix_(rids, cids)], dtype = self._dtype, metadata = self._metas,
-                     rownames = self._rnames[rids],   colnames = self._cnames[cids],
-                     rowindex = self._rindex[:,rids], colindex = self._cindex[:,cids])
+        ntab = Table(self._dmatx[np.ix_(rids, cids)], dtype = self._dtype, metadata = self._metas)
+
+        if hasvalue(self._rnames): ntab.rownames = self._rnames[rids]
+        if hasvalue(self._cnames): ntab.colnames = self._cnames[cids]
+        if hasvalue(self._rindex): ntab.rowindex = self._rindex[:,rids]
+        if hasvalue(self._cindex): ntab.colindex = self._cindex[:,cids]
+        return ntab
 
     def __setitem__(self, key, value):
         rids, cids = self._parseIndices(key)
-
         self._dmatx[np.ix_(rids, cids)] = np.array(value.values)
         if not isinstance(value, Table): return
 
@@ -73,7 +77,6 @@ class Table(CoreType):
 
     def __delitem__(self, key):
         rids, cids = self._parseIndices(key)
-
         raxs = np.ones(self.nrow, dtype = bool)
         raxs[rids] = False
         caxs = np.ones(self.ncol, dtype = bool)
@@ -85,29 +88,64 @@ class Table(CoreType):
         if hasvalue(self._rindex): self._rindex = self._rindex[:,raxs]
         if hasvalue(self._cindex): self._cindex = self._cindex[:,caxs]
 
+    def __iter__(self):
+        return iter(self._dmatx)
+
+    def __contains__(self, item):
+        return np.any(self._dmatx == item)
+
+    def __len__(self):
+        return self.shape[0]
+
+    def __eq__(self, other):
+        if not isinstance(other, Table): return self._dmatx == other
+        return self.shape == other.shape and np.all(self._dmatx == other._dmatx) and \
+               np.all(self._rnames == other._rnames) and np.all(self._cnames == other._cnames) and \
+               self._rindex == other._rindex and self._cindex == other._cindex
+
+    def __iadd__(self, other):
+        if not isinstance(other, Table): raise TypeError('unknown input data type')
+        if other.nrow != self.nrow: raise IndexError('input table has different number of rows')
+        if hasvalue(other._rnames) and other._rnames != self._rnames: raise IndexError('input table has different row names')
+        if hasvalue(other._rindex) and other._rindex != self._rindex: raise IndexError('input table has different row index')
+
+        self._dmatx = np.c_[self._dmatx, other._dmatx]
+        self._cnames += other._cnames
+        self._cindex += other._cindex
+        return self
 
 
-    # def __add__(self, other):
-    #     return Table.vstack(self, other)
-    #
-    # def __eq__(self, other):
-    #     if isinstance(other, Table):
-    #         return self._dmatx == other.values
-    #     elif isinstance(other, np.ndarray):
-    #         return self._dmatx == other
-    #     else: raise TypeError('comparison not supported')
-    #
-    # def __len__(self):
-    #     return self.nrow
-    #
-    # def __str__(self):
-    #     slns = self.toStr(delimiter = '\t', withIndex = True, asLines = True)
-    #     if len(slns) > 20: slns = slns[:15] + ['', '...', ''] + slns[-2:]
-    #     slns += ['Table([%s], shape = (%d x %d))' % (str(self._dtype), self.nrow, self.ncol)]
-    #     return join(slns, '\n')
-    #
-    # def __repr__(self):
-    #     return self.__str__()
+    # TODO: continue from here
+
+    def __str__(self):
+        slns = self.toList(withIndex = True)
+        if len(slns) > 15: slns = slns[:10] + ['...'] + slns[-2:]
+
+        return join(map(lambda x: join(map(str,x), ', '), slns), '\n')
+
+    def __repr__(self):
+        slns = self.toList(withIndex = True)
+        if len(slns) > 15: slns = slns[:10] + ['...'] + slns[-2:]
+
+        rlns = ['Table(' + slns[0]] + \
+               ['                ' + ln for ln in rlns[1:]]
+        return join(rlns, '\n') + ', size = (%d, %d))' % (self.size, self.length)
+
+
+        slns += ['Table([%s], shape = (%d x %d))' % (str(self._dtype), self.nrow, self.ncol)]
+
+    # for numpy
+    def __array__(self, dtype = None):
+        raise NotImplementedError('method not implemented for Kagami CoreType')
+
+    # for pickle
+    def __getstate__(self):
+        return {k: getattr(self, k) for k in self.__slots__}
+
+    def __setstate__(self, dct):
+        for k in filter(lambda x: x in self.__slots__, dct.keys()): setattr(self, k, dct[k])
+
+
     #
     # def __array__(self, dtype = None):
     #     dm = self._dmatx
@@ -201,9 +239,27 @@ class Table(CoreType):
         tab._rindex, tab._cindex = self._cindex.copy(), self._rindex.copy()
         return tab
 
+    # publics
+    def toList(self, transpose = False, withIndex = False):
+        smtx = [[''] + list(optional(self._cnames, np.arange(self.ncol)))] + \
+               [[rn] + list(ln) for rn, ln in zip(optional(self._rnames, np.arange(self.nrow)), self._dmatx)]
+
+        if withIndex:
+            if hasvalue(self._rindex):
+                ridx = map(list, zip(*[[n] + list(v) for n, v in zip(self._rindex.names, self._rindex.series)]))
+                smtx = [ri + sl for ri, sl in zip(ridx, smtx)]
+            if hasvalue(self._cindex):
+                cidx = map(list, zip(*[[n] + list(v) for n, v in zip(self._cindex.names, self._cindex.series)])) if hasvalue(self._cindex) else NA
+                smtx = [[''] * len(optional(self._rindex, [])) + ci for ci in cidx] + smtx
+
+        if transpose: smtx = zip(*smtx)
+        return smtx
+
+    def toStr(self, delimiter = ',', transpose = False, withIndex = False):
+        smtx = self.toList(transpose = transpose, withIndex = withIndex)
+        return join(map(lambda x: join(map(str,x), delimiter), smtx), '\n')
 
 
-    # # publics
     # # class methods
     # @classmethod
     # def hstack(cls, tab1, tab2, ids = NA, force = False):
@@ -288,23 +344,6 @@ class Table(CoreType):
     #     tab._rndct, tab._cndct = self._rndct.copy(), self._cndct.copy()
     #     return tab
     #
-    # def toList(self, transpose = False):
-    #     olst = list(map(list,(self._dmatx.T if transpose else self._dmatx)))
-    #     return olst if not transpose else list(map(list,zip(*olst)))
-    #
-    # def toStr(self, delimiter = ',', transpose = False, withIndex = False, asLines = False):
-    #     smtx = [[''] + list(self.colnames)] + [[rn] + ln for rn, ln in zip(self.rownames, self.toList())]
-    #
-    #     if withIndex:
-    #         rindx = self.rowindex.toList(transpose = True)
-    #         cindx = self.colindex.toList(transpose = False)
-    #         if len(rindx) > 0: smtx = [ri + sl for ri,sl in zip(rindx, smtx)]
-    #         if len(cindx) > 0: smtx = [[''] * len(self.rowindex) + ci for ci in cindx] + smtx
-    #
-    #     if transpose: smtx = zip(*smtx)
-    #     smtx = map(lambda x: join(map(str,x), delimiter), smtx)
-    #
-    #     return smtx if asLines else join(smtx, '\n')
     #
     # def toCSVFile(self, fname, delimiter = ',', transpose = False, withIndex = False):
     #     checkOutputFile(fname)

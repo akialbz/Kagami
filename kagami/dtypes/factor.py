@@ -10,7 +10,7 @@ origin: 08-08-2018
 """
 
 
-import sys
+import sys, time
 import numpy as np
 from string import join
 from operator import itemgetter
@@ -177,4 +177,8 @@ def factor(name, levels, enctype = np.uint32):
     fct._sfmt = 'S%d' % max(map(len,levels))
     setattr(sys.modules[__name__], name, fct) # register to factor
     return fct
+
+def asFactor(labels, levels = NA, enctype = np.uint32):
+    fcls = factor(name = '_factor_%s' % hex(int(time.time())), levels = optional(levels, np.unique(labels)), enctype = enctype)
+    return fcls(labels)
 
