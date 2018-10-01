@@ -9,6 +9,6 @@ origin: 03-18-2017
 
 """
 
-__version__ = '2.0.0.rc1'
+__version__ = '2.0.0rc1'
 __version_name__ = 'Izumo'
 
