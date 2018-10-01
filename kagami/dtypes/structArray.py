@@ -17,6 +17,7 @@ from string import join
 from collections import OrderedDict
 from types import NoneType
 from kagami.core import NA, NAType, isna, checkall, checkany, listable, isstring, mappable, autoeval
+from kagami.functional import smap, pickmap, unpack
 from kagami.filesys import checkInputFile, checkOutputFile
 from kagami.portals import tablePortal
 from kagami.dtypes import CoreType
@@ -46,7 +47,7 @@ class StructuredArray(CoreType):
             ids = np.array(ids)
             if ids.ndim != 1: ids = ids.reshape((1,))
             return ids
-        sids, aids = map(_wrap, (sids, aids))
+        sids, aids = smap((sids, aids), _wrap)
 
         if mapNames and (isinstance(sids, slice) or sids.dtype.kind not in ('S', 'U')): sids = self.names[sids]
         return sids, aids
@@ -120,8 +121,8 @@ class StructuredArray(CoreType):
         return self
 
     def __str__(self):
-        nptn = '%%%ds' % max(map(len, self.names))
-        return join(map(str, [nptn % k + ' : ' + str(v) for k,v in zip(self.names, self.values)]), '\n')
+        nptn = '%%%ds' % max(smap(self.names, len))
+        return join([nptn % k + ' : ' + str(v) for k,v in zip(self.names, self.values)], '\n')
 
     def __repr__(self):
         rlns = str(self).split('\n')
@@ -139,7 +140,7 @@ class StructuredArray(CoreType):
         return {k: getattr(self, k) for k in self.__slots__}
 
     def __setstate__(self, dct):
-        for k in filter(lambda x: x in self.__slots__, dct.keys()): setattr(self, k, dct[k])
+        pickmap(dct.keys(), lambda x: x in self.__slots__, lambda x: setattr(self, x, dct[x]))
 
     # properties
     @property
@@ -152,7 +153,7 @@ class StructuredArray(CoreType):
 
     @property
     def values(self):
-        return np.array(map(np.array, self._dict.values()), dtype = object)
+        return np.array(smap(self._dict.values(), np.array), dtype = object)
 
     @property
     def size(self):
@@ -196,11 +197,11 @@ class StructuredArray(CoreType):
     def fromsarray(cls, array):
         nams, vals = array[:,0], array[:,1:]
 
-        nams = map(lambda x: x[1:-1] if x[0] == '<' and x[-1] == '>' else x, nams)
+        nams = pickmap(nams, lambda x: x[0] == '<' and x[-1] == '>', lambda x: x[1:-1])
 
-        vdts = map(lambda x: type(autoeval(x[0])), vals)
+        vdts = smap(vals, lambda x: type(autoeval(x[0])))
         if checkany(vdts, lambda x: x in (NAType, NoneType)): logging.warning('invalid data type detected')
-        vals = map(lambda x: np.array(x[0]).astype(x[1]) if x[1] != bool else (np.array(x[0]) == 'True'), zip(vals, vdts))
+        vals = smap(zip(vals, vdts), unpack(lambda v,d: np.array(v).astype(d) if d != bool else (np.array(v) == 'True')))
 
         return StructuredArray([(k, v) for k,v in zip(nams, vals)])
 
@@ -223,7 +224,7 @@ class StructuredArray(CoreType):
         return StructuredArray(zip(nams, vals))
 
     def tohtable(self, root, tabname, compression = 0):
-        vdct = {n: v for n,v in zip(self._dict.keys(), map(np.array, self._dict.values()))}
+        vdct = {n: v for n,v in zip(self._dict.keys(), smap(self._dict.values(), np.array))}
         desc = type('_struct_array', (ptb.IsDescription,), {n: ptb.Col.from_dtype(v.dtype) for n,v in vdct.items()})
         tabl = ptb.Table(root, tabname, desc, filters = ptb.Filters(compression))
         tabl.append([vdct[n] for n in tabl.colnames]) # desc.columns is an un-ordered dict

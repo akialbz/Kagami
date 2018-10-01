@@ -14,6 +14,7 @@ import numpy as np
 from operator import itemgetter
 from string import join
 from kagami.core import NA, optional, listable, isstring, checkany
+from kagami.functional import pickmap
 from kagami.dtypes import CoreType
 
 
@@ -77,7 +78,7 @@ class NamedIndex(CoreType):
         return {k: getattr(self, k) for k in self.__slots__}
 
     def __setstate__(self, dct):
-        for k in filter(lambda x: x in self.__slots__, dct.keys()): setattr(self, k, dct[k])
+        pickmap(dct.keys(), lambda x: x in self.__slots__, lambda x: setattr(self, x, dct[x]))
 
     # properties
     @property

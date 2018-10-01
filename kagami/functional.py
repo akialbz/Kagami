@@ -71,7 +71,8 @@ def pick(x, cond):
 
 def pickmap(x, cond, func):
     _check = cond if callable(cond) else (lambda x: x == cond)
-    return smap(x, lambda v: func(v) if _check(v) else v)
+    _replc = func if callable(func) else (lambda: func)
+    return smap(x, lambda v: _replc(v) if _check(v) else v)
 
 def drop(x, cond):
     _check = cond if callable(cond) else (lambda x: x == cond)

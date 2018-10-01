@@ -27,6 +27,7 @@ NA = _NA() # fixed object
 NAType = _NA # alias type
 
 isna = lambda x: isinstance(x, _NA)
+isnull = lambda x: isna(x) or x is None
 hasvalue = lambda x: not isna(x)
 optional = lambda x, default: x if hasvalue(x) else default
 

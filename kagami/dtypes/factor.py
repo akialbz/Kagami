@@ -16,6 +16,7 @@ from string import join
 from operator import itemgetter
 from bidict import FrozenOrderedBidict
 from kagami.core import NA, hasvalue, optional, checkany, listable, mappable, hashable
+from kagami.functional import smap, pickmap
 from kagami.dtypes import CoreType
 
 
@@ -88,7 +89,7 @@ class _Factor(CoreType):
         return {k: getattr(self, k) for k in self.__slots__}
 
     def __setstate__(self, dct):
-        for k in filter(lambda x: x in self.__slots__, dct.keys()): setattr(self, k, dct[k])
+        pickmap(dct.keys(), lambda x: x in self.__slots__, lambda x: setattr(self, x, dct[x]))
 
     # properties
     @property
@@ -174,7 +175,7 @@ def factor(name, levels, enctype = np.uint32):
     else:
         raise TypeError('unknown levels type: %s' % str(type(levels)))
 
-    fct._sfmt = 'S%d' % max(map(len,levels))
+    fct._sfmt = 'S%d' % max(smap(levels, len))
     setattr(sys.modules[__name__], name, fct) # register to factor
     return fct
 

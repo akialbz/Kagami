@@ -14,7 +14,8 @@ import numpy as np
 import rpy2.robjects as robj
 import rpy2.robjects.numpy2ri as np2ri
 from rpy2.robjects import NULL
-from kagami.core import NA, isna
+from kagami.core import NA, isna, isnull
+from kagami.functional import pickmap
 
 
 class RWrapper(object):
@@ -56,7 +57,7 @@ class RWrapper(object):
 
     @staticmethod
     def apply(func, *args, **kwargs):
-        args = map(lambda x: NULL if x is None or isna(x) else x, args)
+        args = pickmap(args, isnull, NULL)
         kwargs = {k: (NULL if v is None or isna(v) else v) for k,v in kwargs.items()}
         return getattr(robj.r, func)(*args, **kwargs)
 

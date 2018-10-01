@@ -15,7 +15,9 @@ import numpy as np
 import tables as ptb
 from string import join
 from types import NoneType
-from kagami.core import NA, NAType, optional, isna, hasvalue, listable, autoeval
+from operator import itemgetter
+from kagami.core import NA, NAType, optional, isna, isnull, hasvalue, listable, autoeval
+from kagami.functional import smap, pickmap
 from kagami.filesys import checkInputFile, checkOutputFile
 from kagami.dtypes import CoreType, NamedIndex, StructuredArray
 from kagami.portals import tablePortal
@@ -59,10 +61,10 @@ class Table(CoreType):
         return rids, cids
 
     def _toStrList(self, delimiter, transpose = False, withIndex = True):
-        slns = map(lambda x: map(str,x), self.tolist(transpose = transpose, withindex = withIndex))
+        slns = smap(self.tolist(transpose = transpose, withindex = withIndex), lambda x: smap(x, str))
 
-        vfmt = '%%%ds' % (np.max(map(lambda x: map(len,x), slns)) + 1)
-        _fmtlns = lambda lns: list(map(lambda x: '[' + join(map(lambda v: vfmt % v, x), delimiter) + ']', lns))
+        vfmt = '%%%ds' % (np.max(smap(slns, lambda x: smap(x, len))) + 1)
+        _fmtlns = lambda lns: list(smap(lns, lambda x: '[' + join(map(lambda v: vfmt % v, x), delimiter) + ']'))
 
         slns = _fmtlns(slns) if len(slns) <= 15 else \
                _fmtlns(slns[:10]) + [' ... '] + _fmtlns(slns[-2:])
@@ -156,7 +158,7 @@ class Table(CoreType):
         return {k: getattr(self, k) for k in self.__slots__}
 
     def __setstate__(self, dct):
-        for k in filter(lambda x: x in self.__slots__, dct.keys()): setattr(self, k, dct[k])
+        pickmap(dct.keys(), lambda x: x in self.__slots__, lambda x: setattr(self, x, dct[x]))
 
     # properties
     @property
@@ -181,7 +183,7 @@ class Table(CoreType):
 
     @rownames.setter
     def rownames(self, value):
-        if isna(value) or value is None: self._rnames = NA; return
+        if isnull(value): self._rnames = NA; return
         self._rnames = NamedIndex(value)
         if self._rnames.size != self.nrow: raise ValueError('input row names size not match')
 
@@ -191,7 +193,7 @@ class Table(CoreType):
 
     @colnames.setter
     def colnames(self, value):
-        if isna(value) or value is None: self._cnames = NA; return
+        if isnull(value): self._cnames = NA; return
         self._cnames = NamedIndex(value)
         if self._cnames.size != self.ncol: raise ValueError('input column names size not match')
 
@@ -201,7 +203,7 @@ class Table(CoreType):
 
     @rowindex.setter
     def rowindex(self, value):
-        if isna(value) or value is None: self._rindex = NA; return
+        if isnull(value): self._rindex = NA; return
         self._rindex = StructuredArray(value)
         if self._rindex.length != self.nrow: raise ValueError('input row index size not match')
 
@@ -211,7 +213,7 @@ class Table(CoreType):
 
     @colindex.setter
     def colindex(self, value):
-        if isna(value) or value is None: self._cindex = NA; return
+        if isnull(value): self._cindex = NA; return
         self._cindex = StructuredArray(value)
         if self._cindex.length != self.ncol: raise ValueError('input column index size not match')
 
@@ -337,10 +339,10 @@ class Table(CoreType):
 
         if withindex:
             if hasvalue(self._rindex):
-                ridx = map(list, zip(*[['<%s>' % n] + list(v) for n, v in zip(self._rindex.names, self._rindex.series)]))
+                ridx = smap(zip(*[['<%s>' % n] + list(v) for n, v in zip(self._rindex.names, self._rindex.series)]), list)
                 smtx = [ri + sl for ri, sl in zip(ridx, smtx)]
             if hasvalue(self._cindex):
-                cidx = map(list, [['<%s>' % n] + list(v) for n, v in zip(self._cindex.names, self._cindex.series)])
+                cidx = smap([['<%s>' % n] + list(v) for n, v in zip(self._cindex.names, self._cindex.series)], list)
                 smtx = [[''] * len(optional(self._rindex, [])) + ci for ci in cidx] + smtx
 
         if transpose: smtx = zip(*smtx)
@@ -357,7 +359,7 @@ class Table(CoreType):
     def fromsarray(cls, array, rowindex = NA, colindex = NA):
         if isna(rowindex) or isna(colindex):
             if '#' not in array: raise ValueError('Unknown array format')
-            colindex, rowindex = map(lambda x: x[0], np.where(array == '#'))
+            colindex, rowindex = smap(np.where(array == '#'), itemgetter(0))
         ridx = StructuredArray.fromsarray(array[colindex:,:rowindex].T) if rowindex > 0 else NA
         cidx = StructuredArray.fromsarray(array[:colindex,rowindex:])   if colindex > 0 else NA
         array = array[colindex:,rowindex:]

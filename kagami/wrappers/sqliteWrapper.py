@@ -11,6 +11,7 @@ origin: 04-12-2017
 
 
 import logging, sqlite3, os
+from kagami.functional import fold
 from kagami.filesys import fileTitle
 
 
@@ -69,7 +70,7 @@ class SQLiteWrapper(object):
 
     def listTables(self):
         res = self.query("SELECT name FROM sqlite_master WHERE type='table';")
-        return reduce(lambda x,y: x+y, res, ())
+        return fold(res, lambda x,y: x+y, ())
 
     def listColumns(self, tableName):
         return self.query("PRAGMA table_info('%s')" % tableName)
