@@ -109,7 +109,8 @@ class StructuredArray(CoreType):
 
     def __eq__(self, other):
         if not isinstance(other, StructuredArray): return self.values == np.array(other, dtype = object)
-        return self.shape == other.shape and np.all(self.names == other.names) and np.all(self.values == other.values)
+        return self.shape == other.shape and np.all(np.sort(self._dict.keys()) == np.sort(other._dict.keys())) and \
+               checkall(self._dict.keys(), lambda k: np.all(self._dict[k] == other[k]))
 
     def __iadd__(self, other):
         if not isinstance(other, StructuredArray): raise TypeError('unknown input data type')
@@ -217,15 +218,16 @@ class StructuredArray(CoreType):
 
     @classmethod
     def fromhtable(cls, hdftable):
-        nams = hdftable.colnames
+        nams = hdftable.attrs.names
         vals = [np.array(hdftable.colinstances[n]) for n in nams]
         return StructuredArray(zip(nams, vals))
 
     def tohtable(self, root, tabname, compression = 0):
-        nams, vals = self.names, map(np.array, self.series)
-        desc = type('_struct_array', (ptb.IsDescription,), {n: ptb.Col.from_dtype(v.dtype) for n,v in zip(nams,vals)})
+        vdct = {n: v for n,v in zip(self._dict.keys(), map(np.array, self._dict.values()))}
+        desc = type('_struct_array', (ptb.IsDescription,), {n: ptb.Col.from_dtype(v.dtype) for n,v in vdct.items()})
         tabl = ptb.Table(root, tabname, desc, filters = ptb.Filters(compression))
-        tabl.append(vals)
+        tabl.append([vdct[n] for n in tabl.colnames]) # desc.columns is an un-ordered dict
+        tabl.attrs.names = self._dict.keys()
         return tabl
 
     @classmethod

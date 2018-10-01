@@ -40,6 +40,7 @@ def test_factor_creation():
     Color(Color(['r', 'r', 'b', 'g']))
     Color(array = [2, 1, 3, 2])
 
+    with pytest.raises(TypeError): factor('Color', None)
     with pytest.raises(KeyError): Color(['r', 'black', 'g', 'b'])
     with pytest.raises(ValueError): Color(array = [0, 2, 1, 3, 4])
 
@@ -83,7 +84,6 @@ def test_factor_built_ints():
     assert np.all((col2 != 'g') == np.ones_like(col2, dtype = bool))
     assert np.all(col1 == [cdct.inv[v] for v in arr1])
     assert np.all(col1[3:5] == col2[3:5])
-
 
     # arithmetic oprtations
     assert np.all(col1[[0,2]] + col1[[1,3]] == col1[[0,2,1,3]])
@@ -146,7 +146,9 @@ def test_factor_methods():
     assert np.all(cls.encode([cdct.inv[v] for v in arr1]) == arr1)
     assert np.all(cls.decode(arr2) == np.array([cdct.inv[v] for v in arr2]))
     assert np.all(cls.encode(col1) == arr1)
-    assert np.all(cls.decode(col2.array) == col2)
+    assert np.all(cls.decode(col2) == col2.labels)
+    assert np.all(cls.encode('r') == [1])
+    assert np.all(cls.decode(2) == ['g'])
 
     # piublic methods
     # manipulations

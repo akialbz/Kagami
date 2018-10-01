@@ -10,7 +10,7 @@ origin: 09-25-2018
 """
 
 
-import pytest
+import os, pytest
 import cPickle as cp
 import numpy as np
 from copy import deepcopy
@@ -108,7 +108,7 @@ def test_structArray_built_ins():
     assert np.all(np.array(arr) == arr.values)
 
     # pickle
-    assert np.all(arr == cp.loads(cp.dumps(arr)))
+    assert arr == cp.loads(cp.dumps(arr))
 
 def test_structArray_properties():
     arr = _create_structArray()
@@ -140,7 +140,7 @@ def test_structArray_methods():
     assert np.all(arr.drop(slice(1,-1))[-1] == ['n1', 'n5'])
 
     # copy
-    assert np.all(arr == arr.copy())
+    assert arr == arr.copy()
     assert arr is not arr.copy()
 
     # portals
@@ -150,9 +150,11 @@ def test_structArray_methods():
     larr = StructuredArray.loadcsv(fname + '.csv')
     print larr
     assert larr == arr
+    if os.path.isfile(fname + '.csv'): os.remove(fname + '.csv')
 
-    arr.savehdf(fname + '.hdf5')
-    larr = StructuredArray.loadhdf(fname + '.hdf5')
+    arr.savehdf(fname + '.hdf')
+    larr = StructuredArray.loadhdf(fname + '.hdf')
     print larr
     assert larr == arr
+    if os.path.isfile(fname + '.hdf'): os.remove(fname + '.hdf')
 

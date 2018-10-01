@@ -15,7 +15,7 @@ import numpy as np
 import tables as ptb
 from string import join
 from types import NoneType
-from kagami.core import NA, NAType, optional, isna, hasvalue, autoeval
+from kagami.core import NA, NAType, optional, isna, hasvalue, listable, autoeval
 from kagami.filesys import checkInputFile, checkOutputFile
 from kagami.dtypes import CoreType, NamedIndex, StructuredArray
 from kagami.portals import tablePortal
@@ -23,13 +23,12 @@ from kagami.portals import tablePortal
 
 # table class
 class Table(CoreType):
-    __slots__ = ('_dmatx', '_dtype', '_rnames', '_cnames', '_rindex', '_cindex', '_metas')
+    __slots__ = ('_dmatx', '_rnames', '_cnames', '_rindex', '_cindex', '_metas')
 
     def __init__(self, X, dtype = float, rownames = NA, colnames = NA, rowindex = NA, colindex = NA, metadata = NA):
         self._dmatx = np.array(X).astype(dtype)
         if self._dmatx.ndim != 2: raise ValueError('input data is not a 2-dimensional matrix')
 
-        self._dtype = dtype # careful do not use _dmatx.dtype -> str converted to fix length S##
         self._metas = {} if isna(metadata) else dict(metadata)
 
         self._rnames = self._cnames = NA
@@ -72,7 +71,7 @@ class Table(CoreType):
     # built-ins
     def __getitem__(self, item):
         rids, cids = self._parseIndices(item)
-        ntab = Table(self._dmatx[np.ix_(rids, cids)], dtype = self._dtype, metadata = self._metas)
+        ntab = Table(self._dmatx[np.ix_(rids, cids)], dtype = self.dtype, metadata = self._metas)
 
         if hasvalue(self._rnames): ntab.rownames = self._rnames[rids]
         if hasvalue(self._cnames): ntab.colnames = self._cnames[cids]
@@ -97,7 +96,7 @@ class Table(CoreType):
         clic = isinstance(cids, slice) and cids == slice(None)
 
         if rlic and clic:
-            self._dmatx = np.array([], dtype = self._dtype).reshape((0,0))
+            self._dmatx = np.array([], dtype = self.dtype).reshape((0,0))
             if hasvalue(self._rnames): del self._rnames[:]
             if hasvalue(self._cnames): del self._cnames[:]
             if hasvalue(self._rindex): del self._rindex[:,np.arange(self.nrow)]
@@ -131,8 +130,8 @@ class Table(CoreType):
     def __iadd__(self, other):
         if not isinstance(other, Table): raise TypeError('unknown input data type')
         if other.ncol != self.ncol: raise IndexError('input table has different number of columns')
-        if hasvalue(other._cnames) and other._cnames != self._cnames: raise IndexError('input table has different column names')
-        if hasvalue(other._cindex) and other._cindex != self._cindex: raise IndexError('input table has different column index')
+        if hasvalue(self._cnames) and hasvalue(other._cnames) and np.any(other._cnames != self._cnames): raise IndexError('input table has different column names')
+        if hasvalue(self._cindex) and hasvalue(other._cindex) and other._cindex != self._cindex: raise IndexError('input table has different column index')
 
         self._dmatx = np.r_[self._dmatx, other._dmatx]
         if hasvalue(self._rnames): self._rnames += other._rnames
@@ -170,12 +169,62 @@ class Table(CoreType):
 
     @property
     def dtype(self):
-        return self._dtype
+        return self._dmatx.dtype
 
     @dtype.setter
     def dtype(self, value):
         self._dmatx = self._dmatx.astype(value)
-        self._dtype = value
+
+    @property
+    def rownames(self):
+        return self._rnames
+
+    @rownames.setter
+    def rownames(self, value):
+        if isna(value) or value is None: self._rnames = NA; return
+        self._rnames = NamedIndex(value)
+        if self._rnames.size != self.nrow: raise ValueError('input row names size not match')
+
+    @property
+    def colnames(self):
+        return self._cnames
+
+    @colnames.setter
+    def colnames(self, value):
+        if isna(value) or value is None: self._cnames = NA; return
+        self._cnames = NamedIndex(value)
+        if self._cnames.size != self.ncol: raise ValueError('input column names size not match')
+
+    @property
+    def rowindex(self):
+        return self._rindex
+
+    @rowindex.setter
+    def rowindex(self, value):
+        if isna(value) or value is None: self._rindex = NA; return
+        self._rindex = StructuredArray(value)
+        if self._rindex.length != self.nrow: raise ValueError('input row index size not match')
+
+    @property
+    def colindex(self):
+        return self._cindex
+
+    @colindex.setter
+    def colindex(self, value):
+        if isna(value) or value is None: self._cindex = NA; return
+        self._cindex = StructuredArray(value)
+        if self._cindex.length != self.ncol: raise ValueError('input column index size not match')
+
+    @property
+    def metadata(self):
+        return self._metas
+
+    @property
+    def T(self):
+        tab = Table(self._dmatx.T, dtype = self.dtype, metadata = self._metas)
+        tab._rnames, tab._cnames = self._cnames.copy(), self._rnames.copy()
+        tab._rindex, tab._cindex = self._cindex.copy(), self._rindex.copy()
+        return tab
 
     @property
     def nrow(self):
@@ -197,66 +246,15 @@ class Table(CoreType):
     def ndim(self):
         return 2
 
-    @property
-    def rownames(self):
-        return np.array(self._rnames)
-
-    @rownames.setter
-    def rownames(self, value):
-        if isna(value): self._rnames = NA; return
-        self._rnames = NamedIndex(value)
-        if self._rnames.size != self.nrow: raise ValueError('input row names size not match')
-
-    @property
-    def colnames(self):
-        return np.array(self._cnames)
-
-    @colnames.setter
-    def colnames(self, value):
-        if isna(value): self._cnames = NA; return
-        self._cnames = NamedIndex(value)
-        if self._cnames.size != self.ncol: raise ValueError('input column names size not match')
-
-    @property
-    def rowindex(self):
-        return self._rindex
-
-    @rowindex.setter
-    def rowindex(self, value):
-        if isna(value): self._rindex = NA; return
-        self._rindex = StructuredArray(value)
-        if self._rindex.length != self.nrow: raise ValueError('input row index size not match')
-
-    @property
-    def colindex(self):
-        return self._cindex
-
-    @colindex.setter
-    def colindex(self, value):
-        if isna(value): self._cindex = NA; return
-        self._cindex = StructuredArray(value)
-        if self._cindex.length != self.ncol: raise ValueError('input column index size not match')
-
-    @property
-    def metadata(self):
-        return self._metas
-
-    @property
-    def T(self):
-        tab = Table(self._dmatx.T, dtype = self._dtype, metadata = self._metas)
-        tab._rnames, tab._cnames = self._cnames.copy(), self._rnames.copy()
-        tab._rindex, tab._cindex = self._cindex.copy(), self._rindex.copy()
-        return tab
-
     # publics
     def append(self, other, axis = 0):
         if not isinstance(other, Table): raise TypeError('unknown input data type')
         if axis == 0:
             if other.ncol != self.ncol: raise IndexError('input table has different number of columns')
-            if hasvalue(other._cnames) and other._cnames != self._cnames: raise IndexError('input table has different column names')
-            if hasvalue(other._cindex) and other._cindex != self._cindex: raise IndexError('input table has different column index')
+            if hasvalue(self._cnames) and hasvalue(other._cnames) and np.any(other._cnames != self._cnames): raise IndexError('input table has different column names')
+            if hasvalue(self._cindex) and hasvalue(other._cindex) and other._cindex != self._cindex: raise IndexError('input table has different column index')
 
-            tab = Table(np.r_[self._dmatx, other._dmatx], dtype = self._dtype, metadata = self._metas)
+            tab = Table(np.r_[self._dmatx, other._dmatx], dtype = self.dtype, metadata = self._metas)
             if hasvalue(self._rnames): tab.rownames = self._rnames + other._rnames
             if hasvalue(self._cnames): tab.colnames = self._cnames.copy()
             if hasvalue(self._rindex): tab.rowindex = self._rindex + other._rindex
@@ -264,10 +262,10 @@ class Table(CoreType):
             return tab
         elif axis == 1:
             if other.nrow != self.nrow: raise IndexError('input table has different number of rows')
-            if hasvalue(other._rnames) and other._rnames != self._rnames: raise IndexError('input table has different row names')
-            if hasvalue(other._rindex) and other._rindex != self._rindex: raise IndexError('input table has different row index')
+            if hasvalue(self._rnames) and hasvalue(other._rnames) and np.any(other._rnames != self._rnames): raise IndexError('input table has different row names')
+            if hasvalue(self._rindex) and hasvalue(other._rindex) and other._rindex != self._rindex: raise IndexError('input table has different row index')
 
-            tab = Table(np.c_[self._dmatx, other._dmatx], dtype = self._dtype, metadata = self._metas)
+            tab = Table(np.c_[self._dmatx, other._dmatx], dtype = self.dtype, metadata = self._metas)
             if hasvalue(self._rnames): tab.rownames = self._rnames.copy()
             if hasvalue(self._cnames): tab.colnames = self._cnames + other._cnames
             if hasvalue(self._rindex): tab.rowindex = self._rindex.copy()
@@ -279,11 +277,11 @@ class Table(CoreType):
         if not isinstance(other, Table): raise TypeError('unknown input data type')
         if axis == 0:
             if other.ncol != self.ncol: raise IndexError('input table has different number of columns')
-            if hasvalue(other._cnames) and other._cnames != self._cnames: raise IndexError('input table has different column names')
-            if hasvalue(other._cindex) and other._cindex != self._cindex: raise IndexError('input table has different column index')
+            if hasvalue(self._cnames) and hasvalue(other._cnames) and np.any(other._cnames != self._cnames): raise IndexError('input table has different column names')
+            if hasvalue(self._cindex) and hasvalue(other._cindex) and other._cindex != self._cindex: raise IndexError('input table has different column index')
 
             if isna(pos): pos = self.nrow
-            tab = Table(np.insert(self._dmatx, pos, other._dmatx, axis = 0), dtype = self._dtype, metadata = self._metas)
+            tab = Table(np.insert(self._dmatx, pos, other._dmatx, axis = 0), dtype = self.dtype, metadata = self._metas)
             if hasvalue(self._rnames): tab.rownames = self._rnames.insert(other._rnames, pos) # in case np.inert etc will change array shape
             if hasvalue(self._cnames): tab.colnames = self._cnames.copy()
             if hasvalue(self._rindex): tab.rowindex = self._rindex.insert(other._rindex, pos)
@@ -291,11 +289,11 @@ class Table(CoreType):
             return tab
         elif axis == 1:
             if other.nrow != self.nrow: raise IndexError('input table has different number of rows')
-            if hasvalue(other._rnames) and other._rnames != self._rnames: raise IndexError('input table has different row names')
-            if hasvalue(other._rindex) and other._rindex != self._rindex: raise IndexError('input table has different row index')
+            if hasvalue(self._rnames) and hasvalue(other._rnames) and np.any(other._rnames != self._rnames): raise IndexError('input table has different row names')
+            if hasvalue(self._rindex) and hasvalue(other._rindex) and other._rindex != self._rindex: raise IndexError('input table has different row index')
 
             if isna(pos): pos = self.ncol
-            tab = Table(np.insert(self._dmatx, pos, other._dmatx, axis = 1), dtype = self._dtype, metadata = self._metas)
+            tab = Table(np.insert(self._dmatx, pos if listable(pos) else [pos], other._dmatx, axis = 1), dtype = self.dtype, metadata = self._metas)
             if hasvalue(self._rnames): tab.rownames = self._rnames.copy()
             if hasvalue(self._cnames): tab.colnames = self._cnames.insert(other._cnames, pos)
             if hasvalue(self._rindex): tab.rowindex = self._rindex.copy()
@@ -306,7 +304,7 @@ class Table(CoreType):
     def drop(self, pos, axis = 0):
         if axis == 0:
             if isna(pos): pos = self.nrow
-            tab = Table(np.delete(self._dmatx, pos, axis = 0), dtype = self._dtype, metadata = self._metas)
+            tab = Table(np.delete(self._dmatx, pos, axis = 0), dtype = self.dtype, metadata = self._metas)
             if hasvalue(self._rnames): tab.rownames = self._rnames.drop(pos)
             if hasvalue(self._cnames): tab.colnames = self._cnames.copy()
             if hasvalue(self._rindex): tab.rowindex = self._rindex.drop(pos)
@@ -314,7 +312,7 @@ class Table(CoreType):
             return tab
         elif axis == 1:
             if isna(pos): pos = self.ncol
-            tab = Table(np.delete(self._dmatx, pos, axis = 1), dtype = self._dtype, metadata = self._metas)
+            tab = Table(np.delete(self._dmatx, pos, axis = 1), dtype = self.dtype, metadata = self._metas)
             if hasvalue(self._rnames): tab.rownames = self._rnames.copy()
             if hasvalue(self._cnames): tab.colnames = self._cnames.drop(pos)
             if hasvalue(self._rindex): tab.rowindex = self._rindex.copy()
@@ -323,7 +321,7 @@ class Table(CoreType):
         else: raise IndexError('unsupported axis [%d]' % axis)
 
     def copy(self):
-        tab = Table(self._dmatx, dtype = self._dtype, metadata = self._metas)
+        tab = Table(self._dmatx, dtype = self.dtype, metadata = self._metas)
         tab._rnames, tab._cnames = self._rnames.copy(), self._cnames.copy()
         tab._rindex, tab._cindex = self._rindex.copy(), self._cindex.copy()
         return tab
@@ -357,15 +355,17 @@ class Table(CoreType):
     # portals
     @classmethod
     def fromsarray(cls, array, rowindex = NA, colindex = NA):
-        if isna(rowindex) or isna(colindex): rowindex, colindex = np.where(array == '#')
+        if isna(rowindex) or isna(colindex):
+            if '#' not in array: raise ValueError('Unknown array format')
+            colindex, rowindex = map(lambda x: x[0], np.where(array == '#'))
         ridx = StructuredArray.fromsarray(array[colindex:,:rowindex].T) if rowindex > 0 else NA
         cidx = StructuredArray.fromsarray(array[:colindex,rowindex:])   if colindex > 0 else NA
         array = array[colindex:,rowindex:]
 
-        rnam = array[0,1:]
-        if np.all(rnam == np.arange(rnam.shape[0]).astype(str)): rnam = NA
-        cnam = array[1:,0]
+        cnam = array[0,1:]
         if np.all(cnam == np.arange(cnam.shape[0]).astype(str)): cnam = NA
+        rnam = array[1:,0]
+        if np.all(rnam == np.arange(rnam.shape[0]).astype(str)): rnam = NA
         array = array[1:,1:]
 
         dtype = type(autoeval(array[0,0]))
@@ -377,7 +377,7 @@ class Table(CoreType):
         return np.array(self.tolist(transpose = False, withindex = withindex), dtype = str)
 
     @classmethod
-    def loadcsv(cls, fname, delimiter = ',', transposed = False, rowindex = 0, colindex = 0):
+    def loadcsv(cls, fname, delimiter = ',', transposed = False, rowindex = NA, colindex = NA):
         idm = np.array(tablePortal.load(fname, delimiter = delimiter))
         if transposed: idm = idm.T
         return cls.fromsarray(idm, rowindex = rowindex, colindex = colindex)
@@ -411,8 +411,8 @@ class Table(CoreType):
         darr = hdf.create_array(hdf.root, 'DataMatx', self._dmatx)
         for k,v in self._metas.items(): setattr(darr.attrs, k, v)
 
-        if hasvalue(self._rnames): hdf.create_array(hdf.root, 'RowNames', self._rnames)
-        if hasvalue(self._cnames): hdf.create_array(hdf.root, 'ColNames', self._cnames)
+        if hasvalue(self._rnames): hdf.create_array(hdf.root, 'RowNames', np.array(self._rnames))
+        if hasvalue(self._cnames): hdf.create_array(hdf.root, 'ColNames', np.array(self._cnames))
         if hasvalue(self._rindex): self._rindex.tohtable(hdf.root, 'RowIndex', compression)
         if hasvalue(self._cindex): self._cindex.tohtable(hdf.root, 'ColIndex', compression)
 

@@ -10,6 +10,7 @@ origin: 08-23-2018
 """
 
 
+import numpy as np
 from copy import deepcopy
 from kagami.core import NA
 
@@ -36,6 +37,9 @@ class CoreType(object):
 
     def __eq__(self, other):
         raise NotImplementedError('method not implemented for Kagami CoreType')
+
+    def __ne__(self, other):
+        return np.logical_not(self.__eq__(other))
 
     def __add__(self, other):
         return self.append(other)
