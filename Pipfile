@@ -6,7 +6,7 @@ name = "pypi"
 [dev-packages]
 
 [packages]
-numpy = "==1.14.5"
+numpy = "*"
 "rpy2" = "==2.8.6"
 scikit-learn = "*"
 requests = "*"
