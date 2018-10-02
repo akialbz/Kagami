@@ -35,6 +35,7 @@ def smap(x, func):
     return map(func, x)
 
 def _mmap(x, func, ptype, nps):
+    if nps is None or nps >= cpu_count(): nps = cpu_count() - 1 # in case dead lock
     mpool = ptype(processes = nps)
     jobs = [mpool.apply_async(func, (p,)) for p in x]
     mpool.close()
@@ -45,7 +46,7 @@ def tmap(x, func, nthreads = NA):
     return _mmap(x, func, ThreadPool, optional(nthreads, None))
 
 def pmap(x, func, nprocs = NA):
-    return _mmap(x, func, Pool, min(nprocs, cpu_count()-1) if hasvalue(nprocs) else None)
+    return _mmap(x, func, Pool, optional(nprocs, None))
 
 def call(x, funcs, nthreads = NA, nprocs = NA, collect = NA):
     if not listable(x): raise TypeError('source in not listable')

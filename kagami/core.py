@@ -34,6 +34,7 @@ optional = lambda x, default: x if hasvalue(x) else default
 
 # auto eval
 def autoeval(x):
+    x = x.strip()
     if x == 'NA': return NA
     try: return literal_eval(x)
     except (ValueError, SyntaxError): return str(x)

@@ -12,9 +12,8 @@ origin: 06-03-2014
 
 import logging
 from ConfigParser import ConfigParser
-from ast import literal_eval
 from collections import OrderedDict
-from kagami.core import NA
+from kagami.core import NA, autoeval
 from kagami.filesys import checkInputFile
 
 
@@ -30,14 +29,10 @@ def load(cfgFile, autoEval = True, dictType = OrderedDict, emptyAsNA = True):
 
     def _eval(x):
         if not autoEval: return x
-        try:
-            return literal_eval(x)
-        except (ValueError, SyntaxError):
-            val = str(x).strip()
-            if val == 'NA': val = NA # make NA a valid value in config
-            if val == '' and emptyAsNA: val = NA
-            return val
+        val = autoeval(x)
+        if val == '' and emptyAsNA: val = NA
+        return val
 
-    _items = lambda x: dictType([(k,_eval(v)) for k,v in cfg.items(x)])
+    _items = lambda x: dictType([(k, _eval(v)) for k,v in cfg.items(x)])
     return dictType([(s, _items(s)) for s in cfg.sections()])
 
