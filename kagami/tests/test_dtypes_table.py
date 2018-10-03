@@ -90,6 +90,11 @@ def test_table_built_ins():
     assert table == deepcopy(table)
     assert table != Table(dm, dtype = int)
 
+    assert np.all((table < 10) == (dm < 10))
+    assert np.all((table > 10) == (dm > 10))
+    assert np.all((table <= 10) == (dm <= 10))
+    assert np.all((table >= 10) == (dm >= 10))
+
     # arithmetic oprtations
     assert table[:2] + table[2:] == table
     ctable = deepcopy(table)[:-1]

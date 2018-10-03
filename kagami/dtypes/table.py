@@ -130,6 +130,18 @@ class Table(CoreType):
                np.all(self._rnames == other._rnames) and np.all(self._cnames == other._cnames) and \
                self._rindex == other._rindex and self._cindex == other._cindex
 
+    def __lt__(self, other):
+        return self._dmatx < other
+
+    def __gt__(self, other):
+        return self._dmatx > other
+
+    def __le__(self, other):
+        return self._dmatx <= other
+
+    def __ge__(self, other):
+        return self._dmatx >= other
+
     def __iadd__(self, other):
         if not isinstance(other, Table): raise TypeError('unknown input data type')
         if other.ncol != self.ncol: raise IndexError('input table has different number of columns')
