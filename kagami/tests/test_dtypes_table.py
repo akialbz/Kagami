@@ -230,3 +230,9 @@ def test_table_methods():
     assert ltable == table
     if os.path.isfile(fname + '.hdf'): os.remove(fname + '.hdf')
 
+    table.saverdata(fname + '.rdata')
+    ltable = Table.loadrdata(fname + '.rdata')
+    print ltable
+    assert ltable == table
+    if os.path.isfile(fname + '.rdata'): os.remove(fname + '.rdata')
+

@@ -18,11 +18,14 @@ from kagami.core import NA, isna, isnull
 from kagami.functional import pickmap
 
 
+np2ri.activate()  # enable numpy <-> R conversions
+robj.r('Sys.setenv(LANG = "en")')
+
 class RWrapper(object):
-    def __init__(self, *libraries):
-        np2ri.activate() # enable numpy <-> R conversions
-        robj.r('Sys.setenv(LANG = "en")')
-        self.library(*libraries)
+    # rpy2 delegates
+    null = NULL
+    robj = robj
+    r = robj.r
 
     # methods
     @staticmethod
@@ -53,7 +56,7 @@ class RWrapper(object):
 
     @staticmethod
     def assign(val, name):
-        return robj.r.assign(name, np.array(val))
+        return robj.r.assign(name, val)
 
     @staticmethod
     def apply(func, *args, **kwargs):

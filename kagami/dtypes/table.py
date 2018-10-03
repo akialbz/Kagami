@@ -21,6 +21,7 @@ from kagami.functional import smap, pickmap
 from kagami.filesys import checkInputFile, checkOutputFile
 from kagami.dtypes import CoreType, NamedIndex, StructuredArray
 from kagami.portals import tablePortal
+from kagami.wrappers import RWrapper as rw
 
 
 # table class
@@ -420,3 +421,40 @@ class Table(CoreType):
 
         hdf.close()
         return os.path.isfile(fname)
+
+    @classmethod
+    def loadrdata(cls, fname, dname = 'data', rowindex = 'row.index', colindex = 'col.index'):
+        checkInputFile(fname)
+        rw.r.load(fname)
+
+        tabl = Table(rw.r[dname], metadata = {'_file_name': fname})
+
+        rnam = rw.run('rownames(%s)' % dname) # stupid numpy conversion
+        if rnam is not rw.null: tabl.rownames = rnam
+        cnam = rw.run('colnames(%s)' % dname)
+        if cnam is not rw.null: tabl.colnames = cnam
+
+        def _parseidx(iname):
+            idx = rw.r[iname]
+            return zip(idx.dtype.names, zip(*idx))
+        if hasvalue(rowindex): tabl.rowindex = _parseidx(rowindex)
+        if hasvalue(colindex): tabl.colindex = _parseidx(colindex)
+
+        return tabl
+
+    def saverdata(self, fname, dname = 'data', rowindex = 'row.index', colindex = 'col.index'):
+        checkOutputFile(fname)
+
+        dmtx = rw.asMatrix(self._dmatx, nrow = self.nrow, ncol = self.ncol)
+        if hasvalue(self._rnames): dmtx.rownames = rw.asVector(self._rnames)
+        if hasvalue(self._cnames): dmtx.colnames = rw.asVector(self._cnames)
+        rw.assign(dmtx, dname)
+
+        if hasvalue(self._rindex): rw.assign(rw.r['data.frame'](**{k: rw.asVector(self._rindex[k]) for k in self._rindex.names}), rowindex)
+        if hasvalue(self._cindex): rw.assign(rw.r['data.frame'](**{k: rw.asVector(self._cindex[k]) for k in self._cindex.names}), colindex)
+
+        vnames = [dname] + ([rowindex] if hasvalue(self._rindex) else []) + ([colindex] if hasvalue(self._cindex) else [])
+        rw.run('save(%s, file = "%s")' % (join(vnames, ','), fname)) # avoid bug in rw.save
+
+        return os.path.isfile(fname)
+
