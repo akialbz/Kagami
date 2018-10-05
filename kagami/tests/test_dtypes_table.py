@@ -134,6 +134,7 @@ def test_table_properties():
     # values and dtype
     ctable = deepcopy(table)
     assert np.all(ctable.values == dm)
+    assert np.all(ctable.X == dm)
     ctable.values = dm + 1
     assert np.all(ctable.values == np.arange(50).reshape((5,10)) + 1)
     assert ctable.dtype.kind == 'i'

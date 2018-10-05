@@ -87,7 +87,7 @@ class Table(CoreType):
         if not isinstance(value, Table):
             self._dmatx[np.ix_(rids, cids)] = np.array(value)
         else:
-            self._dmatx[np.ix_(rids, cids)] = np.array(value.values)
+            self._dmatx[np.ix_(rids, cids)] = np.array(value.X)
             if hasvalue(self._rnames): self._rnames[rids] = value.rownames
             if hasvalue(self._cnames): self._cnames[cids] = value.colnames
             if hasvalue(self._rindex): self._rindex[:,rids] = value.rowindex
@@ -176,11 +176,15 @@ class Table(CoreType):
     # properties
     @property
     def values(self):
-        return self._dmatx
+        return self._dmatx.copy()
 
     @values.setter
     def values(self, value):
         self._dmatx[:] = value
+
+    @property
+    def X(self):
+        return self._dmatx
 
     @property
     def dtype(self):

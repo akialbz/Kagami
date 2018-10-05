@@ -209,12 +209,14 @@ class StructuredArray(CoreType):
         return np.array([np.r_[['<%s>' % k], np.array(v, dtype = str)] for k,v in self._dict.items()])
 
     @classmethod
-    def loadcsv(cls, fname, delimiter = ','):
+    def loadcsv(cls, fname, delimiter = ',', transposed = False):
         idm = np.array(tablePortal.load(fname, delimiter = delimiter))
+        if transposed: idm = idm.T
         return cls.fromsarray(idm)
 
-    def savecsv(self, fname, delimiter = ','):
+    def savecsv(self, fname, delimiter = ',', transpose = False):
         odm = self.tosarray()
+        if transpose: odm = odm.T
         tablePortal.save(odm, fname, delimiter = delimiter)
 
     @classmethod
