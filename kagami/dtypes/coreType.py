@@ -13,9 +13,12 @@ origin: 08-23-2018
 import numpy as np
 from copy import deepcopy
 from kagami.core import NA
+from kagami.functional import pickmap
 
 
 class CoreType(object):
+    __slots__ = ()
+
     # built-ins
     def __getitem__(self, item):
         raise NotImplementedError('method not implemented for Kagami CoreType')
@@ -56,6 +59,13 @@ class CoreType(object):
     # for numpy
     def __array__(self, dtype = None):
         raise NotImplementedError('method not implemented for Kagami CoreType')
+
+    # for pickle
+    def __getstate__(self):
+        return {k: getattr(self, k) for k in self.__slots__}
+
+    def __setstate__(self, dct):
+        pickmap(dct.keys(), lambda x: x in self.__slots__, lambda x: setattr(self, x, dct[x]))
 
     # properties
     @property

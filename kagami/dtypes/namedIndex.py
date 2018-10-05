@@ -14,7 +14,6 @@ import numpy as np
 from operator import itemgetter
 from string import join
 from kagami.core import NA, optional, listable, isstring, checkany
-from kagami.functional import pickmap
 from kagami.dtypes import CoreType
 
 
@@ -72,13 +71,6 @@ class NamedIndex(CoreType):
 
     def __array_wrap__(self, arr):
         return NamedIndex(arr)
-
-    # for pickle
-    def __getstate__(self):
-        return {k: getattr(self, k) for k in self.__slots__}
-
-    def __setstate__(self, dct):
-        pickmap(dct.keys(), lambda x: x in self.__slots__, lambda x: setattr(self, x, dct[x]))
 
     # properties
     @property

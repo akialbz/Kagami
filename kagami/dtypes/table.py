@@ -16,8 +16,8 @@ import tables as ptb
 from string import join
 from types import NoneType
 from operator import itemgetter
-from kagami.core import NA, NAType, optional, isna, isnull, hasvalue, listable, autoeval
-from kagami.functional import smap, pickmap
+from kagami.core import NA, NAType, Metadata, optional, isna, isnull, hasvalue, listable, autoeval
+from kagami.functional import smap
 from kagami.filesys import checkInputFile, checkOutputFile
 from kagami.dtypes import CoreType, NamedIndex, StructuredArray
 from kagami.portals import tablePortal
@@ -32,7 +32,7 @@ class Table(CoreType):
         self._dmatx = np.array(X).astype(dtype)
         if self._dmatx.ndim != 2: raise ValueError('input data is not a 2-dimensional matrix')
 
-        self._metas = {} if isna(metadata) else dict(metadata)
+        self._metas = Metadata() if isnull(metadata) else Metadata(metadata)
 
         self._rnames = self._cnames = NA
         self.rownames = rownames
@@ -165,13 +165,6 @@ class Table(CoreType):
     # for numpy
     def __array__(self, dtype = None):
         return self._dmatx.copy() if dtype is None else self._dmatx.astype(dtype)
-
-    # for pickle
-    def __getstate__(self):
-        return {k: getattr(self, k) for k in self.__slots__}
-
-    def __setstate__(self, dct):
-        pickmap(dct.keys(), lambda x: x in self.__slots__, lambda x: setattr(self, x, dct[x]))
 
     # properties
     @property
@@ -439,16 +432,16 @@ class Table(CoreType):
         return os.path.isfile(fname)
 
     @classmethod
-    def loadrdata(cls, fname, dname = 'data', rowindex = 'row.index', colindex = 'col.index'):
+    def loadrdata(cls, fname, dname, rowindex = NA, colindex = NA, dataTransposed = True):
         checkInputFile(fname)
         rw.r.load(fname)
 
-        tabl = Table(rw.r[dname], metadata = {'_file_name': fname})
+        dm, rn, cn = rw.r[dname], rw.run('rownames(%s)' % dname), rw.run('colnames(%s)' % dname) # stupid numpy conversion
+        if dataTransposed: dm, rn, cn = dm.T, cn, rn
 
-        rnam = rw.run('rownames(%s)' % dname) # stupid numpy conversion
-        if rnam is not rw.null: tabl.rownames = rnam
-        cnam = rw.run('colnames(%s)' % dname)
-        if cnam is not rw.null: tabl.colnames = cnam
+        tabl = Table(dm, metadata = {'_file_name': fname})
+        if rn is not rw.null: tabl.rownames = rn
+        if cn is not rw.null: tabl.colnames = cn
 
         def _parseidx(iname):
             idx = rw.r[iname]
@@ -458,12 +451,15 @@ class Table(CoreType):
 
         return tabl
 
-    def saverdata(self, fname, dname = 'data', rowindex = 'row.index', colindex = 'col.index'):
+    def saverdata(self, fname, dname = 'data', rowindex = 'row.index', colindex = 'col.index', dataTranspose = True):
         checkOutputFile(fname)
 
-        dmtx = rw.asMatrix(self._dmatx, nrow = self.nrow, ncol = self.ncol)
-        if hasvalue(self._rnames): dmtx.rownames = rw.asVector(self._rnames)
-        if hasvalue(self._cnames): dmtx.colnames = rw.asVector(self._cnames)
+        dm, rn, cn = (self._dmatx,   self._rnames, self._cnames) if not dataTranspose else \
+                     (self._dmatx.T, self._cnames, self._rnames)
+
+        dmtx = rw.asMatrix(dm)
+        if hasvalue(rn): dmtx.rownames = rw.asVector(rn)
+        if hasvalue(cn): dmtx.colnames = rw.asVector(cn)
         rw.assign(dmtx, dname)
 
         if hasvalue(self._rindex): rw.assign(rw.r['data.frame'](**{k: rw.asVector(self._rindex[k]) for k in self._rindex.names}), rowindex)

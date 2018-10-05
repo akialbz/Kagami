@@ -16,7 +16,7 @@ from string import join
 from operator import itemgetter
 from bidict import FrozenOrderedBidict
 from kagami.core import NA, hasvalue, optional, checkany, listable, mappable, hashable
-from kagami.functional import smap, pickmap
+from kagami.functional import smap
 from kagami.dtypes import CoreType
 
 
@@ -83,13 +83,6 @@ class _Factor(CoreType):
 
     def __array_wrap__(self, arr):
         return self.__class__(labels = arr)
-
-    # for pickle
-    def __getstate__(self):
-        return {k: getattr(self, k) for k in self.__slots__}
-
-    def __setstate__(self, dct):
-        pickmap(dct.keys(), lambda x: x in self.__slots__, lambda x: setattr(self, x, dct[x]))
 
     # properties
     @property

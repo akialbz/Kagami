@@ -135,13 +135,6 @@ class StructuredArray(CoreType):
         arr = self.values
         return arr if dtype is None else arr.astype(None)
 
-    # for pickle
-    def __getstate__(self):
-        return {k: getattr(self, k) for k in self.__slots__}
-
-    def __setstate__(self, dct):
-        pickmap(dct.keys(), lambda x: x in self.__slots__, lambda x: setattr(self, x, dct[x]))
-
     # properties
     @property
     def names(self):

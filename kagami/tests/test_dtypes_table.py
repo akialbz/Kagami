@@ -14,7 +14,7 @@ import os, pytest
 import cPickle as cp
 import numpy as np
 from copy import deepcopy
-from kagami.core import NA
+from kagami.core import NA, Metadata
 from kagami.dtypes import Table
 
 
@@ -24,7 +24,7 @@ def _create_table():
                   rownames = map(lambda x: 'row_%d' % x, range(5)), colnames = map(lambda x: 'col_%d' % x, range(10)),
                   rowindex = {'type': ['a', 'a', 'b', 'a', 'c'], 'order': [2, 1, 3, 5, 4]},
                   colindex = {'gene': map(lambda x: 'gid_%d' % x, range(10))},
-                  metadata = {'name': 'test_table', 'origin': None})
+                  metadata = {'name': 'test_table', 'origin': None, 'extra': Metadata(val1 = 1, val2 = 2)})
     return table
 
 def test_table_creation():
@@ -161,9 +161,11 @@ def test_table_properties():
 
     # metadata
     assert table.metadata['name'] == 'test_table' and table.metadata['origin'] is None
+    assert table.metadata.name == 'test_table' and table.metadata.origin is None
     table.metadata['name'] = 'new_test_table'
-    table.metadata['normal'] = True
-    assert table.metadata['name'] == 'new_test_table' and table.metadata['normal'] == True
+    table.metadata.normal = True
+    table.metadata.newval = 123
+    assert table.metadata.name == 'new_test_table' and table.metadata['normal'] == True and table.metadata['newval'] == 123
 
     # transpose
     ctable = table.T
@@ -236,8 +238,8 @@ def test_table_methods():
     assert ltable == table
     if os.path.isfile(fname + '.hdf'): os.remove(fname + '.hdf')
 
-    table.saverdata(fname + '.rdata')
-    ltable = Table.loadrdata(fname + '.rdata')
+    table.saverdata(fname + '.rdata', dname = 'data', rowindex = 'row.index', colindex = 'col.index')
+    ltable = Table.loadrdata(fname + '.rdata', dname = 'data', rowindex = 'row.index', colindex = 'col.index')
     print ltable
     assert ltable == table
     if os.path.isfile(fname + '.rdata'): os.remove(fname + '.rdata')
