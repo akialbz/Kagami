@@ -439,7 +439,7 @@ class Table(CoreType):
         dm, rn, cn = rw.r[dname], rw.run('rownames(%s)' % dname), rw.run('colnames(%s)' % dname) # stupid numpy conversion
         if dataTransposed: dm, rn, cn = dm.T, cn, rn
 
-        tabl = Table(dm, metadata = {'_file_name': fname})
+        tabl = Table(dm, metadata = {'_rdata_file_name': fname})
         if rn is not rw.null: tabl.rownames = rn
         if cn is not rw.null: tabl.colnames = cn
 
