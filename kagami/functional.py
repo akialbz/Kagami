@@ -13,7 +13,7 @@ origin: 06-07-2016
 import functools
 from multiprocessing import Pool, cpu_count
 from multiprocessing.pool import ThreadPool
-from kagami.core import NA, hasvalue, optional, listable, checkall
+from kagami.core import NA, hasvalue, isna, optional, listable, checkall, peek
 
 
 # partial & composition
@@ -80,5 +80,5 @@ def drop(x, cond):
     return filter(lambda v: not _check(v), x)
 
 def fold(x, func, init = NA):
-    return reduce(func, x, initializer = optional(init, None))
-
+    if isna(init): init, x = peek(x)
+    return reduce(func, x, init)
