@@ -418,15 +418,15 @@ class Table(CoreType):
 
     def savehdf(self, fname, compression = 0):
         checkOutputFile(fname)
-        hdf = ptb.open_file(fname, mode = 'w')
+        hdf = ptb.open_file(fname, mode = 'w', filters = ptb.Filters(compression))
 
         darr = hdf.create_array(hdf.root, 'DataMatx', self._dmatx)
         for k,v in self._metas.items(): setattr(darr.attrs, k, v)
 
         if hasvalue(self._rnames): hdf.create_array(hdf.root, 'RowNames', np.array(self._rnames))
         if hasvalue(self._cnames): hdf.create_array(hdf.root, 'ColNames', np.array(self._cnames))
-        if hasvalue(self._rindex): self._rindex.tohtable(hdf.root, 'RowIndex', compression)
-        if hasvalue(self._cindex): self._cindex.tohtable(hdf.root, 'ColIndex', compression)
+        if hasvalue(self._rindex): self._rindex.tohtable(hdf.root, 'RowIndex')
+        if hasvalue(self._cindex): self._cindex.tohtable(hdf.root, 'ColIndex')
 
         hdf.close()
         return os.path.isfile(fname)

@@ -232,7 +232,7 @@ def test_table_methods():
     assert ltable == table
     if os.path.isfile(fname + '.csv'): os.remove(fname + '.csv')
 
-    table.savehdf(fname + '.hdf')
+    table.savehdf(fname + '.hdf', compression = 9)
     ltable = Table.loadhdf(fname + '.hdf')
     print ltable
     assert ltable == table

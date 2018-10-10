@@ -152,7 +152,7 @@ def test_structArray_methods():
     assert larr == arr
     if os.path.isfile(fname + '.csv'): os.remove(fname + '.csv')
 
-    arr.savehdf(fname + '.hdf')
+    arr.savehdf(fname + '.hdf', compression = 9)
     larr = StructuredArray.loadhdf(fname + '.hdf')
     print larr
     assert larr == arr

@@ -218,10 +218,10 @@ class StructuredArray(CoreType):
         vals = [np.array(hdftable.colinstances[n]) for n in nams]
         return StructuredArray(zip(nams, vals))
 
-    def tohtable(self, root, tabname, compression = 0):
+    def tohtable(self, root, tabname):
         vdct = {n: v for n,v in zip(self._dict.keys(), smap(self._dict.values(), np.array))}
         desc = type('_struct_array', (ptb.IsDescription,), {n: ptb.Col.from_dtype(v.dtype) for n,v in vdct.items()})
-        tabl = ptb.Table(root, tabname, desc, filters = ptb.Filters(compression))
+        tabl = ptb.Table(root, tabname, desc)
         tabl.append([vdct[n] for n in tabl.colnames]) # desc.columns is an un-ordered dict
         tabl.attrs.names = self._dict.keys()
         return tabl
@@ -234,5 +234,5 @@ class StructuredArray(CoreType):
 
     def savehdf(self, fname, compression = 0):
         checkOutputFile(fname)
-        with ptb.open_file(fname, mode = 'w') as hdf: self.tohtable(hdf.root, 'StructuredArray', compression)
+        with ptb.open_file(fname, mode = 'w', filters = ptb.Filters(compression)) as hdf: self.tohtable(hdf.root, 'StructuredArray')
         return os.path.isfile(fname)
