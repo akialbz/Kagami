@@ -1,17 +1,5 @@
 # Kagami Library
 
-## Install
-```bash
-$ wget https://github.com/albert500/Kagami/blob/master/dist/libkagami.py 
+The Kagami library is a Python package to make things easier or ruin your life. Think twice before using it.
+The Kagami library is distributed under the GNU Lesser General Public License v3.0.
 
-$ wget https://github.com/albert500/Kagami/releases/download/1.2.3/libkagami_1.2.3.zlib
-
-$ ln -s libkagami_1.2.3.zlib libkagami.zlib
-```
-
-## Usage
-```python
-import libkagami
-
-from kagami.prelim import *
-```
