@@ -28,8 +28,9 @@ from kagami.wrappers import RWrapper as rw
 class Table(CoreType):
     __slots__ = ('_dmatx', '_rnames', '_cnames', '_rindex', '_cindex', '_metas')
 
-    def __init__(self, X, dtype = float, rownames = NA, colnames = NA, rowindex = NA, colindex = NA, metadata = NA):
-        self._dmatx = np.array(X).astype(dtype)
+    def __init__(self, X, dtype = NA, rownames = NA, colnames = NA, rowindex = NA, colindex = NA, metadata = NA):
+        self._dmatx = np.array(X)
+        if hasvalue(dtype): self._dmatx = self._dmatx.astype(dtype)
         if self._dmatx.ndim != 2: raise ValueError('input data is not a 2-dimensional matrix')
 
         self._metas = Metadata() if isnull(metadata) else Metadata(metadata)
