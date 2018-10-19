@@ -20,4 +20,13 @@ with open('README.md', 'r') as fh:
             'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
             'Operating System :: OS Independent',
         ],
+        install_requires = [
+            'numpy',
+            'scikit-learn',
+            'requests',
+            'tables',
+            'bidict',
+            'pytest',
+            'rpy2==2.8.6',
+        ]
     )
