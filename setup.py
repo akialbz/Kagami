@@ -16,9 +16,11 @@ with open('README.md', 'r') as fh:
         long_description = long_description,
         long_description_content_type = 'text/markdown',
         classifiers = [
+            'Topic:: Scientific / Engineering:: Bio - Informatics',
+            'Topic :: Software Development :: Libraries',
             'Programming Language :: Python :: 2',
             'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
-            'Operating System :: OS Independent',
+            'Operating System :: POSIX',
         ],
         install_requires = [
             'numpy',
