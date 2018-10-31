@@ -216,7 +216,7 @@ class Table(CoreType):
     def rowindex(self, value):
         if isnull(value): self._rindex = NA; return
         self._rindex = StructuredArray(value)
-        if self._rindex.length != self.nrow: raise ValueError('input row index size not match')
+        if self._rindex.size != 0 and self._rindex.length != self.nrow: raise ValueError('input row index size not match')
 
     @property
     def colindex(self):
@@ -226,7 +226,7 @@ class Table(CoreType):
     def colindex(self, value):
         if isnull(value): self._cindex = NA; return
         self._cindex = StructuredArray(value)
-        if self._cindex.length != self.ncol: raise ValueError('input column index size not match')
+        if self._cindex.size != 0 and self._cindex.length != self.ncol: raise ValueError('input column index size not match')
 
     @property
     def metadata(self):
@@ -367,7 +367,7 @@ class Table(CoreType):
 
     # portals
     @classmethod
-    def fromsarray(cls, array, rowindex = NA, colindex = NA):
+    def fromsarray(cls, array, dtype = NA, rowindex = NA, colindex = NA):
         if isna(rowindex) or isna(colindex):
             if '#' not in array: raise ValueError('Unknown array format')
             colindex, rowindex = smap(np.where(array == '#'), itemgetter(0))
@@ -381,7 +381,7 @@ class Table(CoreType):
         if np.all(rnam == np.arange(rnam.shape[0]).astype(str)): rnam = NA
         array = array[1:,1:]
 
-        dtype = type(autoeval(array[0,0]))
+        if isna(dtype): dtype = type(autoeval(array[0,0]))
         if dtype in (NAType, NoneType): logging.warning('invalid data type detected')
 
         return Table(array, dtype = dtype, rownames = rnam, colnames = cnam, rowindex = ridx, colindex = cidx)
@@ -390,10 +390,10 @@ class Table(CoreType):
         return np.array(self.tolist(transpose = False, withindex = withindex), dtype = str)
 
     @classmethod
-    def loadcsv(cls, fname, delimiter = ',', transposed = False, rowindex = NA, colindex = NA):
+    def loadcsv(cls, fname, dtype = NA, delimiter = ',', transposed = False, rowindex = NA, colindex = NA):
         idm = np.array(tablePortal.load(fname, delimiter = delimiter))
         if transposed: idm = idm.T
-        return cls.fromsarray(idm, rowindex = rowindex, colindex = colindex)
+        return cls.fromsarray(idm, dtype = dtype, rowindex = rowindex, colindex = colindex)
 
     def savecsv(self, fname, delimiter = ',', transpose = False, withindex = True):
         odm = self.tosarray(withindex)
