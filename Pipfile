@@ -7,13 +7,12 @@ name = "pypi"
 
 [packages]
 numpy = "*"
-"rpy2" = "==2.8.6"
+rpy2 = "==2.8.6"
 scikit-learn = "*"
 requests = "*"
 tables = "*"
 bidict = "*"
 pytest = "*"
-numba = "*"
 
 [requires]
 python_version = "2.7"
