@@ -426,8 +426,8 @@ class Table(CoreType):
 
         if hasvalue(self._rnames): hdf.create_array(hdf.root, 'RowNames', np.array(self._rnames))
         if hasvalue(self._cnames): hdf.create_array(hdf.root, 'ColNames', np.array(self._cnames))
-        if hasvalue(self._rindex): self._rindex.tohtable(hdf.root, 'RowIndex')
-        if hasvalue(self._cindex): self._cindex.tohtable(hdf.root, 'ColIndex')
+        if hasvalue(self._rindex) and self._rindex.size > 0: self._rindex.tohtable(hdf.root, 'RowIndex')
+        if hasvalue(self._cindex) and self._cindex.size > 0: self._cindex.tohtable(hdf.root, 'ColIndex')
 
         hdf.close()
         return os.path.isfile(fname)
