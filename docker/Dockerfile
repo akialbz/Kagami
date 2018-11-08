@@ -5,17 +5,30 @@
 # origin: 11-05-2018
 #
 
-FROM ubuntu:18.04
+FROM debian:stretch-slim
 
+# envs
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=C.UTF-8 \
+    LC_COLLATE=C \
+    LC_CTYPE=C \
+    LC_MESSAGES=C \
+    LC_MONETARY=C \
+    LC_NUMERIC=C \
+    LC_TIME=C \
+    LC_ALL=C \
+    PYTHONDONTWRITEBYTECODE=1
 
-# specify a version
+ARG TIMEZONE=GB
 ARG PACKAGE=kagami-2.0.0-py2-none-any.whl
 
 # copy kagami installer
-COPY dist/$PACKAGE .
+COPY $PACKAGE .
 
 # install python and dependencies and commonly used packages
-RUN apt-get update
+RUN ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime \
+    && echo $TIMEZONE > /etc/timezone \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
        ca-certificates \
        netbase \
@@ -37,6 +50,8 @@ RUN apt-get update
        curl \
        python \
        python-dev \
+       r-base \
+       r-base-dev \
     && apt-get autoremove -y \
     && apt-get autoclean -y \
     && rm -rf /var/lib/apt/lists/* \
@@ -45,4 +60,11 @@ RUN apt-get update
     && rm get-pip.py \
     && pip install --no-cache-dir wheel \
     && pip install --no-cache-dir $PACKAGE \
+    && pip install --no-cache-dir pytest-profiling \
+    && pip install --no-cache-dir pytest-cov \
     && rm $PACKAGE \
+    && mkdir -p /home
+
+# set entry
+WORKDIR /home
+ENTRYPOINT ["python"]
