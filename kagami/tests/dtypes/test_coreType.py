@@ -15,11 +15,12 @@ import numpy as np
 from kagami.dtypes import CoreType
 
 
-def test_table_creation():
+def test_coretype_creation():
     cobj = CoreType()
     cobj = cobj.copy()
 
-    # built-ins
+def test_coretype_built_ins():
+    cobj = CoreType()
     with pytest.raises(NotImplementedError): cobj[0]
     with pytest.raises(NotImplementedError): cobj[0] = 1
     with pytest.raises(NotImplementedError): del cobj[0]
@@ -33,12 +34,14 @@ def test_table_creation():
     with pytest.raises(NotImplementedError): repr(cobj)
     with pytest.raises(NotImplementedError): np.array(cobj)
 
-    # properties
+def test_coretype_properties():
+    cobj = CoreType()
     with pytest.raises(NotImplementedError): cobj.size
     with pytest.raises(NotImplementedError): cobj.shape
     with pytest.raises(NotImplementedError): cobj.ndim
 
-    # public
+def test_coretype_methods():
+    cobj = CoreType()
     with pytest.raises(NotImplementedError): cobj.append(1)
     with pytest.raises(NotImplementedError): cobj.insert(1)
     with pytest.raises(NotImplementedError): cobj.drop(1)
