@@ -63,6 +63,11 @@ RUN ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && echo $TIMEZONE > /et
 ENV ENV=/root/.shinit
 RUN echo "exit" > /root/.shinit && echo "exit" > /root/.bashrc && echo "exit" > /etc/bash.bashrc
 
+# add Tini
+ENV TINI_VERSION v0.18.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
+RUN chmod +x /tini
+
 # set entry
 WORKDIR /home
-ENTRYPOINT ["entrypoint.sh"]
+ENTRYPOINT ["/tini", "--", "entrypoint.sh"]
