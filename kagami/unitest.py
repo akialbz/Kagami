@@ -13,13 +13,13 @@ origin: 11-06-2018
 import os, pytest
 
 
-def test(showOutput = False, showCov = False, covReport = False, showProfile = False, profileSVG = False, pyargs = ()):
+def test(capture = False, cov = False, covReport = False, profile = False, profileSVG = False, pyargs = ()):
     pms = list(pyargs)
-    if showOutput: pms += ['--capture=no']
-    if showCov:
+    if not capture: pms += ['--capture=no']
+    if cov:
         pms += ['--cov=kagami']
         if covReport: pms += ['--cov-report html']
-    if showProfile:
+    if profile:
         pms += ['--profile']
         if profileSVG: pms += ['--profile-svg']
     pytest.main([os.path.dirname(os.path.realpath(__file__))] + pms)

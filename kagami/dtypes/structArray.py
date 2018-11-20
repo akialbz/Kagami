@@ -16,11 +16,12 @@ import tables as ptb
 from string import join
 from collections import OrderedDict
 from types import NoneType
-from kagami.core import NA, NAType, isna, checkall, checkany, listable, isstring, mappable, autoeval
-from kagami.functional import smap, pickmap, unpack
-from kagami.filesys import checkInputFile, checkOutputFile
+from kagami.core import NA, NAType, isna, checkall, checkany, listable, isstring, mappable, autoeval, smap, pickmap, unpack, checkInputFile, checkOutputFile
 from kagami.portals import tablePortal
 from kagami.dtypes import CoreType
+
+
+__all__ = ['StructuredArray']
 
 
 class StructuredArray(CoreType):

@@ -10,15 +10,24 @@ origin: 06-07-2016
 """
 
 
+import logging
 from ast import literal_eval
 from collections import Iterable, Mapping, Hashable
 from types import GeneratorType
+
+
+__all__ = [
+    'NA', 'NAType', 'isna', 'isnull', 'hasvalue', 'optional',
+    'Metadata', 'autoeval', 'isstring', 'mappable', 'hashable', 'iterable', 'listable', 'isiterator',
+    'checkall', 'checkany', 'peek',
+]
 
 
 # optional type
 class _NA(object):
     def __nonzero__(self): return False
     def __eq__(self, other): return isinstance(other, _NA)
+    def __ne__(self, other): return not self.__eq__(other)
     def __float__(self): return float('nan')
     def __str__(self): return 'NA'
     def __repr__(self): return self.__str__()
@@ -27,7 +36,7 @@ NA = _NA() # fixed object
 NAType = _NA # alias type
 
 isna = lambda x: isinstance(x, _NA)
-isnull = lambda x: isna(x) or x is None
+isnull = lambda x: isna(x) or (x is None)
 hasvalue = lambda x: not isna(x)
 optional = lambda x, default: x if hasvalue(x) else default
 
@@ -59,10 +68,11 @@ class Metadata(dict):
 
 # auto eval
 def autoeval(x):
-    x = x.strip()
-    if x == 'NA': return NA
-    try: return literal_eval(x)
-    except (ValueError, SyntaxError): return str(x)
+    if not isstring(x): logging.warning('unable to eval non-string value [%s]' % str(x))
+    v = x.strip()
+    if v == 'NA': return NA
+    try: return literal_eval(v)
+    except (ValueError, SyntaxError): return x
 
 
 # iterable
@@ -71,6 +81,7 @@ mappable = lambda x: isinstance(x, Mapping)
 hashable = lambda x: isinstance(x, Hashable) and not isinstance(x, slice)
 iterable = lambda x: isinstance(x, Iterable)
 listable = lambda x: iterable(x) and not isstring(x)
+isiterator = lambda x: iterable(x) and hasattr(x, '__iter__') and hasattr(x, 'next') # __next__ for py3
 
 
 # check
@@ -92,14 +103,5 @@ def checkany(itr, cond):
 # listable oprtations
 def peek(rest, default = None):
     if not listable(rest): raise ValueError('source is not listable')
-    return (next(rest, default), rest) if isinstance(rest, GeneratorType) else \
+    return (next(rest, default), rest) if isinstance(rest, GeneratorType) or isiterator(rest) else \
            (default, rest) if (not rest) else (rest[0], rest[1:])
-
-def partition(itr, pos, *funcs):
-    if not listable(itr): raise ValueError('source is not listable')
-    pos = list(pos)
-    parts = [itr[slice(st,ed)] for st,ed in zip([None] + pos, pos + [None])]
-    if funcs == (): return parts
-    if len(funcs) != len(parts): raise ValueError('partitions and funcs have different lengths')
-    if checkany(funcs, lambda x: not callable(x)): raise TypeError('not all funcs are callable')
-    return map(lambda x: x[0](x[1]), zip(funcs, parts))

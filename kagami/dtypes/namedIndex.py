@@ -17,6 +17,9 @@ from kagami.core import NA, optional, listable, isstring, checkany
 from kagami.dtypes import CoreType
 
 
+__all__ = ['NamedIndex']
+
+
 class NamedIndex(CoreType):
     __slots__ = ('_names', '_ndict')
 

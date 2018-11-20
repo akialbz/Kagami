@@ -14,8 +14,7 @@ import logging
 from string import join
 from subprocess import Popen, PIPE
 from distutils.spawn import find_executable
-from kagami.core import NA, optional, isna, hasvalue, listable
-from kagami.functional import smap, pmap, tmap, partial, unpack
+from kagami.core import NA, optional, isna, hasvalue, listable, smap, pmap, tmap, partial, unpack
 
 
 # for multiprocessing

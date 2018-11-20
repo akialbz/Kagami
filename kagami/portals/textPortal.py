@@ -10,10 +10,9 @@ origin: 06-28-2014
 """
 
 
-import logging
+import logging, os
 from string import strip
-from kagami.filesys import checkInputFile, checkOutputFile
-from kagami.functional import smap, drop, pickmap
+from kagami.core import smap, drop, pickmap, checkInputFile, checkOutputFile
 
 
 # raw text string
@@ -27,9 +26,10 @@ def save(txt, txtFile):
     logging.debug('saving text to [%s]' % txtFile)
     checkOutputFile(txtFile)
     with open(txtFile, 'w') as f: f.write(str(txt))
+    return os.path.isfile(txtFile)
 
 # raw text lines
-def loadLines(txtFile, striping = True, removeBlanks = True):
+def loadlns(txtFile, striping = True, removeBlanks = True):
     logging.debug('loading textlines from [%s]' % txtFile)
     checkInputFile(txtFile)
 
@@ -40,10 +40,12 @@ def loadLines(txtFile, striping = True, removeBlanks = True):
 
     return tlines
 
-def saveLines(tlines, txtFile, autoReturn = True):
+def savelns(tlines, txtFile, autoReturn = True):
     logging.debug('saving textlines to [%s]' % txtFile)
     checkOutputFile(txtFile)
 
     tlines = smap(tlines, str)
     if autoReturn: tlines = pickmap(tlines, lambda x: not x.endswith('\n'), lambda x: x + '\n')
     with open(txtFile, 'w') as ofile: ofile.writelines(tlines)
+
+    return os.path.isfile(txtFile)

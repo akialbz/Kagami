@@ -16,12 +16,12 @@ import tables as ptb
 from string import join
 from types import NoneType
 from operator import itemgetter
-from kagami.core import NA, NAType, Metadata, optional, isna, isnull, hasvalue, listable, autoeval
-from kagami.functional import smap
-from kagami.filesys import checkInputFile, checkOutputFile
+from kagami.core import NA, NAType, Metadata, optional, isna, isnull, hasvalue, listable, autoeval, smap, checkInputFile, checkOutputFile
 from kagami.dtypes import CoreType, NamedIndex, StructuredArray
 from kagami.portals import tablePortal
-from kagami.wrappers import RWrapper as rw
+
+
+__all__ = ['Table']
 
 
 # table class
@@ -84,11 +84,14 @@ class Table(CoreType):
         return ntab
 
     def __setitem__(self, key, value):
+        if isinstance(key, np.ndarray) and key.shape == self.shape and key.dtype.kind == 'b' and \
+           isinstance(value, (int, float, basestring, bool)): self._dmatx[key] = value; return # just for convenience
+
         rids, cids = self._parseIndices(key)
         if not isinstance(value, Table):
             self._dmatx[np.ix_(rids, cids)] = np.array(value)
         else:
-            self._dmatx[np.ix_(rids, cids)] = np.array(value.X)
+            self._dmatx[np.ix_(rids, cids)] = np.array(value.X_)
             if hasvalue(self._rnames): self._rnames[rids] = value.rownames
             if hasvalue(self._cnames): self._cnames[cids] = value.colnames
             if hasvalue(self._rindex): self._rindex[:,rids] = value.rowindex
@@ -172,13 +175,13 @@ class Table(CoreType):
     def values(self):
         return self._dmatx.copy()
 
-    @values.setter
-    def values(self, value):
-        self._dmatx[:] = value
-
     @property
-    def X(self):
+    def X_(self):
         return self._dmatx
+
+    @X_.setter
+    def X_(self, value):
+        self._dmatx[:] = value
 
     @property
     def dtype(self):
@@ -434,6 +437,8 @@ class Table(CoreType):
 
     @classmethod
     def loadrdata(cls, fname, dname, rowindex = NA, colindex = NA, dataTransposed = True):
+        from kagami.wrappers.rWrapper import RWrapper as rw
+
         checkInputFile(fname)
         rw.r.load(fname)
 
@@ -453,6 +458,8 @@ class Table(CoreType):
         return tabl
 
     def saverdata(self, fname, dname = 'data', rowindex = 'row.index', colindex = 'col.index', dataTranspose = True):
+        from kagami.wrappers.rWrapper import RWrapper as rw
+
         checkOutputFile(fname)
 
         dm, rn, cn = (self._dmatx,   self._rnames, self._cnames) if not dataTranspose else \

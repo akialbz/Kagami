@@ -12,8 +12,10 @@ origin: 08-23-2018
 
 import numpy as np
 from copy import deepcopy
-from kagami.core import NA
-from kagami.functional import pickmap
+from kagami.core import NA, pickmap
+
+
+__all__ = ['CoreType']
 
 
 class CoreType(object):

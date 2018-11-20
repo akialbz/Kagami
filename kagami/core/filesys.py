@@ -11,8 +11,13 @@ origin: 06-06-2016
 
 
 import logging, os, shutil
-from kagami.core import NA, hasvalue
-from kagami.functional import pick, drop
+from kagami.core import NA, hasvalue, pick, drop
+
+
+__all__ = [
+    'filePath', 'fileName', 'filePrefix', 'fileSuffix', 'fileTitle', 'listPath',
+    'checkInputFile', 'checkInputDir', 'checkOutputFile', 'checkOutputDir'
+]
 
 
 # file name manipulations

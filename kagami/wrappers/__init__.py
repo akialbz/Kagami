@@ -10,7 +10,13 @@ origin: 03-18-2017
 """
 
 
-from rWrapper import RWrapper
-from sqliteWrapper import SQLiteWrapper
+from kagami.wrappers.binWrapper import BinaryWrapper
+from kagami.wrappers.sqliteWrapper import SQLiteWrapper, createSQLiteWrapper
 
+__all__ = ['BinaryWrapper', 'SQLiteWrapper', 'createSQLiteWrapper']
+
+try:
+    from kagami.wrappers.rWrapper import RWrapper, RRuntimeError
+    __all__ += ['RWrapper', 'RRuntimeError']
+except ImportError: pass
 

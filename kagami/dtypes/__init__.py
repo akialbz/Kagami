@@ -10,9 +10,9 @@ origin: 08-07-2018
 """
 
 
-from coreType import CoreType
-from factor import factor, asFactor
-from namedIndex import NamedIndex
-from structArray import StructuredArray
-from table import Table
+from kagami.dtypes.coreType import *
+from kagami.dtypes.factor import *
+from kagami.dtypes.namedIndex import *
+from kagami.dtypes.structArray import *
+from kagami.dtypes.table import *
 

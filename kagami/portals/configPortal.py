@@ -13,8 +13,7 @@ origin: 06-03-2014
 import logging
 from ConfigParser import ConfigParser
 from collections import OrderedDict
-from kagami.core import NA, autoeval
-from kagami.filesys import checkInputFile
+from kagami.core import NA, autoeval, checkInputFile
 
 
 class _NoConvConfigParser(ConfigParser):

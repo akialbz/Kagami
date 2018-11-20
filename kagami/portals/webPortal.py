@@ -12,8 +12,7 @@ origin: Jun. 28, 2014
 
 import logging, requests, json
 from time import sleep
-from kagami.core import NA, optional, hasvalue, isna
-from kagami.functional import partial
+from kagami.core import NA, optional, hasvalue, isna, partial
 
 
 def _request(req, wait, tries, manualRetry):

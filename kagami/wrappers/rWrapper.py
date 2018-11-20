@@ -11,12 +11,14 @@ origin: 12-19-2017
 
 
 import numpy as np
-import rpy2.robjects as robj
-import rpy2.robjects.numpy2ri as np2ri
-from rpy2.robjects import NULL
-from rpy2.rinterface import RRuntimeError
-from kagami.core import NA, isna, isnull
-from kagami.functional import pickmap
+try:
+    import rpy2.robjects as robj
+    import rpy2.robjects.numpy2ri as np2ri
+    from rpy2.robjects import NULL
+    from rpy2.rinterface import RRuntimeError
+except ImportError:
+    raise ImportError('rWrapper requires r environment and rpy2 package')
+from kagami.core import NA, isna, isnull, pickmap
 
 
 np2ri.activate()  # enable numpy <-> R conversions

@@ -11,8 +11,8 @@ origin: 04-12-2017
 
 
 import logging, sqlite3, os
-from kagami.functional import fold
-from kagami.filesys import fileTitle
+from string import join
+from kagami.core import smap, fold, fileTitle
 
 
 class SQLiteWrapper(object):
@@ -63,14 +63,31 @@ class SQLiteWrapper(object):
             res = []
         return res
 
-    # routines
+    # table routines
     def tableExists(self, tableName):
         res = self.query("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';" % tableName)
         return len(res) > 0
 
+    def dropTable(self, tableName):
+        self.execute("DROP TABLE IF EXISTS %s" % tableName)
+        return not self.tableExists(tableName)
+
+    def createTable(self, tableName, columns = ()):
+        tcols = join(smap(columns, lambda x: join(x, ' ')), ', ')
+        self.execute("CREATE TABLE %s(%s)" % (tableName, tcols))
+        return self.tableExists(tableName)
+
     def listTables(self):
         res = self.query("SELECT name FROM sqlite_master WHERE type='table';")
         return fold(res, lambda x,y: x+y, ())
+
+    # column routines
+    def columnExists(self, tableName, colName):
+        return colName in self.listColNames(tableName)
+
+    def addColumn(self, tableName, colName, types = ()):
+        self.execute("ALTER TABLE %s ADD COLUMN %s %s" % (tableName, colName, join(types, ' ')))
+        return self.columnExists(tableName, colName)
 
     def listColumns(self, tableName):
         return self.query("PRAGMA table_info('%s')" % tableName)
@@ -79,6 +96,7 @@ class SQLiteWrapper(object):
         cols = self.listColumns(tableName)
         return zip(*cols)[1] if len(cols) > 0 else ()
 
+    # export
     def toList(self, tableName):
         return self.query("SELECT * FROM '%s';" % tableName)
 

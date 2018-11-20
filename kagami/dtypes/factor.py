@@ -15,9 +15,11 @@ import numpy as np
 from string import join
 from operator import itemgetter
 from bidict import FrozenOrderedBidict
-from kagami.core import NA, hasvalue, optional, checkany, listable, mappable, hashable
-from kagami.functional import smap
+from kagami.core import NA, hasvalue, optional, checkany, listable, mappable, hashable, smap
 from kagami.dtypes import CoreType
+
+
+__all__ = ['factor', 'asFactor']
 
 
 # DO NOT call this class directly, use factor()

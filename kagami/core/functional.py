@@ -16,6 +16,11 @@ from multiprocessing.pool import ThreadPool
 from kagami.core import NA, hasvalue, isna, optional, listable, checkall, peek
 
 
+__all__ = [
+    'partial', 'compose', 'unpack', 'smap', 'tmap', 'pmap', 'call', 'pick', 'pickmap', 'drop', 'fold'
+]
+
+
 # partial & composition
 def partial(func, *args, **kwargs):
     pfunc = functools.partial(func, *args, **kwargs)
@@ -31,6 +36,10 @@ def compose(*funcs):
 
 
 # mappers
+def unpack(func):
+    def _wrap(x): return func(*x)
+    return _wrap
+
 def smap(x, func):
     return map(func, x)
 
@@ -59,12 +68,6 @@ def call(x, funcs, nthreads = NA, nprocs = NA, collect = NA):
            partial(pmap, nprocs = nprocs)
     res = reduce(lambda v, f: _map(v, f), funcs, x)
     return collect(res) if hasvalue(collect) else res
-
-
-# functions
-def unpack(func):
-    def _wrap(x): return func(*x)
-    return _wrap
 
 def pick(x, cond):
     _check = cond if callable(cond) else (lambda x: x == cond)

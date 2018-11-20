@@ -11,12 +11,10 @@ origin: 06-28-2014
 
 
 import logging, os, csv
-from kagami.core import NA, hasvalue, autoeval
-from kagami.functional import smap, pickmap
-from kagami.filesys import checkInputFile, checkOutputFile
+from kagami.core import NA, hasvalue, autoeval, smap, pickmap, checkInputFile, checkOutputFile
 
 
-def loadCSV(tabFile, headRows = NA, autoEval = False, **kwargs):
+def loadcsv(tabFile, headRows = NA, autoEval = False, wrap = NA, **kwargs):
     logging.debug('loading table from [%s]' % tabFile)
     checkInputFile(tabFile)
 
@@ -25,9 +23,10 @@ def loadCSV(tabFile, headRows = NA, autoEval = False, **kwargs):
         tb = list(csv.reader(f, **kwargs))
     if autoEval: tb = smap(tb, lambda x: smap(x, autoeval))
 
-    return (tb, hd) if hasvalue(headRows) else tb
+    if hasvalue(wrap): tb = wrap(tb)
+    return (hd, tb) if hasvalue(headRows) else tb
 
-def saveCSV(table, tabFile, heads = NA, **kwargs):
+def savecsv(table, tabFile, heads = NA, **kwargs):
     logging.debug('saving table to [%s]' % tabFile)
     checkOutputFile(tabFile)
 
@@ -37,9 +36,9 @@ def saveCSV(table, tabFile, heads = NA, **kwargs):
 
     return os.path.isfile(tabFile)
 
-def load(tabFile, delimiter = '\t', headRows = NA, autoEval = False, **kwargs):
-    return loadCSV(tabFile, headRows, autoEval, delimiter = delimiter, **kwargs)
+def load(tabFile, delimiter = '\t', headRows = NA, autoEval = False, wrap = NA, **kwargs):
+    return loadcsv(tabFile, headRows = headRows, autoEval = autoEval, wrap = wrap, delimiter = delimiter, **kwargs)
 
 def save(table, tabFile, delimiter = '\t', heads = NA, **kwargs):
-    return saveCSV(table, tabFile, heads, delimiter = delimiter, **kwargs)
+    return savecsv(table, tabFile, heads =  heads, delimiter = delimiter, **kwargs)
 

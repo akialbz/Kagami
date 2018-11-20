@@ -63,6 +63,8 @@ def test_table_built_ins():
     assert ctable == table
     ctable[[1,2],[3,4]] = table[['row_1','row_2'],['col_3','col_4']]
     assert ctable == table
+    ctable[ctable < 10] = 0
+    assert np.all(ctable[0] == 0) and not np.any(ctable[1:] == 0)
 
     ctable = deepcopy(table)
     del ctable['row_2']
@@ -134,8 +136,8 @@ def test_table_properties():
     # values and dtype
     ctable = deepcopy(table)
     assert np.all(ctable.values == dm)
-    assert np.all(ctable.X == dm)
-    ctable.values = dm + 1
+    assert np.all(ctable.X_ == dm)
+    ctable.X_ += 1
     assert np.all(ctable.values == np.arange(50).reshape((5,10)) + 1)
     assert ctable.dtype.kind == 'i'
     ctable.dtype = float

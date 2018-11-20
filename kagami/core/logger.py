@@ -14,6 +14,11 @@ import logging, sys
 from kagami.core import NA, hasvalue, optional
 
 
+__all__ = [
+    'LEVEL_FORMATS', 'LOGFILE_FORMAT', 'EXCEPTION_FORMAT', 'configLogger'
+]
+
+
 # default formats
 LEVEL_FORMATS = {
     logging.DEBUG:    'D> %(message)s',
