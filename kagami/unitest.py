@@ -15,7 +15,7 @@ import os, pytest
 
 
 def test(capture = True, cov = False, covReport = False, profile = False, profileSVG = False, pyargs = ()):
-    logging.info('running self-testing ...')
+    logging.debug('running self-testing ...')
 
     pms = list(pyargs)
     if not capture: pms += ['--capture=no']
@@ -27,6 +27,6 @@ def test(capture = True, cov = False, covReport = False, profile = False, profil
         if profileSVG: pms += ['--profile-svg']
     ret = pytest.main([os.path.dirname(os.path.realpath(__file__))] + pms)
 
-    logging.info('finished self-testing with return code [%s]' % str(ret))
+    logging.debug('finished self-testing with return code [%s]' % str(ret))
     return ret
 

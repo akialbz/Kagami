@@ -58,16 +58,19 @@ def listPath(path, recursive = False, fileOnly = False, folderOnly = False, visi
 
 # check
 def checkInputFile(fpath):
+    logging.debug('checking input file [%s]' % fpath)
     if not os.path.isfile(fpath): raise IOError('input file [%s] not found' % fpath)
     if not os.path.getsize(fpath) > 0: logging.warning('input file [%s] is empty' % fpath)
     return fpath
 
 def checkInputDir(dpath):
+    logging.debug('checking input dir [%s]' % dpath)
     if not os.path.isdir(dpath): raise IOError('input dir [%s] not found' % dpath)
     if not len(os.listdir(dpath)) > 0: logging.warning('input dir [%s] is empty' % dpath)
     return dpath
 
 def checkOutputFile(fpath, override = True):
+    logging.debug('checking output file [%s] with [%s]' % (fpath, 'override' if override else 'no-override'))
     if not os.path.isfile(fpath):
         checkOutputDir(os.path.dirname(fpath))
     elif override:
@@ -77,6 +80,7 @@ def checkOutputFile(fpath, override = True):
     return fpath
 
 def checkOutputDir(dpath, override = False):
+    logging.debug('checking output dir [%s] with [%s]' % (dpath, 'override' if override else 'no-override'))
     if dpath.strip() != '':
         if os.path.isdir(dpath):
             if not override: return dpath

@@ -10,11 +10,9 @@ origin: 11-21-2018
 """
 
 
-import os, pytest
+import os, shutil, pytest
 from kagami.core import *
 
-# 'filePath', 'fileName', 'filePrefix', 'fileSuffix', 'fileTitle', 'listPath',
-# 'checkInputFile', 'checkInputDir', 'checkOutputFile', 'checkOutputDir'
 
 def test_file_names():
     fn = os.path.abspath(__file__)
@@ -43,4 +41,14 @@ def test_checks():
     with pytest.raises(IOError): checkInputDir('no_such_dir')
     assert checkInputDir(filePath(__file__)) == filePath(__file__)
 
+    rmfile = os.path.join(filePath(__file__), 'test_remove_file')
+    with open(rmfile, 'w+') as f: f.write('')
+    assert os.path.isfile(rmfile)
+    checkOutputFile(rmfile)
+    assert not os.path.isfile(rmfile)
+
+    rmfold = os.path.join(filePath(__file__), 'test_remove_folder')
+    checkOutputDir(rmfold)
+    assert os.path.isdir(rmfold)
+    shutil.rmtree(rmfold)
 
