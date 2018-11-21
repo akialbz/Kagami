@@ -72,9 +72,14 @@ def test_checks():
     assert checkany([1,0,1,1,1], lambda x: x == 1) and not checkany(np.ones(10), lambda x: x != 1)
 
 def test_peek():
-    l, c = iter(range(10)), []
-    while True:
-        v, l = peek(l)
-        if v is None: break
-        c += [v]
-    assert c == range(10)
+    def _test(_wrap):
+        l, c = _wrap(range(10)), []
+        while True:
+            v, l = peek(l)
+            if v is None: break
+            c += [v]
+        assert c == range(10)
+    _test(list)
+    _test(iter)
+    _test(np.array)
+

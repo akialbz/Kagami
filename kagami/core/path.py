@@ -2,7 +2,7 @@
 #  -*- coding: utf-8 -*-
 
 """
-filesys
+path
 
 author(s): Albert (aki) Zhou
 origin: 06-06-2016
@@ -22,11 +22,11 @@ __all__ = [
 
 # file name manipulations
 def filePath(fpath, absolute = True):
-    p = fpath.rsplit(os.sep, 1)[0]
-    return os.path.abspath(p) if absolute else p
+    if absolute: fpath = os.path.abspath(fpath)
+    return os.path.dirname(fpath)
 
 def fileName(fpath):
-    return fpath.rsplit(os.sep, 1)[-1]
+    return os.path.basename(fpath)
 
 def filePrefix(fpath):
     pts = fpath.rsplit('.', 1)

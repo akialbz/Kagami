@@ -10,10 +10,13 @@ origin: 11-06-2018
 """
 
 
+import logging
 import os, pytest
 
 
-def test(capture = False, cov = False, covReport = False, profile = False, profileSVG = False, pyargs = ()):
+def test(capture = True, cov = False, covReport = False, profile = False, profileSVG = False, pyargs = ()):
+    logging.info('running self-testing ...')
+
     pms = list(pyargs)
     if not capture: pms += ['--capture=no']
     if cov:
@@ -22,4 +25,8 @@ def test(capture = False, cov = False, covReport = False, profile = False, profi
     if profile:
         pms += ['--profile']
         if profileSVG: pms += ['--profile-svg']
-    pytest.main([os.path.dirname(os.path.realpath(__file__))] + pms)
+    ret = pytest.main([os.path.dirname(os.path.realpath(__file__))] + pms)
+
+    logging.info('finished self-testing with return code [%s]' % str(ret))
+    return ret
+

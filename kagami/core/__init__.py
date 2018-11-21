@@ -11,6 +11,6 @@ origin: 11-20-2018
 
 from kagami.core.etc import *
 from kagami.core.functional import *
-from kagami.core.filesys import *
+from kagami.core.path import *
 from kagami.core.logger import *
 

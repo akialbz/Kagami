@@ -2,7 +2,7 @@
 #  -*- coding: utf-8 -*-
 
 """
-prelim
+etc
 
 author(s): Albert (aki) Zhou
 origin: 06-07-2016
@@ -81,7 +81,7 @@ mappable = lambda x: isinstance(x, Mapping)
 hashable = lambda x: isinstance(x, Hashable) and not isinstance(x, slice)
 iterable = lambda x: isinstance(x, Iterable)
 listable = lambda x: iterable(x) and not isstring(x)
-isiterator = lambda x: iterable(x) and hasattr(x, '__iter__') and hasattr(x, 'next') # __next__ for py3
+isiterator = lambda x: iterable(x) and hasattr(x, '__iter__') and hasattr(x, 'next') # use __next__ for py3
 
 
 # check
@@ -104,4 +104,4 @@ def checkany(itr, cond):
 def peek(rest, default = None):
     if not listable(rest): raise ValueError('source is not listable')
     return (next(rest, default), rest) if isinstance(rest, GeneratorType) or isiterator(rest) else \
-           (default, rest) if (not rest) else (rest[0], rest[1:])
+           (default, rest) if len(rest) == 0 else (rest[0], rest[1:])

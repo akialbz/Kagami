@@ -2,7 +2,7 @@
 #  -*- coding: utf-8 -*-
 
 """
-logConfig
+logger
 
 author(s): Albert (aki) Zhou
 origin: 12-11-2014
@@ -51,7 +51,7 @@ class _QuitHandler(logging.Handler):
 
 # config interface
 def configLogger(level = logging.INFO, fatalLevel = logging.FATAL,
-                  consoleFmt = NA, logFile = NA, logMode = 'w', logFmt = NA, exceptionFmt = NA):
+                  consoleFmt = NA, logFile = NA, logMode = 'a+', logFmt = NA, exceptionFmt = NA):
     logger = logging.getLogger()
     logger.handlers = [] # remove existing handlers
     logger.setLevel(level)
