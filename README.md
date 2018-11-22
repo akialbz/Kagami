@@ -43,17 +43,17 @@ docker run -v $(pwd):/home --rm kagami-core:latest <your script>
 import kagami
 kagami.test()
 
-============================================ test session starts =============================================
+=================================== test session starts =================================== 
 platform darwin -- Python 2.7.15, pytest-3.7.0, py-1.5.4, pluggy-0.7.1
-rootdir: /Users/albert/Repository/Kagami, inifile:
+rootdir: Kagami, inifile:
 plugins: profiling-1.3.0, cov-2.5.1
 collected 47 items
 
-kagami/tests/core_tests/test_etc.py ......                                                             [ 12%]
-kagami/tests/core_tests/test_functional.py .....                                                       [ 23%]
-kagami/tests/core_tests/test_path.py ...                                                               [ 29%]
-kagami/tests/dtypes_tests/test_coreType.py ....                                                        [ 38%]
-kagami/tests/dtypes_tests/test_factor.py ....                                                          [ 46%]
-kagami/tests/dtypes_tests/test_namedIndex.py ....                                                      [ 55%]
+kagami/tests/core_tests/test_etc.py ......                                            [ 12%]
+kagami/tests/core_tests/test_functional.py .....                                      [ 23%]
+kagami/tests/core_tests/test_path.py ...                                              [ 29%]
+kagami/tests/dtypes_tests/test_coreType.py ....                                       [ 38%]
+kagami/tests/dtypes_tests/test_factor.py ....                                         [ 46%]
+kagami/tests/dtypes_tests/test_namedIndex.py ....                                     [ 55%]
 ....
 ```
