@@ -52,7 +52,7 @@ class SQLiteWrapper(object):
 
     def execute(self, query):
         if self._dbconn is None: raise IOError('database not connected')
-        logging.debug('exec = [%s]' % query)
+        logging.debug('sqlite exec = [%s]' % query)
         try:
             self._dbconn.execute(query)
         except Exception, e:
@@ -61,7 +61,7 @@ class SQLiteWrapper(object):
 
     def query(self, query):
         if self._dbconn is None: raise IOError('database not connected')
-        logging.debug('query = [%s]' % query)
+        logging.debug('sqlite query = [%s]' % query)
         try:
             res = self._dbconn.execute(query).fetchall()
         except Exception, e:

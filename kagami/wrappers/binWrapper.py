@@ -21,7 +21,7 @@ from kagami.core import NA, optional, isna, hasvalue, listable, smap, pmap, tmap
 def _exec(binary, params, stdin, shell, normcodes, mute):
     exelst = [binary] + smap(optional(params, []), lambda x: str(x).strip())
     exestr = join(smap(exelst, lambda x: x.replace(' ', '\ ')), ' ')
-    logging.debug('cmd = [%s]' % exestr)
+    logging.debug('running binary cmd = [%s]' % exestr)
 
     procs = Popen(exestr if shell else exelst, stdin = PIPE, stdout = PIPE, stderr = PIPE, shell = shell)
     rvals = procs.communicate(input = optional(stdin, None))
@@ -32,6 +32,8 @@ def _exec(binary, params, stdin, shell, normcodes, mute):
     else: logging.error('execution failed [%d]:\n%s' % (rcode, join(rstrs, ' | ')))
     return rcode, rstrs
 
+def _mp_exec(params):
+    return _exec(*params)
 
 class BinaryWrapper(object):
     def __init__(self, binName, shell = False, normalExit = 0, mute = False):
@@ -63,5 +65,5 @@ class BinaryWrapper(object):
 
         _map = partial(pmap, nprocs = nprocs) if hasvalue(nprocs) else \
                partial(tmap, nthreads = nthreads) if hasvalue(nthreads) else smap
-        return _map([(self._bin, p, s, self._shell, self._ncode, self._mute) for p,s in zip(params, stdin)], unpack(_exec))
+        return _map([(self._bin, p, s, self._shell, self._ncode, self._mute) for p,s in zip(params, stdin)], _mp_exec)
 

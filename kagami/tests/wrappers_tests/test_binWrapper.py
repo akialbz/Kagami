@@ -32,8 +32,11 @@ def test_runs():
     assert rcode == 0 and rerr == '' and \
            set(pick(rstd.strip().split('\n'), lambda x: x.endswith('.py'))) == flst
 
-    rcodes, rstrs = zip(*bw.mapexec([[filePath(__file__)] for _ in range(3)]))
-    rstds, rerrs = zip(*rstrs)
-    assert set(rcodes) == {0} and set(rerrs) == {''} and \
-           set(collapse(smap(rstds, lambda rs: pick(rs.strip().split('\n'), lambda x: x.endswith('.py'))))) == flst
-
+    def _testmap(nt = NA, np = NA):
+        rcodes, rstrs = zip(*bw.mapexec([[filePath(__file__)] for _ in range(3)], nthreads = nt, nprocs = np))
+        rstds, rerrs = zip(*rstrs)
+        assert set(rcodes) == {0} and set(rerrs) == {''} and \
+               set(collapse(smap(rstds, lambda rs: pick(rs.strip().split('\n'), lambda x: x.endswith('.py'))))) == flst
+    _testmap()
+    _testmap(nt = 3)
+    _testmap(np = 3)
