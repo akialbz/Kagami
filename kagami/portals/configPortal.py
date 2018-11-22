@@ -19,7 +19,7 @@ from kagami.core import NA, autoeval, checkInputFile
 class _NoConvConfigParser(ConfigParser):
     def optionxform(self, optionstr): return optionstr
 
-def load(cfgFile, autoEval = True, dictType = OrderedDict, emptyAsNA = True):
+def load(cfgFile, autoEval = True, dictType = OrderedDict, emptyAsNA = False):
     logging.debug('loading configs from [%s]' % cfgFile)
     checkInputFile(cfgFile)
 
@@ -29,7 +29,7 @@ def load(cfgFile, autoEval = True, dictType = OrderedDict, emptyAsNA = True):
     def _eval(x):
         if not autoEval: return x
         val = autoeval(x)
-        if val == '' and emptyAsNA: val = NA
+        if x not in ("''", '""') and val == '' and emptyAsNA: val = NA
         return val
 
     _items = lambda x: dictType([(k, _eval(v)) for k,v in cfg.items(x)])

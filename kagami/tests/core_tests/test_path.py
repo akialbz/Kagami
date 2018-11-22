@@ -50,5 +50,7 @@ def test_checks():
     rmfold = os.path.join(filePath(__file__), 'test_remove_folder')
     checkOutputDir(rmfold)
     assert os.path.isdir(rmfold)
+    checkOutputDir(rmfold, override = True)
+    assert os.path.isdir(rmfold)
     shutil.rmtree(rmfold)
 

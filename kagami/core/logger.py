@@ -32,7 +32,7 @@ EXCEPTION_FORMAT = '%(class)s: %(message)s'
 
 
 # handlers
-class _LevelFormatter(logging.Formatter):
+class _LevelFormatter(logging.Formatter): # pragma: no cover
     def __init__(self, *args, **kwargs):
         self._fmtdict = LEVEL_FORMATS
         logging.Formatter.__init__(self, *args, **kwargs)
@@ -43,7 +43,7 @@ class _LevelFormatter(logging.Formatter):
         self._fmt = self._fmtdict[record.levelno]
         return logging.Formatter.format(self, record)
 
-class _QuitHandler(logging.Handler):
+class _QuitHandler(logging.Handler): # pragma: no cover
     def emit(self, record):
         logging.shutdown()
         sys.exit(1)
@@ -51,7 +51,7 @@ class _QuitHandler(logging.Handler):
 
 # config interface
 def configLogger(level = logging.INFO, fatalLevel = logging.FATAL,
-                  consoleFmt = NA, logFile = NA, logMode = 'a+', logFmt = NA, exceptionFmt = NA):
+                  consoleFmt = NA, logFile = NA, logMode = 'a+', logFmt = NA, exceptionFmt = NA): # pragma: no cover
     logger = logging.getLogger()
     logger.handlers = [] # remove existing handlers
     logger.setLevel(level)

@@ -11,9 +11,9 @@ origin: 03-18-2017
 
 
 from kagami.wrappers.binWrapper import BinaryWrapper
-from kagami.wrappers.sqliteWrapper import SQLiteWrapper, createSQLiteWrapper
+from kagami.wrappers.sqliteWrapper import SQLiteWrapper, openSQLiteWrapper
 
-__all__ = ['BinaryWrapper', 'SQLiteWrapper', 'createSQLiteWrapper']
+__all__ = ['BinaryWrapper', 'SQLiteWrapper', 'openSQLiteWrapper']
 
 try:
     from kagami.wrappers.rWrapper import RWrapper, RRuntimeError

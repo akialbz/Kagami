@@ -8,7 +8,6 @@ name = "pypi"
 [packages]
 numpy = "*"
 rpy2 = "==2.8.6"
-scikit-learn = "*"
 requests = "*"
 tables = "*"
 bidict = "*"

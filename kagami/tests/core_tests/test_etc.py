@@ -45,6 +45,9 @@ def test_metadata():
     meta.c = 5
     assert set(meta.items()) == {('a', 4), ('b', 2), ('c', 5)}
 
+    del meta.c
+    assert set(meta.items()) == {('a', 4), ('b', 2)}
+
     assert cp.loads(cp.dumps(meta)) == meta
 
 def test_autoeval():

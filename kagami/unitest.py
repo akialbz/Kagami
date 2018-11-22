@@ -14,7 +14,7 @@ import logging
 import os, pytest
 
 
-def test(capture = True, cov = False, covReport = False, profile = False, profileSVG = False, pyargs = ()):
+def test(capture = True, cov = False, covReport = False, profile = False, profileSVG = False, pyargs = ()): # pragma: no cover
     logging.debug('running self-testing ...')
 
     pms = list(pyargs)

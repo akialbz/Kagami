@@ -24,7 +24,7 @@ from kagami.core import NA, isna, isnull, pickmap
 np2ri.activate()  # enable numpy <-> R conversions
 robj.r('Sys.setenv(LANG = "en")')
 
-class RWrapper(object):
+class RWrapper(object): # pragma: no cover
     # rpy2 delegates
     null = NULL
     robj = robj

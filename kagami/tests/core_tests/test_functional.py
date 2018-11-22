@@ -45,6 +45,11 @@ def test_pickdrop():
     assert np.allclose(drop(vals, lambda x: x < 0), vals[vals > 0])
     assert np.allclose(drop(vals, vals[1]), vals[~np.isclose(vals, vals[1])])
 
-def test_fold():
+def test_folds():
     vals = np.random.uniform(-10, 10, size = 10)
-    assert np.allclose(fold(vals, lambda x,y: x+y), np.sum(vals))
+    assert np.isclose(fold(vals, lambda x,y: x+y), np.sum(vals))
+    assert np.isclose(collapse(vals), np.sum(vals))
+
+    valv = [[v] for v in vals]
+    assert np.allclose(fold(valv, lambda x,y: x+y), vals)
+    assert np.allclose(collapse(valv), vals)

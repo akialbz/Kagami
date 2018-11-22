@@ -17,7 +17,7 @@ from kagami.core import NA, hasvalue, isna, optional, listable, checkall, peek
 
 
 __all__ = [
-    'partial', 'compose', 'unpack', 'smap', 'tmap', 'pmap', 'call', 'pick', 'pickmap', 'drop', 'fold'
+    'partial', 'compose', 'unpack', 'smap', 'tmap', 'pmap', 'call', 'pick', 'pickmap', 'drop', 'fold', 'collapse'
 ]
 
 
@@ -85,3 +85,6 @@ def drop(x, cond):
 def fold(x, func, init = NA):
     if isna(init): init, x = peek(x)
     return reduce(func, x, init)
+
+def collapse(x, init = NA):
+    return fold(x, lambda a,b: a+b, init = init)

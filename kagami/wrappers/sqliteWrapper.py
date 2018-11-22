@@ -12,7 +12,7 @@ origin: 04-12-2017
 
 import logging, sqlite3, os
 from string import join
-from kagami.core import smap, fold, fileTitle
+from kagami.core import smap, collapse, fileTitle
 
 
 class SQLiteWrapper(object):
@@ -20,6 +20,11 @@ class SQLiteWrapper(object):
         self._dbfile = dbfile
         self._dbpams = kwargs
         self._dbconn = None
+
+    # properties
+    @property
+    def connected(self):
+        return self._dbconn is not None
 
     # operations
     def connect(self):
@@ -51,7 +56,8 @@ class SQLiteWrapper(object):
         try:
             self._dbconn.execute(query)
         except Exception, e:
-            logging.warning('sqlite query failed: ' + str(e))
+            logging.warning('sqlite execution failed: ' + str(e))
+        return self
 
     def query(self, query):
         if self._dbconn is None: raise IOError('database not connected')
@@ -64,30 +70,30 @@ class SQLiteWrapper(object):
         return res
 
     # table routines
-    def tableExists(self, tableName):
-        res = self.query("SELECT name FROM sqlite_master WHERE type='table' AND name='%s';" % tableName)
-        return len(res) > 0
-
-    def dropTable(self, tableName):
-        self.execute("DROP TABLE IF EXISTS %s" % tableName)
-        return not self.tableExists(tableName)
-
     def createTable(self, tableName, columns = ()):
         tcols = join(smap(columns, lambda x: join(x, ' ')), ', ')
-        self.execute("CREATE TABLE %s(%s)" % (tableName, tcols))
-        return self.tableExists(tableName)
+        self.execute("CREATE TABLE '%s'(%s)" % (tableName, tcols))
+        return self
+
+    def dropTable(self, tableName):
+        self.execute("DROP TABLE IF EXISTS '%s'" % tableName)
+        return self
+
+    def tableExists(self, tableName):
+        res = self.query("SELECT name FROM sqlite_master WHERE type='table' AND name='%s'" % tableName)
+        return len(res) > 0
 
     def listTables(self):
-        res = self.query("SELECT name FROM sqlite_master WHERE type='table';")
-        return fold(res, lambda x,y: x+y, ())
+        res = self.query("SELECT name FROM sqlite_master WHERE type='table'")
+        return collapse(res, ())
 
     # column routines
+    def addColumn(self, tableName, colName, types = ()):
+        self.execute("ALTER TABLE '%s' ADD COLUMN '%s' %s" % (tableName, colName, join(types, ' ')))
+        return self
+
     def columnExists(self, tableName, colName):
         return colName in self.listColNames(tableName)
-
-    def addColumn(self, tableName, colName, types = ()):
-        self.execute("ALTER TABLE %s ADD COLUMN %s %s" % (tableName, colName, join(types, ' ')))
-        return self.columnExists(tableName, colName)
 
     def listColumns(self, tableName):
         return self.query("PRAGMA table_info('%s')" % tableName)
@@ -98,11 +104,11 @@ class SQLiteWrapper(object):
 
     # export
     def toList(self, tableName):
-        return self.query("SELECT * FROM '%s';" % tableName)
+        return self.query("SELECT * FROM '%s'" % tableName)
 
 
 # with ... as statement
-class createSQLiteWrapper:
+class openSQLiteWrapper:
     def __init__(self, dbfile, **kwargs):
         self._dbfile = dbfile
         self._params = kwargs
