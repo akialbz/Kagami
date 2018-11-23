@@ -35,6 +35,8 @@ def test_factor_creation():
     Color = factor('Color', cdct.keys())
     Color = factor('Color', cdct)
 
+    assert Color.r == 1 and Color.g == 2 and Color.b == 3
+
     Color()
     Color(['r', 'r', 'g', 'b', 'g'])
     Color(Color(['r', 'r', 'b', 'g']))
@@ -118,6 +120,9 @@ def test_factor_built_ints():
 
 def test_factor_properties():
     cdct, (arr1, arr2), (col1, col2) = _create_factor()
+
+    # lavel properties
+    assert col1.r == col2.r == 1 and col1.g == col2.g == 2 and col1.b == col2.b == 3
 
     # labels & array
     assert np.all(col1.labels == np.array([cdct.inv[v] for v in arr1]))

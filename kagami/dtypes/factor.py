@@ -170,6 +170,9 @@ def factor(name, levels, enctype = np.uint32):
     else:
         raise TypeError('unknown levels type: %s' % str(type(levels)))
 
+    fct.__slots__ += tuple(fct._levdct.keys())
+    for k,v in fct._levdct.items(): setattr(fct, k, v)
+
     fct._sfmt = 'S%d' % max(smap(levels, len))
     setattr(sys.modules[__name__], name, fct) # register to factor
     return fct

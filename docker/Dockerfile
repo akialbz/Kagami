@@ -20,7 +20,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1
 
 ARG TIMEZONE=GB
-ARG PACKAGE=kagami-2.0.0-py2-none-any.whl
+ARG PACKAGE=kagami-2.1.20-py2-none-any.whl
 
 # copy kagami installer
 COPY entrypoint.sh /usr/local/bin/
