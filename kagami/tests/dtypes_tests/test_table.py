@@ -14,7 +14,7 @@ import os, pytest
 import cPickle as cp
 import numpy as np
 from copy import deepcopy
-from kagami.core import NA, Metadata
+from kagami.core import na, Metadata
 from kagami.dtypes import Table
 
 
@@ -108,9 +108,9 @@ def test_table_built_ins():
     ctable.colindex = {'metabolite': map(lambda x: 'mid_%d' % x, range(10))}
 
     with pytest.raises(IndexError): table + ctable
-    ctable.colnames = NA
+    ctable.colnames = na
     with pytest.raises(IndexError): table + ctable
-    ctable.colindex = NA
+    ctable.colindex = na
     with pytest.raises(KeyError): table + ctable
     ctable.rownames = map(lambda x: 'ext_row_%d' % x, range(5))
 

@@ -2,7 +2,7 @@
 #  -*- coding: utf-8 -*-
 
 """
-test_core.py
+test_etc.py
 
 author(s): Albert (aki) Zhou
 origin: 11-14-2018
@@ -10,51 +10,17 @@ origin: 11-14-2018
 """
 
 
-import cPickle as cp
 import numpy as np
-from copy import deepcopy
 from collections import defaultdict, OrderedDict
 from kagami.core import *
 
-
-def test_NA():
-    assert NA == deepcopy(NA)
-    assert NA != '' and NA is not None
-    assert isinstance(NA, NAType)
-
-    assert isna(NA)
-    assert not isna(None)
-    assert isnull(NA) and isnull(None)
-    assert not isnull('')
-    assert hasvalue('') and hasvalue(False) and hasvalue(np.nan) and hasvalue(())
-    assert optional('a', 'b') == 'a' and optional(None, 'b') is None and optional(NA, 'b') == 'b'
-
-def test_metadata():
-    meta = Metadata(a = 1, b = 2)
-    assert meta == Metadata([('a', 1), ('b', 2)])
-
-    assert meta.a == 1 and meta.b == 2
-    assert meta['a'] == 1 and meta['b'] == 2
-    assert meta.get('c', 3) == 3
-
-    assert meta.has_key('a') and not meta.has_key('c')
-    assert 'a' in meta and not 'c' in meta
-    assert set(meta.keys()) == {'a', 'b'} and set(meta.values()) == {1, 2}
-
-    meta.a = 4
-    meta.c = 5
-    assert set(meta.items()) == {('a', 4), ('b', 2), ('c', 5)}
-
-    del meta.c
-    assert set(meta.items()) == {('a', 4), ('b', 2)}
-
-    assert cp.loads(cp.dumps(meta)) == meta
 
 def test_autoeval():
     assert autoeval('11') == 11 and np.isclose(autoeval('12.3'), 12.3)
     assert autoeval('a') == 'a' and autoeval(u'bc') == u'bc'
     assert autoeval('[1,2,3]') == [1,2,3]
-    assert autoeval('NA') == NA and autoeval('None') is None
+    assert autoeval('na') == autoeval('n/a') == autoeval('NA') == autoeval('N/A') == na
+    assert autoeval('None') is None
 
 def test_types():
     assert isstring('abc') and isstring(u'def') and isstring(np.array(['ghi'])[0])

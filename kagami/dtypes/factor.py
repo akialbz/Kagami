@@ -15,7 +15,7 @@ import numpy as np
 from string import join
 from operator import itemgetter
 from bidict import FrozenOrderedBidict
-from kagami.core import NA, hasvalue, optional, checkany, listable, mappable, hashable, smap
+from kagami.core import na, available, optional, checkany, listable, mappable, hashable, smap
 from kagami.dtypes import CoreType
 
 
@@ -26,10 +26,10 @@ __all__ = ['factor', 'asFactor']
 class _Factor(CoreType):
     __slots__ = ('_array', '_levdct', '_enctype', '_sfmt')
 
-    def __init__(self, labels = NA, array = NA, _fromCopy = False):
-        if hasvalue(labels):
+    def __init__(self, labels = na, array = na, _fromCopy = False):
+        if available(labels):
             self._array = self.encode(labels)
-        elif hasvalue(array):
+        elif available(array):
             self._array = np.array(array, dtype = self._enctype)
             if self._array.ndim != 1: self._array = self._array.reshape((1,))
             if not _fromCopy and checkany(self._array, lambda x: x not in self._levdct.values()): raise ValueError('array values not recognised')
@@ -146,7 +146,7 @@ class _Factor(CoreType):
     def append(self, other):
         return self.__class__(array = np.hstack((self._array, self.encode(other))), _fromCopy = True)
 
-    def insert(self, other, pos = NA):
+    def insert(self, other, pos = na):
         return self.__class__(array = np.insert(self._array, optional(pos, self.size), self.encode(other)), _fromCopy = True)
 
     def drop(self, pos):
@@ -177,7 +177,7 @@ def factor(name, levels, enctype = np.uint32):
     setattr(sys.modules[__name__], name, fct) # register to factor
     return fct
 
-def asFactor(labels, levels = NA, enctype = np.uint32):
+def asFactor(labels, levels = na, enctype = np.uint32):
     fcls = factor(name = '_factor_%s' % hex(int(time.time())), levels = optional(levels, np.unique(labels)), enctype = enctype)
     return fcls(labels)
 

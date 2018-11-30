@@ -13,7 +13,7 @@ origin: 08-23-2018
 import numpy as np
 from operator import itemgetter
 from string import join
-from kagami.core import NA, optional, listable, isstring, checkany
+from kagami.core import na, optional, listable, isstring, checkany
 from kagami.dtypes import CoreType
 
 
@@ -23,7 +23,7 @@ __all__ = ['NamedIndex']
 class NamedIndex(CoreType):
     __slots__ = ('_names', '_ndict')
 
-    def __init__(self, names = NA):
+    def __init__(self, names = na):
         self.names = optional(names, [])
 
     # built-ins
@@ -112,7 +112,7 @@ class NamedIndex(CoreType):
     def append(self, other):
         return NamedIndex(np.hstack((self._names, other)))
 
-    def insert(self, other, pos = NA):
+    def insert(self, other, pos = na):
         return NamedIndex(np.insert(self._names, optional(pos, self.size), other))
 
     def drop(self, pos):

@@ -13,7 +13,7 @@ origin: 06-07-2016
 import functools
 from multiprocessing import Pool, cpu_count
 from multiprocessing.pool import ThreadPool
-from kagami.core import NA, hasvalue, isna, optional, listable, checkall, peek
+from kagami.core import na, available, missing, optional, listable, checkall, peek
 
 
 __all__ = [
@@ -51,23 +51,23 @@ def _mmap(x, func, ptype, nps):
     mpool.join()
     return [j.get() for j in jobs]
 
-def tmap(x, func, nthreads = NA):
+def tmap(x, func, nthreads = na):
     return _mmap(x, func, ThreadPool, optional(nthreads, None))
 
-def pmap(x, func, nprocs = NA):
+def pmap(x, func, nprocs = na):
     return _mmap(x, func, Pool, optional(nprocs, None))
 
-def call(x, funcs, nthreads = NA, nprocs = NA, collect = NA):
+def call(x, funcs, nthreads = na, nprocs = na, collect = na):
     if not listable(x): raise TypeError('source in not listable')
     if len(funcs) == 0: raise ValueError('too few functions for piping')
-    if hasvalue(nthreads) and hasvalue(nprocs): raise ValueError('cannot use multithreading and multiprocssing as the same time')
-    if hasvalue(collect) and not callable(collect): raise TypeError('collector is not callable')
+    if available(nthreads) and available(nprocs): raise ValueError('cannot use multithreading and multiprocssing as the same time')
+    if available(collect) and not callable(collect): raise TypeError('collector is not callable')
 
-    _map = smap if checkall((nprocs, nthreads), NA) else \
-           partial(tmap, nthreads = nthreads) if hasvalue(nthreads) else \
+    _map = smap if checkall((nprocs, nthreads), na) else \
+           partial(tmap, nthreads = nthreads) if available(nthreads) else \
            partial(pmap, nprocs = nprocs)
     res = reduce(lambda v, f: _map(v, f), funcs, x)
-    return collect(res) if hasvalue(collect) else res
+    return collect(res) if available(collect) else res
 
 def pick(x, cond):
     _check = cond if callable(cond) else (lambda x: x == cond)
@@ -82,9 +82,9 @@ def drop(x, cond):
     _check = cond if callable(cond) else (lambda x: x == cond)
     return filter(lambda v: not _check(v), x)
 
-def fold(x, func, init = NA):
-    if isna(init): init, x = peek(x)
+def fold(x, func, init = na):
+    if missing(init): init, x = peek(x)
     return reduce(func, x, init)
 
-def collapse(x, init = NA):
+def collapse(x, init = na):
     return fold(x, lambda a,b: a+b, init = init)

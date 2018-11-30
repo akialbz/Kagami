@@ -12,7 +12,7 @@ origin: 08-23-2018
 
 import numpy as np
 from copy import deepcopy
-from kagami.core import NA, pickmap
+from kagami.core import na, pickmap
 
 
 __all__ = ['CoreType']
@@ -86,7 +86,7 @@ class CoreType(object):
     def append(self, other):
         raise NotImplementedError('method not implemented for Kagami CoreType')
 
-    def insert(self, other, pos = NA):
+    def insert(self, other, pos = na):
         raise NotImplementedError('method not implemented for Kagami CoreType')
 
     def drop(self, pos):

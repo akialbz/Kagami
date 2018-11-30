@@ -18,7 +18,7 @@ try:
     from rpy2.rinterface import RRuntimeError
 except ImportError:
     raise ImportError('rWrapper requires r environment and rpy2 package')
-from kagami.core import NA, isna, isnull, pickmap
+from kagami.core import na, missing, pickmap
 
 
 np2ri.activate()  # enable numpy <-> R conversions
@@ -50,14 +50,14 @@ class RWrapper(object): # pragma: no cover
             'f': robj.FloatVector,
             'b': robj.BoolVector,
             'S': robj.StrVector, 'U': robj.StrVector,
-        }.get(val.dtype.kind, NA)
-        if isna(_pack): raise TypeError('unknown vector type [%s]' % val.dtype.kind)
+        }.get(val.dtype.kind, na)
+        if missing(_pack): raise TypeError('unknown vector type [%s]' % val.dtype.kind)
         return _pack(val)
 
     @staticmethod
-    def asMatrix(val, nrow = NA, ncol = NA):
+    def asMatrix(val, nrow = na, ncol = na):
         val = np.array(val)
-        if isna(nrow) and isna(ncol): nrow, ncol = val.shape
+        if missing(nrow) and missing(ncol): nrow, ncol = val.shape
         return robj.r.matrix(val, nrow = nrow, ncol = ncol)
 
     @staticmethod
@@ -67,7 +67,7 @@ class RWrapper(object): # pragma: no cover
     @staticmethod
     def apply(func, *args, **kwargs):
         args = pickmap(args, isnull, NULL)
-        kwargs = {k: (NULL if v is None or isna(v) else v) for k,v in kwargs.items()}
+        kwargs = {k: (NULL if v is None or missing(v) else v) for k,v in kwargs.items()}
         return getattr(robj.r, func)(*args, **kwargs)
 
     @staticmethod

@@ -25,10 +25,10 @@ def test_get_io():
     assert ret == 'cge:100765387\tko:K19752'
 
     ret = webPortal.get('http://rest.kegg.jp/no-such-website', tries = 3)
-    assert isna(ret)
+    assert missing(ret)
 
     ret = webPortal.get('http://no-such-website.com', tries = 3)
-    assert isna(ret)
+    assert missing(ret)
 
 @pytest.mark.skipif(not _connected(), reason = 'no connection to KEGG rest APIs')
 def test_post_io():
@@ -36,7 +36,7 @@ def test_post_io():
     assert ret == 'cge:100765387\tko:K19752'
 
     ret = webPortal.post('http://rest.kegg.jp/no-such-website', tries = 3)
-    assert isna(ret)
+    assert missing(ret)
 
     ret = webPortal.post('http://no-such-website.com', tries = 3)
-    assert isna(ret)
+    assert missing(ret)

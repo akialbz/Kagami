@@ -16,7 +16,7 @@ import tables as ptb
 from string import join
 from collections import OrderedDict
 from types import NoneType
-from kagami.core import NA, NAType, isna, checkall, checkany, listable, isstring, mappable, autoeval, smap, pickmap, unpack, checkInputFile, checkOutputFile
+from kagami.core import na, NAType, missing, checkall, checkany, listable, isstring, mappable, autoeval, smap, pickmap, unpack, checkInputFile, checkOutputFile
 from kagami.portals import tablePortal
 from kagami.dtypes import CoreType
 
@@ -27,15 +27,15 @@ __all__ = ['StructuredArray']
 class StructuredArray(CoreType):
     __slots__ = ('_dict', '_length')
 
-    def __init__(self, items = NA, **kwargs):
+    def __init__(self, items = na, **kwargs):
         items = items if listable(items) and checkall(items, lambda x: len(x) == 2) else \
                 items._dict.items() if isinstance(items, StructuredArray) else \
                 items.items() if mappable(items) else \
-                kwargs.items() if isna(items) else NA
-        if isna(items): raise TypeError('unknow data type')
+                kwargs.items() if missing(items) else na
+        if missing(items): raise TypeError('unknow data type')
 
         self._dict = OrderedDict()
-        self._length = NA
+        self._length = na
         for k,v in items: self[k] = v
 
     # privates
@@ -64,7 +64,7 @@ class StructuredArray(CoreType):
             value = value.copy() if isinstance(value, CoreType) else np.array(value)
             if value.ndim != 1: raise ValueError('input value not in 1-dimensional')
 
-            if isna(self._length): self._length = len(value)
+            if missing(self._length): self._length = len(value)
             elif self._length != len(value): raise ValueError('input value size not match')
 
             self._dict[key] = value
@@ -91,7 +91,7 @@ class StructuredArray(CoreType):
 
         if slic and alic:
             self._dict = OrderedDict()
-            self._length = NA
+            self._length = na
         elif slic and not alic:
             for k in self.names: self._dict[k] = np.delete(self._dict[k], aids)
             self._length = len(self._dict[self._dict.keys()[0]])
@@ -171,10 +171,10 @@ class StructuredArray(CoreType):
         if self.size != other.size or not np.all(np.unique(self.names) == np.unique(other.names)): raise KeyError('input array has different names')
         return StructuredArray([(k, v.append(other[k]) if isinstance(v, CoreType) else np.r_[v, other[k].astype(v.dtype)]) for k,v in self._dict.items()])
 
-    def insert(self, other, pos = NA):
+    def insert(self, other, pos = na):
         if not isinstance(other, StructuredArray): raise TypeError('unknown input data type')
         if self.size != other.size or not np.all(np.unique(self.names) == np.unique(other.names)): raise KeyError('input array has different names')
-        if isna(pos): pos = self.length
+        if missing(pos): pos = self.length
         return StructuredArray([(k, v.insert(other[k], pos) if isinstance(v, CoreType) else np.insert(v, pos, other[k])) for k,v in self._dict.items()])
 
     def drop(self, pos):

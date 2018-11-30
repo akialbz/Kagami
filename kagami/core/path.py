@@ -11,7 +11,7 @@ origin: 06-06-2016
 
 
 import logging, os, shutil
-from kagami.core import NA, hasvalue, pick, drop
+from kagami.core import na, available, pick, drop
 
 
 __all__ = [
@@ -41,7 +41,7 @@ def fileTitle(fpath):
 
 
 # search path
-def listPath(path, recursive = False, fileOnly = False, folderOnly = False, visibleOnly = True, prefix = NA, suffix = NA):
+def listPath(path, recursive = False, fileOnly = False, folderOnly = False, visibleOnly = True, prefix = na, suffix = na):
     if fileOnly and folderOnly: logging.warning('nothing to expect after removing both dirs and files')
 
     fds = [os.path.join(root, name) for root, dirs, files in os.walk(path) for name in files + dirs] if recursive else \
@@ -50,8 +50,8 @@ def listPath(path, recursive = False, fileOnly = False, folderOnly = False, visi
     if fileOnly: fds = pick(fds, os.path.isfile)
     if folderOnly: fds = pick(fds, os.path.isdir)
     if visibleOnly: fds = drop(fds, lambda x: fileName(x).startswith(('.', '~')))
-    if hasvalue(prefix): fds = pick(fds, lambda x: fileName(x).startswith(prefix))
-    if hasvalue(suffix): fds = pick(fds, lambda x: x.endswith(suffix))
+    if available(prefix): fds = pick(fds, lambda x: fileName(x).startswith(prefix))
+    if available(suffix): fds = pick(fds, lambda x: x.endswith(suffix))
 
     return fds
 

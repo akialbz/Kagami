@@ -10,7 +10,7 @@ origin: 03-18-2017
 """
 
 
-__version__ = '2.1'
+__version__ = '2.2'
 __version_name__ = 'Izumo'
 
 

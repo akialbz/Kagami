@@ -14,7 +14,7 @@ import logging
 from string import join
 from subprocess import Popen, PIPE
 from distutils.spawn import find_executable
-from kagami.core import NA, optional, isna, hasvalue, listable, smap, pmap, tmap, partial, unpack
+from kagami.core import na, optional, missing, available, listable, smap, pmap, tmap, partial
 
 
 # for multiprocessing
@@ -53,17 +53,17 @@ class BinaryWrapper(object):
     def reachable(binName):
         return BinaryWrapper.which(binName) is not None
 
-    def execute(self, params = NA, stdin = NA):
+    def execute(self, params = na, stdin = na):
         return _exec(self._bin, params, stdin, self._shell, self._ncode, self._mute)
 
-    def mapexec(self, params = NA, stdin = NA, nthreads = NA, nprocs = NA):
-        if hasvalue(params) and hasvalue(stdin) and len(params) != len(stdin): raise RuntimeError('parameters and stdins size not match')
-        if isna(params) and isna(stdin): raise RuntimeError('both parameters and stdins are NA')
+    def mapexec(self, params = na, stdin = na, nthreads = na, nprocs = na):
+        if available(params) and available(stdin) and len(params) != len(stdin): raise RuntimeError('parameters and stdins size not match')
+        if missing(params) and missing(stdin): raise RuntimeError('both parameters and stdins are N/A')
 
-        if isna(params): params = [NA] * len(stdin)
-        if isna(stdin): stdin = [NA] * len(params)
+        if missing(params): params = [na] * len(stdin)
+        if missing(stdin): stdin = [na] * len(params)
 
-        _map = partial(pmap, nprocs = nprocs) if hasvalue(nprocs) else \
-               partial(tmap, nthreads = nthreads) if hasvalue(nthreads) else smap
+        _map = partial(pmap, nprocs = nprocs) if available(nprocs) else \
+               partial(tmap, nthreads = nthreads) if available(nthreads) else smap
         return _map([(self._bin, p, s, self._shell, self._ncode, self._mute) for p,s in zip(params, stdin)], _mp_exec)
 

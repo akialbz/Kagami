@@ -32,7 +32,7 @@ def test_file_names():
 
 def test_listpath():
     pys = listPath(filePath(__file__), recursive = True, fileOnly = True, visibleOnly = True, suffix = '.py')
-    assert set(smap(pys, fileTitle)) == {'__init__', 'test_etc', 'test_functional', 'test_path'}
+    assert set(smap(pys, fileTitle)) == {'__init__', 'test_etc', 'test_optvalue', 'test_metadata', 'test_functional', 'test_path'}
 
 def test_checks():
     with pytest.raises(IOError): checkInputFile('no_such_file')

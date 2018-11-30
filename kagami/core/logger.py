@@ -11,7 +11,7 @@ origin: 12-11-2014
 
 
 import logging, sys
-from kagami.core import NA, hasvalue, optional
+from kagami.core import na, available, optional
 
 
 __all__ = [
@@ -51,7 +51,7 @@ class _QuitHandler(logging.Handler): # pragma: no cover
 
 # config interface
 def configLogger(level = logging.INFO, fatalLevel = logging.FATAL,
-                  consoleFmt = NA, logFile = NA, logMode = 'a+', logFmt = NA, exceptionFmt = NA): # pragma: no cover
+                  consoleFmt = na, logFile = na, logMode = 'a+', logFmt = na, exceptionFmt = na): # pragma: no cover
     logger = logging.getLogger()
     logger.handlers = [] # remove existing handlers
     logger.setLevel(level)
@@ -64,7 +64,7 @@ def configLogger(level = logging.INFO, fatalLevel = logging.FATAL,
     logger.addHandler(chdl)
 
     # log to file
-    if hasvalue(logFile):
+    if available(logFile):
         lfmt = optional(logFmt, logging.Formatter(LOGFILE_FORMAT))
         if not isinstance(lfmt, logging.Formatter): raise TypeError('log file formatter is not a Formatter object')
         fhdl = logging.FileHandler(logFile, mode = logMode)
