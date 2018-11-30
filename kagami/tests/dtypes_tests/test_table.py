@@ -14,7 +14,7 @@ import os, pytest
 import cPickle as cp
 import numpy as np
 from copy import deepcopy
-from kagami.core import na, Metadata
+from kagami.core import na, isna, Metadata
 from kagami.dtypes import Table
 
 
@@ -65,6 +65,17 @@ def test_table_built_ins():
     assert ctable == table
     ctable[ctable < 10] = 0
     assert np.all(ctable[0] == 0) and not np.any(ctable[1:] == 0)
+
+    ctable[1,:] = na
+    assert np.all(isna(ctable.X_[1])) # table is always 2-dimensional
+    ctable = ctable.astype(float)
+    ctable[1,:] = na
+    assert np.all(np.isnan(ctable.X_[1]))
+    ctable[:,2] = na
+    assert np.all(np.isnan(ctable.X_[:,2]))
+    ctable = ctable.astype(str)
+    ctable[:,2] = na
+    assert np.all(ctable.X_[:,2] == '')
 
     ctable = deepcopy(table)
     del ctable['row_2']

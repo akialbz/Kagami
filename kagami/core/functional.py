@@ -13,7 +13,7 @@ origin: 06-07-2016
 import functools
 from multiprocessing import Pool, cpu_count
 from multiprocessing.pool import ThreadPool
-from kagami.core import na, available, missing, optional, listable, checkall, peek
+from kagami.core import na, available, missing, optional, listable, peek
 
 
 __all__ = [
@@ -28,7 +28,7 @@ def partial(func, *args, **kwargs):
     return pfunc
 
 def compose(*funcs):
-    if len(funcs) <= 1: raise ValueError('too few functions for composition')
+    if len(funcs) < 1: raise ValueError('too few functions for composition')
     def _appl(fs, v):
         r = fs[0](v)
         return r if len(fs) == 1 else _appl(fs[1:], r)
@@ -63,23 +63,23 @@ def call(x, funcs, nthreads = na, nprocs = na, collect = na):
     if available(nthreads) and available(nprocs): raise ValueError('cannot use multithreading and multiprocssing as the same time')
     if available(collect) and not callable(collect): raise TypeError('collector is not callable')
 
-    _map = smap if checkall((nprocs, nthreads), na) else \
+    _map = smap if missing(nprocs) and missing(nthreads) else \
            partial(tmap, nthreads = nthreads) if available(nthreads) else \
            partial(pmap, nprocs = nprocs)
     res = reduce(lambda v, f: _map(v, f), funcs, x)
     return collect(res) if available(collect) else res
 
 def pick(x, cond):
-    _check = cond if callable(cond) else (lambda x: x == cond)
+    _check = cond if callable(cond) else (lambda v: v == cond)
     return filter(_check, x)
 
 def pickmap(x, cond, func):
-    _check = cond if callable(cond) else (lambda x: x == cond)
-    _replc = func if callable(func) else (lambda: func)
+    _check = cond if callable(cond) else (lambda v: v == cond)
+    _replc = func if callable(func) else (lambda v: func)
     return smap(x, lambda v: _replc(v) if _check(v) else v)
 
 def drop(x, cond):
-    _check = cond if callable(cond) else (lambda x: x == cond)
+    _check = cond if callable(cond) else (lambda v: v == cond)
     return filter(lambda v: not _check(v), x)
 
 def fold(x, func, init = na):

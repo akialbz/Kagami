@@ -18,7 +18,7 @@ try:
     from rpy2.rinterface import RRuntimeError
 except ImportError:
     raise ImportError('rWrapper requires r environment and rpy2 package')
-from kagami.core import na, missing, pickmap
+from kagami.core import na, isnull, missing, pickmap
 
 
 np2ri.activate()  # enable numpy <-> R conversions

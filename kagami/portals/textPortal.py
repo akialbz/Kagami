@@ -16,36 +16,36 @@ from kagami.core import smap, drop, pickmap, checkInputFile, checkOutputFile
 
 
 # raw text string
-def load(txtFile, striping = True):
+def load(txtFile, striping = True, mode = 'r'):
     logging.debug('loading text from [%s]' % txtFile)
     checkInputFile(txtFile)
-    with open(txtFile, 'r') as f: txt = f.read()
+    with open(txtFile, mode) as f: txt = f.read()
     return strip(txt) if striping else txt
 
-def save(txt, txtFile):
+def save(txt, txtFile, mode = 'w'):
     logging.debug('saving text to [%s]' % txtFile)
     checkOutputFile(txtFile)
-    with open(txtFile, 'w') as f: f.write(str(txt))
+    with open(txtFile, mode) as f: f.write(str(txt))
     return os.path.isfile(txtFile)
 
 # raw text lines
-def loadlns(txtFile, striping = True, removeBlanks = True):
+def loadlns(txtFile, striping = True, removeBlanks = True, mode = 'rU'):
     logging.debug('loading textlines from [%s]' % txtFile)
     checkInputFile(txtFile)
 
-    with open(txtFile, 'rU') as f: tlines = f.readlines()
+    with open(txtFile, mode) as f: tlines = f.readlines()
     tlines = smap(tlines, lambda x: x.rstrip('\n'))
     if striping: tlines = smap(tlines, strip)
     if removeBlanks: tlines = drop(tlines, lambda x: x.strip() == '')
 
     return tlines
 
-def savelns(tlines, txtFile, autoReturn = True):
+def savelns(tlines, txtFile, autoReturn = True, mode = 'w'):
     logging.debug('saving textlines to [%s]' % txtFile)
     checkOutputFile(txtFile)
 
     tlines = smap(tlines, str)
     if autoReturn: tlines = pickmap(tlines, lambda x: not x.endswith('\n'), lambda x: x + '\n')
-    with open(txtFile, 'w') as ofile: ofile.writelines(tlines)
+    with open(txtFile, mode) as ofile: ofile.writelines(tlines)
 
     return os.path.isfile(txtFile)

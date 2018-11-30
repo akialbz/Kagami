@@ -14,6 +14,7 @@ import os, pytest
 import cPickle as cp
 import numpy as np
 from copy import deepcopy
+from kagami.core import *
 from kagami.dtypes import factor, NamedIndex, StructuredArray
 
 
@@ -64,10 +65,14 @@ def test_structArray_built_ins():
     assert np.all(carr['ser6'] == ['n1', 'n2', 'n3', 'n6', 'n7'])
     carr['ser5'] = np.array(carr['ser5'])
     assert carr['ser5'].dtype.kind == 'S' and np.all(carr['ser5'] == ['r', 'g', 'g', 'r', 'b'])
+    carr['ser5'][:-1] = na
+    assert np.all(carr['ser5'] == ['', '', '', '', 'b'])
     carr['ser3',:] = np.arange(5)
     assert np.all(carr['ser3'] == ['0', '1', '2', '3', '4'])
     carr['ser3'] = np.arange(5)
     assert np.all(carr['ser3'] == [0, 1, 2, 3, 4])
+    carr['ser3'][1:3] = na
+    assert np.all(isna(carr['ser3']) == [False, True, True, False, False])
 
     carr = deepcopy(arr)
     del carr['ser1']

@@ -31,6 +31,9 @@ class Table(CoreType):
     def __init__(self, X, dtype = na, rownames = na, colnames = na, rowindex = na, colindex = na, metadata = na):
         self._dmatx = np.array(X)
         if available(dtype): self._dmatx = self._dmatx.astype(dtype)
+        if self.dtype.kind == 'u' or (self.dtype.kind == 'i' and self.dtype.itemsize < 8):
+            logging.warning('special integer dtype may cause na comparison failure')
+
         if self._dmatx.ndim != 2: raise ValueError('input data is not a 2-dimensional matrix')
 
         self._metas = Metadata() if isnull(metadata) else Metadata(metadata)
@@ -190,6 +193,8 @@ class Table(CoreType):
     @dtype.setter
     def dtype(self, value):
         self._dmatx = self._dmatx.astype(value)
+        if self.dtype.kind == 'u' or (self.dtype.kind == 'i' and self.dtype.itemsize < 8):
+            logging.warning('special integer dtype may cause na comparison failure')
 
     @property
     def rownames(self):

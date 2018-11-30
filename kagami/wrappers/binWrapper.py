@@ -14,12 +14,12 @@ import logging
 from string import join
 from subprocess import Popen, PIPE
 from distutils.spawn import find_executable
-from kagami.core import na, optional, missing, available, listable, smap, pmap, tmap, partial
+from kagami.core import na, isnull, optional, missing, available, listable, smap, pmap, tmap, partial
 
 
 # for multiprocessing
 def _exec(binary, params, stdin, shell, normcodes, mute):
-    exelst = [binary] + smap(optional(params, []), lambda x: str(x).strip())
+    exelst = [binary] + smap([] if isnull(params) else params, lambda x: str(x).strip())
     exestr = join(smap(exelst, lambda x: x.replace(' ', '\ ')), ' ')
     logging.debug('running binary cmd = [%s]' % exestr)
 
@@ -58,7 +58,7 @@ class BinaryWrapper(object):
 
     def mapexec(self, params = na, stdin = na, nthreads = na, nprocs = na):
         if available(params) and available(stdin) and len(params) != len(stdin): raise RuntimeError('parameters and stdins size not match')
-        if missing(params) and missing(stdin): raise RuntimeError('both parameters and stdins are N/A')
+        if missing(params) and missing(stdin): raise RuntimeError('both parameters and stdins are missing')
 
         if missing(params): params = [na] * len(stdin)
         if missing(stdin): stdin = [na] * len(params)

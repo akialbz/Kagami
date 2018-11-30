@@ -61,6 +61,9 @@ class StructuredArray(CoreType):
 
     def __setitem__(self, key, value):
         if isstring(key):
+            if isinstance(value, np.ndarray) and (value.dtype.kind == 'u' or (value.dtype.kind == 'i' and value.dtype.itemsize < 8)):
+                logging.warning('special integer dtype may cause na comparison failure')
+
             value = value.copy() if isinstance(value, CoreType) else np.array(value)
             if value.ndim != 1: raise ValueError('input value not in 1-dimensional')
 
