@@ -12,8 +12,9 @@ origin: 08-23-2018
 
 import numpy as np
 from operator import itemgetter
+from collections import defaultdict
 from string import join
-from kagami.core import na, optional, listable, isstring, checkany
+from kagami.core import na, optional, listable, isstring, checkany, pickmap
 from kagami.dtypes import CoreType
 
 
@@ -21,9 +22,10 @@ __all__ = ['NamedIndex']
 
 
 class NamedIndex(CoreType):
-    __slots__ = ('_names', '_ndict')
+    __slots__ = ('_names', '_ndict', '_relabel')
 
-    def __init__(self, names = na):
+    def __init__(self, names = na, relabel = False):
+        self._relabel = relabel
         self.names = optional(names, [])
 
     # built-ins
@@ -85,6 +87,13 @@ class NamedIndex(CoreType):
         self._names = np.array(value, dtype = object)
         if self._names.ndim != 1: self._names = self._names.reshape((1,))
         if checkany(self._names, lambda x: not isstring(x)): raise TypeError('index names must be string')
+
+        if self._relabel:
+            cdct = defaultdict(lambda: 1)
+            for i,c in enumerate(self._names):
+                count, cdct[c] = cdct[c], cdct[c] + 1
+                if count > 1: self._names[i] += '.%d' % count # self._names is an object array
+
         self._ndict = {n:i for i,n in enumerate(self._names)} # much faster than dict()
         if self._names.shape[0] != len(self._ndict): raise KeyError('input names have duplications')
 
