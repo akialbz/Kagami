@@ -14,7 +14,7 @@ import numpy as np
 from operator import itemgetter
 from collections import defaultdict
 from string import join
-from kagami.core import na, optional, listable, isstring, checkany, pickmap
+from kagami.core import na, optional, listable, isstring, checkany
 from kagami.dtypes import CoreType
 
 
