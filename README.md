@@ -1,15 +1,16 @@
 # Kagami Library
 
-The Kagami library is a Python package to **reinvent the wheel** and make my life easier. It's neither designed as user friendly nor for the purpose for others to use. It may include documents in the future. But nothing under plan yet. Think twice before you touch it.
+The Kagami library is a Python package to **reinvent the wheel** and make some developments easier. It's neither designed as user-friendly nor for the purpose for a broad public to use. It may include documents in the future. But nothing under plan yet. Think twice before using it in your project.
 
-The Kagami library supports Python 2.7 and will soon be compatible with Python 3.7. The Kagami library is distributed under the GNU Lesser General Public License v3.0.
+The Kagami library is under rapid development. Compatible between the major releases are not guaranteed. Be careful about the version required.
+
+The Kagami library supports Python 2.7 and will soon be compatible with Python 3. The Kagami library is distributed under the GNU Lesser General Public License v3.0.
 
 ## Dependencies
 
-Kagami requires (recommend version):
+Kagami requires:
 
 - Python (>= 2.7.14)
-- NumPy (>= 1.15.2)
 - Pytables (>= 3.4.4)
 - requests (>= 2.20.1)
 - bidict (>= 0.17.5)
@@ -20,19 +21,24 @@ To use RWrapper, you will also need:
 - rpy2 (== 2.8.6)
 - R (>= 3.4.4)
 
+To use pytest coverage and profiling, you will also need:
+
+- pytest-cov (>= 2.6.0)
+- pytest-profiling (>= 1.3.0)
+
 ## Installation
 
 Using pip:
 ```bash
-pip install kagami-2.1.17-py2-none-any.whl
+pip install kagami
 ```
 
 Using Pipenv:
 ```bash
-pipenv install kagami-2.1.17-py2-none-any.whl
+pipenv install kagami
 ```
 
-Using Docker
+Using Docker (publicly available soon)
 ```bash
 docker run -v $(pwd):/home --rm kagami-core:latest <your script>
 ```
@@ -52,8 +58,5 @@ collected 47 items
 kagami/tests/core_tests/test_etc.py ......                                            [ 12%]
 kagami/tests/core_tests/test_functional.py .....                                      [ 23%]
 kagami/tests/core_tests/test_path.py ...                                              [ 29%]
-kagami/tests/dtypes_tests/test_coreType.py ....                                       [ 38%]
-kagami/tests/dtypes_tests/test_factor.py ....                                         [ 46%]
-kagami/tests/dtypes_tests/test_namedIndex.py ....                                     [ 55%]
 ....
 ```
