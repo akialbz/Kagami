@@ -122,8 +122,9 @@ def test_structArray_properties():
     assert np.all(arr.names == map(lambda x: 'ser%d' % (x+1), range(6)))
 
     # series and values
-    assert len(arr.series) == 6 and set(map(len, arr.series)) == {5}
     assert arr.values.shape == (6,5)
+    assert len(arr.series) == 6 and set(map(len, arr.series)) == {5}
+    assert arr.items == zip(arr.names, arr.series)
 
     # sizes
     assert arr.size == 6

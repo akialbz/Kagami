@@ -137,7 +137,7 @@ class StructuredArray(CoreType):
     # for numpy
     def __array__(self, dtype = None):
         arr = self.values
-        return arr if dtype is None else arr.astype(None)
+        return arr if dtype is None else arr.astype(dtype)
 
     # properties
     @property
@@ -145,12 +145,16 @@ class StructuredArray(CoreType):
         return np.array(self._dict.keys())
 
     @property
-    def series(self):
-        return tuple(self._dict.values())
+    def values(self):
+        return np.array(smap(self.series, np.array), dtype = object)
 
     @property
-    def values(self):
-        return np.array(smap(self._dict.values(), np.array), dtype = object)
+    def series(self):
+        return self._dict.values()
+
+    @property
+    def items(self):
+        return self._dict.items()
 
     @property
     def size(self):
