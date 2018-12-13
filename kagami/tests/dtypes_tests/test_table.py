@@ -38,6 +38,11 @@ def test_table_creation():
     with pytest.raises(ValueError): Table(np.arange(30).reshape((5,6)), rownames = ['a', 'b', 'c'])
     with pytest.raises(ValueError): Table(np.arange(30).reshape((5,6)), colindex = {'order': range(10)})
 
+    with pytest.raises(KeyError): Table(np.arange(12).reshape((3,4)), rownames = ['a', 'b', 'a'], colnames = ['1', '2', '1', '1'])
+    tab = Table(np.arange(12).reshape((3,4)), rownames = ['a', 'b', 'a'], colnames = ['1', '2', '1', '1'], fixRepeat = True)
+    assert np.all(tab.rownames == ['a', 'b', 'a.2'])
+    assert np.all(tab.colnames == ['1', '2', '1.2', '1.3'])
+
 def test_table_built_ins():
     table = _create_table()
     dm = np.arange(50).reshape((5,10))
@@ -194,6 +199,13 @@ def test_table_properties():
     assert table.size == 5
     assert table.shape == (5,10)
     assert table.ndim == 2
+
+    # fixRepeat
+    assert table.fixRepeat == False
+    table.fixRepeat = True
+    table = table[[0, 1, 1, 3, 4], [0, 1, 2, 0, 1, 2, 0, 1, 2, 0]]
+    assert np.all(table.rownames == ['row_0', 'row_1', 'row_1.2', 'row_3', 'row_4'])
+    assert np.all(table.colnames == ['col_0', 'col_1', 'col_2', 'col_0.2', 'col_1.2', 'col_2.2', 'col_0.3', 'col_1.3', 'col_2.3', 'col_0.4'])
 
 def test_table_methods():
     table = _create_table()

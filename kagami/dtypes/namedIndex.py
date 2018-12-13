@@ -22,15 +22,15 @@ __all__ = ['NamedIndex']
 
 
 class NamedIndex(CoreType):
-    __slots__ = ('_names', '_ndict', '_relabel')
+    __slots__ = ('_names', '_ndict', '_fixrep')
 
-    def __init__(self, names = na, relabel = False):
-        self._relabel = relabel
+    def __init__(self, names = na, fixRepeat = False):
+        self._fixrep = fixRepeat
         self.names = optional(names, [])
 
     # built-ins
     def __getitem__(self, item):
-        return NamedIndex(self._names[item])
+        return NamedIndex(self._names[item], fixRepeat = self._fixrep)
 
     def __setitem__(self, key, value):
         self._names[key] = value
@@ -75,7 +75,7 @@ class NamedIndex(CoreType):
         return self._names.astype(str) if dtype is None else self._names.astype(dtype)
 
     def __array_wrap__(self, arr):
-        return NamedIndex(arr)
+        return NamedIndex(arr, fixRepeat = self._fixrep)
 
     # properties
     @property
@@ -90,7 +90,7 @@ class NamedIndex(CoreType):
         if self._names.ndim != 1: self._names = self._names.reshape((1,))
         if checkany(self._names, lambda x: not isstring(x)): raise TypeError('index names must be string')
 
-        if self._relabel:
+        if self._fixrep:
             cdct = defaultdict(lambda: 1)
             for i,n in enumerate(self._names):
                 count, cdct[n] = cdct[n], cdct[n] + 1
@@ -111,6 +111,14 @@ class NamedIndex(CoreType):
     def ndim(self):
         return 1
 
+    @property
+    def fixRepeat(self):
+        return self._fixrep
+
+    @fixRepeat.setter
+    def fixRepeat(self, value):
+        self._fixrep = bool(value)
+
     # public
     def namesof(self, ids):
         return self._names[ids]
@@ -121,17 +129,18 @@ class NamedIndex(CoreType):
         return ids if ids.ndim == 1 else ids.reshape((1,))
 
     def append(self, other):
-        return NamedIndex(np.hstack((self._names, other)))
+        return NamedIndex(np.hstack((self._names, other)), fixRepeat = self._fixrep)
 
     def insert(self, other, pos = na):
-        return NamedIndex(np.insert(self._names, optional(pos, self.size), other))
+        return NamedIndex(np.insert(self._names, optional(pos, self.size), other), fixRepeat = self._fixrep)
 
     def drop(self, pos):
-        return NamedIndex(np.delete(self._names, optional(pos, self.size)))
+        return NamedIndex(np.delete(self._names, optional(pos, self.size)), fixRepeat = self._fixrep)
 
     def copy(self):
         idx = NamedIndex()
         idx._names = self._names.copy()
         idx._ndict = self._ndict.copy()
+        idx._fixrep = self._fixrep
         return idx
 

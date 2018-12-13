@@ -31,7 +31,7 @@ def test_namedIndex_creation():
     with pytest.raises(TypeError): NamedIndex(['a', ['b', 'c']])
     with pytest.raises(KeyError): NamedIndex(['a', 'a', 'b'])
 
-    idx = NamedIndex(['a', 'a', 'b'], relabel = True)
+    idx = NamedIndex(['a', 'a', 'b'], fixRepeat = True)
     assert np.all(idx == ['a', 'a.2', 'b'])
     assert np.all(idx == NamedIndex(idx))
 
@@ -125,6 +125,12 @@ def test_namedIndex_properties():
     assert idx.size == len(idx) == len(vals)
     assert idx.shape == vals.shape
     assert idx.ndim == 1
+
+    # fixRepeat
+    assert idx.fixRepeat == False
+    idx.fixRepeat = True
+    idx = idx[[0, 0, 1, 2, 3]]
+    assert np.all(idx == ['a', 'a.2', 'bbb', 'cc', 'dddd'])
 
 def test_namedIndex_methods():
     idx, vals = _create_namedIndex()

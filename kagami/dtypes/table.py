@@ -26,9 +26,9 @@ __all__ = ['Table']
 
 # table class
 class Table(CoreType):
-    __slots__ = ('_dmatx', '_rnames', '_cnames', '_rindex', '_cindex', '_metas')
+    __slots__ = ('_dmatx', '_rnames', '_cnames', '_rindex', '_cindex', '_metas', '_fixrep')
 
-    def __init__(self, X, dtype = na, rownames = na, colnames = na, rowindex = na, colindex = na, metadata = na):
+    def __init__(self, X, dtype = na, rownames = na, colnames = na, rowindex = na, colindex = na, metadata = na, fixRepeat = False):
         self._dmatx = np.array(X)
         if available(dtype): self._dmatx = self._dmatx.astype(dtype)
         if self.dtype.kind == 'u' or (self.dtype.kind == 'i' and self.dtype.itemsize < 8):
@@ -38,6 +38,7 @@ class Table(CoreType):
 
         self._metas = Metadata() if isnull(metadata) else Metadata(metadata)
 
+        self._fixrep = fixRepeat
         self._rnames = self._cnames = na
         self.rownames = rownames
         self.colnames = colnames
@@ -72,13 +73,13 @@ class Table(CoreType):
         _fmtlns = lambda lns: list(smap(lns, lambda x: '[' + join(map(lambda v: vfmt % v, x), delimiter) + ']'))
 
         slns = _fmtlns(slns) if len(slns) <= 15 else \
-               _fmtlns(slns[:10]) + [' ... '] + _fmtlns(slns[-2:])
+               _fmtlns(slns[:3]) + [' ... '] + _fmtlns(slns[-2:])
         return slns
 
     # built-ins
     def __getitem__(self, item):
         rids, cids = self._parseIndices(item)
-        ntab = Table(self._dmatx[np.ix_(rids, cids)], dtype = self.dtype, metadata = self._metas)
+        ntab = Table(self._dmatx[np.ix_(rids, cids)], dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
 
         if available(self._rnames): ntab.rownames = self._rnames[rids]
         if available(self._cnames): ntab.colnames = self._cnames[cids]
@@ -203,7 +204,7 @@ class Table(CoreType):
     @rownames.setter
     def rownames(self, value):
         if isnull(value): self._rnames = na; return
-        self._rnames = NamedIndex(value)
+        self._rnames = NamedIndex(value, fixRepeat = self._fixrep)
         if self._rnames.size != self.nrow: raise ValueError('input row names size not match')
 
     @property
@@ -213,7 +214,7 @@ class Table(CoreType):
     @colnames.setter
     def colnames(self, value):
         if isnull(value): self._cnames = na; return
-        self._cnames = NamedIndex(value)
+        self._cnames = NamedIndex(value, fixRepeat = self._fixrep)
         if self._cnames.size != self.ncol: raise ValueError('input column names size not match')
 
     @property
@@ -242,7 +243,7 @@ class Table(CoreType):
 
     @property
     def T(self):
-        tab = Table(self._dmatx.T, dtype = self.dtype, metadata = self._metas)
+        tab = Table(self._dmatx.T, dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
         tab._rnames, tab._cnames = self._cnames.copy(), self._rnames.copy()
         tab._rindex, tab._cindex = self._cindex.copy(), self._rindex.copy()
         return tab
@@ -267,6 +268,16 @@ class Table(CoreType):
     def ndim(self):
         return 2
 
+    @property
+    def fixRepeat(self):
+        return self._fixrep
+
+    @fixRepeat.setter
+    def fixRepeat(self, value):
+        self._fixrep = bool(value)
+        if available(self._rnames): self._rnames.fixRepeat = self._fixrep
+        if available(self._cnames): self._cnames.fixRepeat = self._fixrep
+
     # publics
     def append(self, other, axis = 0):
         if not isinstance(other, Table): raise TypeError('unknown input data type')
@@ -275,7 +286,7 @@ class Table(CoreType):
             if available(self._cnames) and available(other._cnames) and np.any(other._cnames != self._cnames): raise IndexError('input table has different column names')
             if available(self._cindex) and available(other._cindex) and other._cindex != self._cindex: raise IndexError('input table has different column index')
 
-            tab = Table(np.r_[self._dmatx, other._dmatx], dtype = self.dtype, metadata = self._metas)
+            tab = Table(np.r_[self._dmatx, other._dmatx], dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
             if available(self._rnames): tab.rownames = self._rnames + other._rnames
             if available(self._cnames): tab.colnames = self._cnames.copy()
             if available(self._rindex): tab.rowindex = self._rindex + other._rindex
@@ -286,7 +297,7 @@ class Table(CoreType):
             if available(self._rnames) and available(other._rnames) and np.any(other._rnames != self._rnames): raise IndexError('input table has different row names')
             if available(self._rindex) and available(other._rindex) and other._rindex != self._rindex: raise IndexError('input table has different row index')
 
-            tab = Table(np.c_[self._dmatx, other._dmatx], dtype = self.dtype, metadata = self._metas)
+            tab = Table(np.c_[self._dmatx, other._dmatx], dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
             if available(self._rnames): tab.rownames = self._rnames.copy()
             if available(self._cnames): tab.colnames = self._cnames + other._cnames
             if available(self._rindex): tab.rowindex = self._rindex.copy()
@@ -302,7 +313,7 @@ class Table(CoreType):
             if available(self._cindex) and available(other._cindex) and other._cindex != self._cindex: raise IndexError('input table has different column index')
 
             if missing(pos): pos = self.nrow
-            tab = Table(np.insert(self._dmatx, pos, other._dmatx, axis = 0), dtype = self.dtype, metadata = self._metas)
+            tab = Table(np.insert(self._dmatx, pos, other._dmatx, axis = 0), dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
             if available(self._rnames): tab.rownames = self._rnames.insert(other._rnames, pos) # in case np.inert etc will change array shape
             if available(self._cnames): tab.colnames = self._cnames.copy()
             if available(self._rindex): tab.rowindex = self._rindex.insert(other._rindex, pos)
@@ -314,7 +325,7 @@ class Table(CoreType):
             if available(self._rindex) and available(other._rindex) and other._rindex != self._rindex: raise IndexError('input table has different row index')
 
             if missing(pos): pos = self.ncol
-            tab = Table(np.insert(self._dmatx, pos if listable(pos) else [pos], other._dmatx, axis = 1), dtype = self.dtype, metadata = self._metas)
+            tab = Table(np.insert(self._dmatx, pos if listable(pos) else [pos], other._dmatx, axis = 1), dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
             if available(self._rnames): tab.rownames = self._rnames.copy()
             if available(self._cnames): tab.colnames = self._cnames.insert(other._cnames, pos)
             if available(self._rindex): tab.rowindex = self._rindex.copy()
@@ -325,7 +336,7 @@ class Table(CoreType):
     def drop(self, pos, axis = 0):
         if axis == 0:
             if missing(pos): pos = self.nrow
-            tab = Table(np.delete(self._dmatx, pos, axis = 0), dtype = self.dtype, metadata = self._metas)
+            tab = Table(np.delete(self._dmatx, pos, axis = 0), dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
             if available(self._rnames): tab.rownames = self._rnames.drop(pos)
             if available(self._cnames): tab.colnames = self._cnames.copy()
             if available(self._rindex): tab.rowindex = self._rindex.drop(pos)
@@ -333,7 +344,7 @@ class Table(CoreType):
             return tab
         elif axis == 1:
             if missing(pos): pos = self.ncol
-            tab = Table(np.delete(self._dmatx, pos, axis = 1), dtype = self.dtype, metadata = self._metas)
+            tab = Table(np.delete(self._dmatx, pos, axis = 1), dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
             if available(self._rnames): tab.rownames = self._rnames.copy()
             if available(self._cnames): tab.colnames = self._cnames.drop(pos)
             if available(self._rindex): tab.rowindex = self._rindex.copy()
@@ -342,7 +353,7 @@ class Table(CoreType):
         else: raise IndexError('unsupported axis [%d]' % axis)
 
     def copy(self):
-        tab = Table(self._dmatx, dtype = self.dtype, metadata = self._metas)
+        tab = Table(self._dmatx, dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
         tab._rnames, tab._cnames = self._rnames.copy(), self._cnames.copy()
         tab._rindex, tab._cindex = self._rindex.copy(), self._cindex.copy()
         return tab
