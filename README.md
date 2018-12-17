@@ -38,9 +38,9 @@ Using Pipenv:
 pipenv install kagami
 ```
 
-Using Docker (publicly available soon)
+Using Docker
 ```bash
-docker run -v $(pwd):/home --rm kagami-core:latest <your script>
+docker run -v $(pwd):/home --rm albertaki/kagami-core:2.2.7 <your script>
 ```
 
 ## Testing
