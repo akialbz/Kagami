@@ -19,6 +19,7 @@ from kagami.core import na, autoeval, checkInputFile
 class _NoConvConfigParser(ConfigParser):
     def optionxform(self, optionstr): return optionstr
 
+
 def load(cfgFile, autoEval = True, dictType = OrderedDict, emptyAsMissing = False):
     logging.debug('loading configs from [%s]' % cfgFile)
     checkInputFile(cfgFile)

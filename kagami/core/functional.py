@@ -69,6 +69,8 @@ def call(x, funcs, nthreads = na, nprocs = na, collect = na):
     res = reduce(lambda v, f: _map(v, f), funcs, x)
     return collect(res) if available(collect) else res
 
+
+# utils
 def pick(x, cond):
     _check = cond if callable(cond) else (lambda v: v == cond)
     return filter(_check, x)

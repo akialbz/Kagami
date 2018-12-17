@@ -39,6 +39,7 @@ def _request(req, wait, tries, manualRetry):
     try: return json.loads(res)
     except ValueError: return res.strip()
 
+
 def get(url, params = na, headers = na, timeout = 3.05, wait = 1, tries = 1, manualRetry = False, **kwargs):
     logging.debug('getting url [%s]' % url)
     req = partial(requests.get, url, params = optional(params, None), headers = optional(headers, None), timeout = timeout, **kwargs)

@@ -28,6 +28,7 @@ def save(txt, txtFile, mode = 'w'):
     with open(txtFile, mode) as f: f.write(str(txt))
     return os.path.isfile(txtFile)
 
+
 # raw text lines
 def loadlns(txtFile, striping = True, removeBlanks = True, mode = 'rU'):
     logging.debug('loading textlines from [%s]' % txtFile)
