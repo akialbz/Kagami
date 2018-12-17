@@ -16,7 +16,7 @@ import tables as ptb
 from string import join
 from types import NoneType
 from operator import itemgetter
-from kagami.core import na, NAType, Metadata, optional, missing, isnull, available, listable, autoeval, smap, checkInputFile, checkOutputFile
+from kagami.core import na, NAType, Metadata, optional, missing, isnull, available, listable, autoeval, smap, partial, checkInputFile, checkOutputFile
 from kagami.dtypes import CoreType, NamedIndex, StructuredArray
 from kagami.portals import tablePortal
 
@@ -66,15 +66,22 @@ class Table(CoreType):
 
         return rids, cids
 
-    def _toStrList(self, delimiter, transpose = False, withIndex = True):
-        slns = smap(self.tolist(transpose = transpose, withindex = withIndex), lambda x: smap(x, str))
+    def _toStrList(self, delimiter, transpose = False, withindex = True):
+        slns = smap(self.tolist(transpose = transpose, withindex = withindex), lambda x: smap(x, str))
 
-        vfmt = '%%%ds' % (np.max(smap(slns, lambda x: smap(x, len))) + 1)
-        _fmtlns = lambda lns: list(smap(lns, lambda x: '[' + join(map(lambda v: vfmt % v, x), delimiter) + ']'))
+        lmtx = np.array(smap(slns, lambda x: smap(x, len)))
+        nidx = len(optional(self.colindex if transpose else self.rowindex, ())) if withindex else 0
+        ilen, nlen, vlen = smap((lmtx[:,:nidx], lmtx[:,nidx:nidx+1], lmtx[:,nidx+1:]), lambda x: 0 if 0 in x.shape else np.max(x))
 
-        slns = _fmtlns(slns) if len(slns) <= 15 else \
-               _fmtlns(slns[:3]) + [' ... '] + _fmtlns(slns[-2:])
-        return slns
+        _fmt = lambda l,v: '{0:>{1}s}'.format(v, l+1) if v is not None else ' ... '
+        _fmtidx, _fmtnam, _fmtval = smap((ilen, nlen, vlen), lambda x: partial(_fmt, x))
+
+        _fmtdln = lambda x: '[' + join(smap(x[:nidx],_fmtidx) + [_fmtnam(x[nidx])] + smap(x[nidx+1:],_fmtval), delimiter) + ']'
+        _fmtlns = lambda x: smap(x, lambda v: _fmtdln(v) if v is not None else ' ... ')
+
+        if len(slns[0])-1-nidx > 4 and len(slns[0])*vlen > 80: slns = smap(slns, lambda x: x[:nidx+1+3] + [None] + x[-1:])
+        if len(slns) > 15: slns = slns[:6] + [None] + slns[-3:]
+        return _fmtlns(slns)
 
     # built-ins
     def __getitem__(self, item):
@@ -379,7 +386,7 @@ class Table(CoreType):
         return smtx
 
     def tostr(self, delimiter = ',', transpose = False, withindex = False):
-        rlns = self._toStrList(delimiter = delimiter, transpose = transpose, withIndex = withindex)
+        rlns = self._toStrList(delimiter = delimiter, transpose = transpose, withindex = withindex)
         rlns = ['[' + rlns[0]] + \
                [' ' + ln for ln in rlns[1:]]
         return join(rlns, '\n') + ']'
