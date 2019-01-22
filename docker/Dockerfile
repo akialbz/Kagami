@@ -16,15 +16,41 @@ COPY entrypoint.sh /usr/local/bin/
 
 # install python and dependencies and commonly used packages
 RUN ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && echo $TIMEZONE > /etc/timezone \
+    # install R
     && apt-get update && apt-get install -y --no-install-recommends \
 	   r-base \
 	   r-base-dev \
+	# install kagami and dependencies
     && pip install --upgrade --no-cache-dir pip \
-    && pip install --no-cache-dir wheel \
-    && pip install --no-cache-dir $PACKAGE \
-    && pip install --no-cache-dir pytest-profiling pytest-cov \
+    && pip install --no-cache-dir \
+       wheel \
+       numpy \
+       scipy \
+       scikit-learn \
+       statsmodels \
+       pandas \
+       networkx \
+       matplotlib \
+       plotly \
+       bokeh \
+       numba \
+       pytest==3.10.1 \
+       pytest-profiling \
+       pytest-cov \
+       rpy2==2.8.6 \
+       $PACKAGE \
+    # clean
+    && apt-get purge -y \
+       gcc \
+       make \
+       libc6-dev \
+       r-base-dev \
+    && find /usr/local -depth \
+       \( -type f -a \( -name '*.pyc' -o -name '*.pyo' \) \) \
+       -exec rm -rf '{}' + \
     && apt-get autoremove -y && apt-get autoclean -y \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false && rm -rf /var/lib/apt/lists/* \
+    # set entry point and work dir
     && chmod a+x /usr/local/bin/entrypoint.sh && ln -s /usr/local/bin/entrypoint.sh / \
     && mkdir -p /home
 
