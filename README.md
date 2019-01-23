@@ -11,7 +11,8 @@ The Kagami library supports Python 2.7 and will soon be compatible with Python 3
 Kagami requires:
 
 - Python (>= 2.7.14)
-- Pytables (>= 3.4.4)
+- numpy (>= 1.14.3)
+- tables (>= 3.4.4)
 - requests (>= 2.20.1)
 - bidict (>= 0.17.5)
 - pytest (>= 4.0.0)
@@ -19,12 +20,14 @@ Kagami requires:
 To use RWrapper, you will also need:
 
 - rpy2 (== 2.8.6)
-- R (>= 3.4.4)
+- R (>= 3.3.3)
 
 To use pytest coverage and profiling, you will also need:
 
 - pytest-cov (>= 2.6.0)
 - pytest-profiling (>= 1.3.0)
+
+Lower versions may work but have not been tested.
 
 ## Installation
 
@@ -40,7 +43,7 @@ pipenv install kagami
 
 Using Docker
 ```bash
-docker run -v $(pwd):/home --rm albertaki/kagami-core:2.2.7 <your script>
+docker run -v $(pwd):/home --rm albertaki/kagami-core:2.2.10 <your script>
 ```
 
 ## Testing
