@@ -18,7 +18,7 @@ try:
     from rpy2.rinterface import RRuntimeError
 except ImportError:
     raise ImportError('rWrapper requires r environment and rpy2 package')
-from kagami.core import na, isnull, missing, pickmap
+from kagami.core import na, isnull, missing, smap, pickmap, partial
 
 
 np2ri.activate()  # enable numpy <-> R conversions
@@ -40,7 +40,7 @@ class RWrapper(object): # pragma: no cover
 
     @staticmethod
     def library(*args):
-        return robj.r.library(*args)
+        return smap(args, partial(robj.r.library, quietly = True))
 
     @staticmethod
     def asVector(val):
