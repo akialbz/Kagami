@@ -40,7 +40,7 @@ class RWrapper(object): # pragma: no cover
 
     @staticmethod
     def library(*args):
-        return smap(args, partial(robj.r.library, quietly = True))
+        for pkg in args: robj.r.library(pkg, quietly = True)
 
     @staticmethod
     def asVector(val):
