@@ -128,6 +128,7 @@ class NamedIndex(CoreType):
 
     def idsof(self, nams):
         if not listable(nams): return self._ndict[nams]
+        if len(nams) == 0: return np.array([])
         ids = np.array(itemgetter(*nams)(self._ndict))
         return ids if ids.ndim == 1 else ids.reshape((1,))
 
