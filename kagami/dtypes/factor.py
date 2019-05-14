@@ -16,7 +16,7 @@ from string import join
 from operator import itemgetter
 from bidict import FrozenOrderedBidict
 from kagami.core import na, available, optional, checkany, listable, mappable, hashable, smap
-from kagami.dtypes import CoreType
+from coreType import CoreType
 
 
 __all__ = ['factor', 'asFactor']

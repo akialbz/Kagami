@@ -21,8 +21,8 @@ def _connected():
 
 @pytest.mark.skipif(not _connected(), reason = 'no connection to KEGG rest APIs')
 def test_get_io():
-    ret = webPortal.get('http://rest.kegg.jp/link/ko/cge:100765387')
-    assert ret == 'cge:100765387\tko:K19752'
+    ret = webPortal.get('http://rest.kegg.jp/link/ko/cge:113831488')
+    assert ret == 'cge:113831488\tko:K19752'
 
     ret = webPortal.get('http://rest.kegg.jp/no-such-website', tries = 3)
     assert missing(ret)
@@ -32,8 +32,8 @@ def test_get_io():
 
 @pytest.mark.skipif(not _connected(), reason = 'no connection to KEGG rest APIs')
 def test_post_io():
-    ret = webPortal.post('http://rest.kegg.jp/link/ko/cge:100765387')
-    assert ret == 'cge:100765387\tko:K19752'
+    ret = webPortal.post('http://rest.kegg.jp/link/ko/cge:113831488')
+    assert ret == 'cge:113831488\tko:K19752'
 
     ret = webPortal.post('http://rest.kegg.jp/no-such-website', tries = 3)
     assert missing(ret)

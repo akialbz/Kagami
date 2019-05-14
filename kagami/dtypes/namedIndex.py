@@ -14,12 +14,14 @@ import numpy as np
 from operator import itemgetter
 from collections import defaultdict
 from string import join
-from kagami.core import na, optional, listable, isstring, checkany
-from kagami.dtypes import CoreType
+from kagami.core import na, optional, missing, listable, isstring, checkany, smap
+from coreType import CoreType
 
 
 __all__ = ['NamedIndex']
 
+
+strtype_ = lambda x: isstring(x) if not listable(x) else all(smap(x,isstring))
 
 class NamedIndex(CoreType):
     __slots__ = ('_names', '_ndict', '_fixrep')
@@ -30,6 +32,7 @@ class NamedIndex(CoreType):
 
     # built-ins
     def __getitem__(self, item):
+        if isinstance(item, int): return self._names[item]
         return NamedIndex(self._names[item], fixRepeat = self._fixrep)
 
     def __setitem__(self, key, value):
@@ -124,7 +127,7 @@ class NamedIndex(CoreType):
         return self._names[ids]
 
     def idsof(self, nams):
-        if not listable(nams): nams = [nams]
+        if not listable(nams): return self._ndict[nams]
         ids = np.array(itemgetter(*nams)(self._ndict))
         return ids if ids.ndim == 1 else ids.reshape((1,))
 
@@ -132,10 +135,14 @@ class NamedIndex(CoreType):
         return NamedIndex(np.hstack((self._names, other)), fixRepeat = self._fixrep)
 
     def insert(self, other, pos = na):
-        return NamedIndex(np.insert(self._names, optional(pos, self.size), other), fixRepeat = self._fixrep)
+        if missing(pos): pos = self.size
+        elif strtype_(pos): pos = self.idsof(pos)
+        return NamedIndex(np.insert(self._names, pos, other), fixRepeat = self._fixrep)
 
     def drop(self, pos):
-        return NamedIndex(np.delete(self._names, optional(pos, self.size)), fixRepeat = self._fixrep)
+        if missing(pos): pos = self.size
+        elif strtype_(pos): pos = self.idsof(pos)
+        return NamedIndex(np.delete(self._names, pos), fixRepeat = self._fixrep)
 
     def copy(self):
         idx = NamedIndex()

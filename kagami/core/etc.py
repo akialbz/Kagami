@@ -14,7 +14,7 @@ import logging
 from ast import literal_eval
 from collections import Iterable, Mapping, Hashable
 from types import GeneratorType
-from kagami.core import na
+from null import na
 
 
 __all__ = [

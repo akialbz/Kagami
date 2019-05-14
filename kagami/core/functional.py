@@ -11,13 +11,16 @@ origin: 06-07-2016
 
 
 import functools
+import numpy as np
 from multiprocessing import Pool, cpu_count
 from multiprocessing.pool import ThreadPool
-from kagami.core import na, available, missing, optional, listable, peek
+from operator import itemgetter
+from null import na, available, missing
+from etc import listable, peek
 
 
 __all__ = [
-    'partial', 'compose', 'unpack', 'smap', 'tmap', 'pmap', 'call', 'pick', 'pickmap', 'drop', 'fold', 'collapse'
+    'partial', 'compose', 'unpack', 'smap', 'tmap', 'pmap', 'cmap', 'call', 'pick', 'pickmap', 'drop', 'fold', 'collapse'
 ]
 
 
@@ -44,7 +47,7 @@ def smap(x, func):
     return map(func, x)
 
 def _mmap(x, func, ptype, nps):
-    if nps is None or nps >= cpu_count(): nps = cpu_count() - 1 # in case dead lock
+    if missing(nps) or nps >= cpu_count(): nps = cpu_count() - 1 # in case dead lock
     mpool = ptype(processes = nps)
     jobs = [mpool.apply_async(func, (p,)) for p in x]
     mpool.close()
@@ -52,10 +55,18 @@ def _mmap(x, func, ptype, nps):
     return [j.get() for j in jobs]
 
 def tmap(x, func, nthreads = na):
-    return _mmap(x, func, ThreadPool, optional(nthreads, None))
+    return _mmap(x, func, ThreadPool, nthreads)
 
 def pmap(x, func, nprocs = na):
-    return _mmap(x, func, Pool, optional(nprocs, None))
+    return _mmap(x, func, Pool, nprocs)
+
+def cmap(x, func, nchunks = na):
+    if missing(nchunks): nchunks = cpu_count() - 1
+    if nchunks > len(x): nchunks = len(x)
+    ids = smap(np.array_split(np.arange(len(x)), nchunks), lambda i: i if len(i) > 1 else [i])
+    pms = smap(ids, lambda i: itemgetter(*i)(x))
+    _func = lambda ps: smap(ps, func)
+    return collapse(tmap(pms, _func, nchunks))
 
 def call(x, funcs, nthreads = na, nprocs = na, collect = na):
     if not listable(x): raise TypeError('source in not listable')

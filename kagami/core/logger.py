@@ -11,7 +11,7 @@ origin: 12-11-2014
 
 
 import logging, sys
-from kagami.core import na, available, optional
+from null import na, available, optional
 
 
 __all__ = [

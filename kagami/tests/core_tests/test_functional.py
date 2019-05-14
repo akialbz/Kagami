@@ -33,6 +33,7 @@ def test_maps():
     assert np.allclose(smap(vals, unpack(_pow)), np.power(vals, 2))
     assert np.allclose(tmap(vals, _mp_pow), np.power(vals, 2))
     assert np.allclose(pmap(vals, _mp_pow), np.power(vals, 2))
+    assert np.allclose(cmap(vals, _mp_pow), np.power(vals, 2))
     assert np.allclose(call(vals, (_mp_pow, _mp_pow), nthreads = 6, collect = lambda x: np.array(x) - 1), np.power(vals, 4) - 1)
     assert np.allclose(call(vals, (_mp_pow, _mp_pow), nprocs = 6, collect = lambda x: np.array(x) - 1), np.power(vals, 4) - 1)
 

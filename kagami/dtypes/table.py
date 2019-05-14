@@ -17,8 +17,10 @@ from string import join
 from types import NoneType
 from operator import itemgetter
 from kagami.core import na, NAType, Metadata, optional, missing, isnull, available, listable, autoeval, smap, partial, checkInputFile, checkOutputFile
-from kagami.dtypes import CoreType, NamedIndex, StructuredArray
 from kagami.portals import tablePortal
+from coreType import CoreType
+from namedIndex import strtype_, NamedIndex
+from structArray import StructuredArray
 
 
 __all__ = ['Table']
@@ -320,6 +322,8 @@ class Table(CoreType):
             if available(self._cindex) and available(other._cindex) and other._cindex != self._cindex: raise IndexError('input table has different column index')
 
             if missing(pos): pos = self.nrow
+            elif available(self._rnames) and strtype_(pos): pos = self._rnames.idsof(pos)
+
             tab = Table(np.insert(self._dmatx, pos, other._dmatx, axis = 0), dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
             if available(self._rnames): tab.rownames = self._rnames.insert(other._rnames, pos) # in case np.inert etc will change array shape
             if available(self._cnames): tab.colnames = self._cnames.copy()
@@ -332,6 +336,8 @@ class Table(CoreType):
             if available(self._rindex) and available(other._rindex) and other._rindex != self._rindex: raise IndexError('input table has different row index')
 
             if missing(pos): pos = self.ncol
+            elif available(self._cnames) and strtype_(pos): pos = self._cnames.idsof(pos)
+
             tab = Table(np.insert(self._dmatx, pos if listable(pos) else [pos], other._dmatx, axis = 1), dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
             if available(self._rnames): tab.rownames = self._rnames.copy()
             if available(self._cnames): tab.colnames = self._cnames.insert(other._cnames, pos)
@@ -343,6 +349,8 @@ class Table(CoreType):
     def drop(self, pos, axis = 0):
         if axis == 0:
             if missing(pos): pos = self.nrow
+            elif available(self._rnames) and strtype_(pos): pos = self._rnames.idsof(pos)
+
             tab = Table(np.delete(self._dmatx, pos, axis = 0), dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
             if available(self._rnames): tab.rownames = self._rnames.drop(pos)
             if available(self._cnames): tab.colnames = self._cnames.copy()
@@ -351,6 +359,8 @@ class Table(CoreType):
             return tab
         elif axis == 1:
             if missing(pos): pos = self.ncol
+            elif available(self._cnames) and strtype_(pos): pos = self._cnames.idsof(pos)
+
             tab = Table(np.delete(self._dmatx, pos, axis = 1), dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
             if available(self._rnames): tab.rownames = self._rnames.copy()
             if available(self._cnames): tab.colnames = self._cnames.drop(pos)

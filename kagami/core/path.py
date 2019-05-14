@@ -11,7 +11,8 @@ origin: 06-06-2016
 
 
 import logging, os, shutil
-from kagami.core import na, available, pick, drop
+from null import na, available
+from functional import pick, drop
 
 
 __all__ = [

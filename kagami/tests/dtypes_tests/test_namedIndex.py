@@ -71,7 +71,7 @@ def test_namedIndex_built_ins():
     assert 'aa' not in idx
     assert 'a' not in idx[1:]
     assert len(idx) == vals.shape[0]
-    assert len(idx[-1]) == 1
+    assert len(idx[-1]) == len(vals[-1])
 
     # comparison oprtations
     assert np.all(idx == vals)
@@ -141,7 +141,7 @@ def test_namedIndex_methods():
     assert np.all(idx.namesof([0,2]) == vals[[0,2]])
     with pytest.raises(IndexError): idx.namesof([4,5])
 
-    assert idx.idsof('cc') == 2
+    assert isinstance(idx.idsof('cc'), int) and idx.idsof('cc') == 2
     assert np.all(idx.idsof(['a', 'dddd']) == [0,3])
     with pytest.raises(KeyError): idx.idsof(['a', 'b', 'cc'])
 
@@ -152,11 +152,13 @@ def test_namedIndex_methods():
 
     assert np.all(idx.insert('ee', 1) == np.insert(vals, 1, 'ee'))
     assert np.all(idx.insert(['ff', 'gg'], [0,2]) == np.insert(vals, [0,2], ['ff', 'gg']))
+    assert np.all(idx.insert(['ff', 'gg'], ['a','cc']) == np.insert(vals, [0,2], ['ff', 'gg']))
     assert np.all(idx.insert(NamedIndex(['ff', 'gg']), 1) == np.insert(vals, 1, ['ff', 'gg']))
     assert np.all(idx.insert(['ee']) == idx.append('ee'))
     with pytest.raises(KeyError): idx.insert(idx, 1)
 
     assert np.all(idx.drop(-1) == vals[:-1])
+    assert np.all(idx.drop(['a', 'dddd']) == vals[1:3])
     assert np.all(idx.drop([0,2]) == vals[[1,3]])
     assert len(idx.drop([0,1,2,3])) == 0
 
