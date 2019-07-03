@@ -18,8 +18,13 @@ from null import na
 
 
 __all__ = [
-    'autoeval', 'isstring', 'mappable', 'hashable', 'iterable', 'listable', 'isiterator', 'checkall', 'checkany', 'peek'
+    'T', 'F', 'autoeval', 'isstring', 'mappable', 'hashable', 'iterable', 'listable', 'isiterator', 'checkall', 'checkany', 'peek'
 ]
+
+
+# convenient constants
+T = True
+F = False
 
 
 # auto eval

@@ -10,6 +10,7 @@ origin: 12-19-2017
 """
 
 
+import warnings
 import numpy as np
 try:
     import rpy2.robjects as robj
@@ -18,7 +19,7 @@ try:
     from rpy2.rinterface import RRuntimeError
 except ImportError:
     raise ImportError('rWrapper requires r environment and rpy2 package')
-from kagami.core import na, isnull, missing, smap, pickmap, partial
+from kagami.core import na, isnull, missing, pickmap
 
 
 np2ri.activate()  # enable numpy <-> R conversions
@@ -30,8 +31,8 @@ class RWrapper(object): # pragma: no cover
     robj = robj
     r = robj.r
 
-    def __init__(self, *libraries):
-        self.library(*libraries)
+    def __init__(self, *libraries, **kwargs):
+        self.library(*libraries, **kwargs)
 
     # methods
     @staticmethod
@@ -39,8 +40,14 @@ class RWrapper(object): # pragma: no cover
         return robj.r('rm(list = ls())')
 
     @staticmethod
-    def library(*args):
-        for pkg in args: robj.r.library(pkg, quietly = True)
+    def library(*args, **kwargs):
+        mute = kwargs.pop('mute', False)
+        if mute:
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore')
+                for pkg in args: robj.r.library(pkg, quietly = True)
+        else:
+            for pkg in args: robj.r.library(pkg, quietly = True)
 
     @staticmethod
     def asVector(val):
