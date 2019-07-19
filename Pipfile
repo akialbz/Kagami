@@ -12,6 +12,7 @@ requests = "*"
 tables = "*"
 bidict = "*"
 pytest = "*"
+pylint = "*"
 
 [requires]
 python_version = "2.7"

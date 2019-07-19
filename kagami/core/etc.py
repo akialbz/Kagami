@@ -14,7 +14,7 @@ import logging
 from ast import literal_eval
 from collections import Iterable, Mapping, Hashable
 from types import GeneratorType
-from null import na
+from .null import na
 
 
 __all__ = [
@@ -29,7 +29,7 @@ F = False
 
 # auto eval
 def autoeval(x):
-    if not isstring(x): logging.warning('unable to eval non-string value [%s]' % str(x))
+    if not isstring(x): logging.warning('unable to eval non-string value [%s]', str(x))
     v = x.strip()
     if v in ('na', 'n/a', 'NA', 'N/A'): return na
     try: return literal_eval(v)

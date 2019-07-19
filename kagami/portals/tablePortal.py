@@ -16,7 +16,7 @@ from kagami.core import na, available, autoeval, smap, pickmap, checkInputFile, 
 
 # csv portals
 def loadcsv(tabFile, headRows = na, autoEval = False, wrap = na, mode = 'rU', **kwargs):
-    logging.debug('loading table from [%s]' % tabFile)
+    logging.debug('loading table from [%s]', tabFile)
     checkInputFile(tabFile)
 
     with open(tabFile, mode) as f:
@@ -28,7 +28,7 @@ def loadcsv(tabFile, headRows = na, autoEval = False, wrap = na, mode = 'rU', **
     return (hd, tb) if available(headRows) else tb
 
 def savecsv(table, tabFile, heads = na, mode = 'w', **kwargs):
-    logging.debug('saving table to [%s]' % tabFile)
+    logging.debug('saving table to [%s]', tabFile)
     checkOutputFile(tabFile)
 
     with open(tabFile, mode) as f:

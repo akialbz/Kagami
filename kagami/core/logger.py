@@ -11,7 +11,7 @@ origin: 12-11-2014
 
 
 import logging, sys
-from null import na, available, optional
+from .null import na, available, optional
 
 
 __all__ = [
@@ -51,7 +51,7 @@ class _QuitHandler(logging.Handler): # pragma: no cover
 
 # config interface
 def configLogger(level = logging.INFO, fatalLevel = logging.FATAL,
-                  consoleFmt = na, logFile = na, logMode = 'a+', logFmt = na, exceptionFmt = na): # pragma: no cover
+                 consoleFmt = na, logFile = na, logMode = 'a+', logFmt = na, exceptionFmt = na): # pragma: no cover
     logger = logging.getLogger()
     logger.handlers = [] # remove existing handlers
     logger.setLevel(level)
@@ -76,7 +76,7 @@ def configLogger(level = logging.INFO, fatalLevel = logging.FATAL,
     if not isinstance(efmt, str): raise TypeError('exception format is not a string object')
     def _excepthook(*args):
         logger.fatal(
-            efmt % {'class': args[1].__class__.__name__, 'message': args[1].message},
+            efmt, {'class': args[1].__class__.__name__, 'message': args[1].message},
             exc_info = False if level > logging.DEBUG else args
         )
     sys.excepthook = _excepthook

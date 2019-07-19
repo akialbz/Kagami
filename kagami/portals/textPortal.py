@@ -17,13 +17,13 @@ from kagami.core import smap, drop, pickmap, checkInputFile, checkOutputFile
 
 # raw text string
 def load(txtFile, striping = True, mode = 'r'):
-    logging.debug('loading text from [%s]' % txtFile)
+    logging.debug('loading text from [%s]', txtFile)
     checkInputFile(txtFile)
     with open(txtFile, mode) as f: txt = f.read()
     return strip(txt) if striping else txt
 
 def save(txt, txtFile, mode = 'w'):
-    logging.debug('saving text to [%s]' % txtFile)
+    logging.debug('saving text to [%s]', txtFile)
     checkOutputFile(txtFile)
     with open(txtFile, mode) as f: f.write(str(txt))
     return os.path.isfile(txtFile)
@@ -31,7 +31,7 @@ def save(txt, txtFile, mode = 'w'):
 
 # raw text lines
 def loadlns(txtFile, striping = True, removeBlanks = True, mode = 'rU'):
-    logging.debug('loading textlines from [%s]' % txtFile)
+    logging.debug('loading textlines from [%s]', txtFile)
     checkInputFile(txtFile)
 
     with open(txtFile, mode) as f: tlines = f.readlines()
@@ -42,7 +42,7 @@ def loadlns(txtFile, striping = True, removeBlanks = True, mode = 'rU'):
     return tlines
 
 def savelns(tlines, txtFile, autoReturn = True, mode = 'w'):
-    logging.debug('saving textlines to [%s]' % txtFile)
+    logging.debug('saving textlines to [%s]', txtFile)
     checkOutputFile(txtFile)
 
     tlines = smap(tlines, str)

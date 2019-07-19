@@ -20,9 +20,9 @@ def _request(req, wait, tries, manualRetry):
         try:
             resp = req()
             if resp.ok: return resp.text
-            logging.warning('[%d] attempt connection failed: [%d] %s' % (ti, resp.status_code, resp.reason))
+            logging.warning('[%d] attempt connection failed: [%d] %s', ti, resp.status_code, resp.reason)
         except Exception, e:
-            logging.warning('[%d] attempt connection failed: %s' % (ti, str(e)))
+            logging.warning('[%d] attempt connection failed: %s', ti, str(e))
         if ti > 0 and wait > 0: sleep(wait)
         return na
 
@@ -41,11 +41,11 @@ def _request(req, wait, tries, manualRetry):
 
 
 def get(url, params = na, headers = na, timeout = 3.05, wait = 1, tries = 1, manualRetry = False, **kwargs):
-    logging.debug('getting url [%s]' % url)
+    logging.debug('getting url [%s]', url)
     req = partial(requests.get, url, params = optional(params, None), headers = optional(headers, None), timeout = timeout, **kwargs)
     return _request(req, wait, tries, manualRetry)
 
 def post(url, data = na, headers = na, timeout = 3.05, wait = 1, tries = 1, manualRetry = False, **kwargs):
-    logging.debug('posting url [%s]' % url)
+    logging.debug('posting url [%s]', url)
     req = partial(requests.post, url, data = optional(data, None), headers = optional(headers, None), timeout = timeout, **kwargs)
     return _request(req, wait, tries, manualRetry)

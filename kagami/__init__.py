@@ -14,4 +14,4 @@ __version__ = '2.2'
 __version_name__ = 'Izumo'
 
 
-from unitest import test
+from .unitest import test

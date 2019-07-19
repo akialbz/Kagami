@@ -9,9 +9,9 @@ origin: 11-20-2018
 
 """
 
-from kagami.core.null import *
-from kagami.core.metadata import *
-from kagami.core.etc import *
-from kagami.core.functional import *
-from kagami.core.path import *
-from kagami.core.logger import *
+from .null import *
+from .metadata import *
+from .etc import *
+from .functional import *
+from .path import *
+from .logger import *

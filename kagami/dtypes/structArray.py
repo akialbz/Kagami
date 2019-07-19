@@ -18,7 +18,7 @@ from collections import OrderedDict
 from types import NoneType
 from kagami.core import na, NAType, missing, checkall, checkany, listable, isstring, mappable, autoeval, smap, pickmap, unpack, checkInputFile, checkOutputFile
 from kagami.portals import tablePortal
-from coreType import CoreType
+from .coreType import CoreType
 
 
 __all__ = ['StructuredArray']

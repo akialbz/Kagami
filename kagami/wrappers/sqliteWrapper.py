@@ -29,10 +29,9 @@ class SQLiteWrapper(object):
     # operations
     def connect(self):
         if self._dbconn is not None:
-            logging.debug('database [%s] already connected, ignore' % fileTitle(self._dbfile))
+            logging.debug('database [%s] already connected, ignore', fileTitle(self._dbfile))
         else:
-            logging.debug('%s SQLite database [%s]' %
-                ('connecting' if os.path.isfile(self._dbfile) else 'creating', fileTitle(self._dbfile)))
+            logging.debug('%s SQLite database [%s]', 'connecting' if os.path.isfile(self._dbfile) else 'creating', fileTitle(self._dbfile))
             self._dbconn = sqlite3.connect(self._dbfile, **self._dbpams)
         return self
 
@@ -42,9 +41,9 @@ class SQLiteWrapper(object):
 
     def close(self, commit = True):
         if self._dbconn is None:
-            logging.debug('connection to database [%s] already closed, ignore' % fileTitle(self._dbfile))
+            logging.debug('connection to database [%s] already closed, ignore', fileTitle(self._dbfile))
         else:
-            logging.debug('closing connection to SQLite database [%s]' % fileTitle(self._dbfile))
+            logging.debug('closing connection to SQLite database [%s]', fileTitle(self._dbfile))
             if commit: self._dbconn.commit()
             self._dbconn.close()
             self._dbconn = None
@@ -52,20 +51,20 @@ class SQLiteWrapper(object):
 
     def execute(self, query):
         if self._dbconn is None: raise IOError('database not connected')
-        logging.debug('sqlite exec = [%s]' % query)
+        logging.debug('sqlite exec = [%s]', query)
         try:
             self._dbconn.execute(query)
         except Exception, e:
-            logging.warning('sqlite execution failed: ' + str(e))
+            logging.warning('sqlite execution failed: %s', str(e))
         return self
 
     def query(self, query):
         if self._dbconn is None: raise IOError('database not connected')
-        logging.debug('sqlite query = [%s]' % query)
+        logging.debug('sqlite query = [%s]', query)
         try:
             res = self._dbconn.execute(query).fetchall()
         except Exception, e:
-            logging.warning('sqlite query failed: ' + str(e))
+            logging.warning('sqlite query failed: %s', str(e))
             res = []
         return res
 

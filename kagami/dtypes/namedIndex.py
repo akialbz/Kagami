@@ -15,7 +15,7 @@ from operator import itemgetter
 from collections import defaultdict
 from string import join
 from kagami.core import na, optional, missing, listable, isstring, checkany, smap
-from coreType import CoreType
+from .coreType import CoreType
 
 
 __all__ = ['NamedIndex']

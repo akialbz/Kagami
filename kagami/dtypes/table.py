@@ -18,9 +18,9 @@ from types import NoneType
 from operator import itemgetter
 from kagami.core import na, NAType, Metadata, optional, missing, isnull, available, listable, autoeval, smap, partial, checkInputFile, checkOutputFile
 from kagami.portals import tablePortal
-from coreType import CoreType
-from namedIndex import strtype_, NamedIndex
-from structArray import StructuredArray
+from .coreType import CoreType
+from .namedIndex import strtype_, NamedIndex
+from .structArray import StructuredArray
 
 
 __all__ = ['Table']

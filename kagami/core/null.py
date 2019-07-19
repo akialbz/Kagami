@@ -28,25 +28,33 @@ class _NA(object):
     bool_     = False
 
     # comparison
-    def __eq__(self, other): return isinstance(other, _NA)
-    def __ne__(self, other): return not self.__eq__(other)
+    @classmethod
+    def __eq__(cls, other): return isinstance(other, _NA)
+    @classmethod
+    def __ne__(cls, other): return not cls.__eq__(other)
 
     # type conversion, not reversible
-    def __str__(self): return _NA.char_
-    def __int__(self): return _NA.integer_
-    def __long__(self): return _NA.integer_
-    def __float__(self): return _NA.float_
-    def __nonzero__(self): return _NA.bool_
+    @classmethod
+    def __str__(cls): return cls.char_
+    @classmethod
+    def __int__(cls): return cls.integer_
+    @classmethod
+    def __long__(cls): return cls.integer_
+    @classmethod
+    def __float__(cls): return cls.float_
+    @classmethod
+    def __nonzero__(cls): return cls.bool_
 
     # for printing
-    def __repr__(self): return 'N/A'
+    @classmethod
+    def __repr__(cls): return 'N/A'
 
     # for pickling
     def __getstate__(self):
         return {k: getattr(self, k) for k in self.__slots__}
 
     def __setstate__(self, dct):
-        for k in filter(lambda x: x in self.__slots__, dct.keys()): setattr(self, k, dct[k])
+        for k in [v for v in dct.keys() if v in self.__slots__]: setattr(self, k, dct[k])
 
     # copy
     def copy(self): return self
@@ -54,10 +62,10 @@ class _NA(object):
 na = _NA() # fixed object
 NAType = _NA # alias type
 
+# works on variable
 missing = lambda x: isinstance(x, _NA)
 available = lambda x: not missing(x)
 optional = lambda x, default: x if available(x) else default
-
 isnull = lambda x: missing(x) or x is None
 
 # works on array
@@ -66,7 +74,7 @@ def isna(x):
 
     if isinstance(x, np.ndarray) and x.dtype.kind != 'O':
         dt = x.dtype.kind
-        if dt not in ('f', 'i'): logging.warning('unsafe na checking for ndarray dtype [%s]' % dt)
+        if dt not in ('f', 'i'): logging.warning('unsafe na checking for ndarray dtype [%s]', dt)
         return np.isnan(x) if dt == 'f' else x == na.integer_ if dt == 'i' else np.zeros_like(x, dtype = bool)
     else:
         return np.array([isnan(v) if isinstance(v, float) else v == na.integer_ if isinstance(v, int) else v == na for v in list(x)])

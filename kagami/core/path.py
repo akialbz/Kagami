@@ -11,8 +11,8 @@ origin: 06-06-2016
 
 
 import logging, os, shutil
-from null import na, available
-from functional import pick, drop
+from .null import na, available
+from .functional import pick, drop
 
 
 __all__ = [
@@ -59,33 +59,33 @@ def listPath(path, recursive = False, fileOnly = False, folderOnly = False, visi
 
 # check
 def checkInputFile(fpath):
-    logging.debug('checking input file [%s]' % fpath)
+    logging.debug('checking input file [%s]', fpath)
     if not os.path.isfile(fpath): raise IOError('input file [%s] not found' % fpath)
-    if not os.path.getsize(fpath) > 0: logging.warning('input file [%s] is empty' % fpath)
+    if not os.path.getsize(fpath) > 0: logging.warning('input file [%s] is empty', fpath)
     return fpath
 
 def checkInputDir(dpath):
-    logging.debug('checking input dir [%s]' % dpath)
+    logging.debug('checking input dir [%s]', dpath)
     if not os.path.isdir(dpath): raise IOError('input dir [%s] not found' % dpath)
-    if not len(os.listdir(dpath)) > 0: logging.warning('input dir [%s] is empty' % dpath)
+    if not len(os.listdir(dpath)) > 0: logging.warning('input dir [%s] is empty', dpath)
     return dpath
 
 def checkOutputFile(fpath, override = True):
-    logging.debug('checking output file [%s] with [%s]' % (fpath, 'override' if override else 'no-override'))
+    logging.debug('checking output file [%s] with [%s]', fpath, 'override' if override else 'no-override')
     if not os.path.isfile(fpath):
         checkOutputDir(os.path.dirname(fpath))
     elif override:
-        logging.warning('output file [%s] already exists, override' % fpath)
+        logging.warning('output file [%s] already exists, override', fpath)
         os.remove(fpath)
         if os.path.isfile(fpath): raise IOError('fail to remove existing output file [%s]' % fpath)
     return fpath
 
 def checkOutputDir(dpath, override = False):
-    logging.debug('checking output dir [%s] with [%s]' % (dpath, 'override' if override else 'no-override'))
+    logging.debug('checking output dir [%s] with [%s]', dpath, 'override' if override else 'no-override')
     if dpath.strip() != '':
         if os.path.isdir(dpath):
             if not override: return dpath
-            logging.warning('output dir [%s] already exists, override' % dpath)
+            logging.warning('output dir [%s] already exists, override', dpath)
             shutil.rmtree(dpath)
             if os.path.isdir(dpath): raise IOError('fail to remove existing output dir [%s]' % dpath)
         os.makedirs(dpath)

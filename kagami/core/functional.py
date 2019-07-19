@@ -15,8 +15,8 @@ import numpy as np
 from multiprocessing import Pool, cpu_count
 from multiprocessing.pool import ThreadPool
 from operator import itemgetter
-from null import na, available, missing
-from etc import listable, peek
+from .null import na, available, missing
+from .etc import listable, peek
 
 
 __all__ = [
@@ -77,7 +77,7 @@ def call(x, funcs, nthreads = na, nprocs = na, collect = na):
     _map = smap if missing(nprocs) and missing(nthreads) else \
            partial(tmap, nthreads = nthreads) if available(nthreads) else \
            partial(pmap, nprocs = nprocs)
-    res = reduce(lambda v, f: _map(v, f), funcs, x)
+    res = reduce(_map, funcs, x)
     return collect(res) if available(collect) else res
 
 
@@ -93,7 +93,7 @@ def pickmap(x, cond, func):
 
 def drop(x, cond):
     _check = cond if callable(cond) else (lambda v: v == cond)
-    return filter(lambda v: not _check(v), x)
+    return [v for v in x if not _check(v)]
 
 def fold(x, func, init = na):
     if missing(init): init, x = peek(x)

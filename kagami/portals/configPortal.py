@@ -21,7 +21,7 @@ class _NoConvConfigParser(ConfigParser):
 
 
 def load(cfgFile, autoEval = True, dictType = OrderedDict, emptyAsMissing = False):
-    logging.debug('loading configs from [%s]' % cfgFile)
+    logging.debug('loading configs from [%s]', cfgFile)
     checkInputFile(cfgFile)
 
     cfg = _NoConvConfigParser()

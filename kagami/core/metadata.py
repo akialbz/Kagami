@@ -17,9 +17,6 @@ __all__ = ['Metadata']
 class Metadata(dict):
     __slots__ = ()
 
-    def __init__(self, *args, **kwargs):
-        super(Metadata, self).__init__(*args, **kwargs)
-
     def __getattr__(self, item):
         return self[item] if self.has_key(item) else super(Metadata, self).__getattribute__(item)
 
@@ -35,5 +32,5 @@ class Metadata(dict):
         return {k: getattr(self, k) for k in self.__slots__}
 
     def __setstate__(self, dct):
-        for k in filter(lambda x: x in self.__slots__, dct.keys()): setattr(self, k, dct[k])
+        for k in [v for v in dct.keys() if v in self.__slots__]: setattr(self, k, dct[k])
 

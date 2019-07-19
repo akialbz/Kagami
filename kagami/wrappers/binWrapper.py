@@ -20,8 +20,8 @@ from kagami.core import na, isnull, optional, missing, available, listable, smap
 # for multiprocessing
 def _exec(binary, params, stdin, shell, normcodes, mute):
     exelst = [binary] + smap([] if isnull(params) else params, lambda x: str(x).strip())
-    exestr = join(smap(exelst, lambda x: x.replace(' ', '\ ')), ' ')
-    logging.debug('running binary cmd = [%s]' % exestr)
+    exestr = join(smap(exelst, lambda x: x.replace(' ', r'\ ')), ' ')
+    logging.debug('running binary cmd = [%s]', exestr)
 
     procs = Popen(exestr if shell else exelst, stdin = PIPE, stdout = PIPE, stderr = PIPE, shell = shell)
     rvals = procs.communicate(input = optional(stdin, None))
@@ -29,7 +29,7 @@ def _exec(binary, params, stdin, shell, normcodes, mute):
     rcode = procs.returncode
 
     if rcode in normcodes: logging.log((logging.DEBUG if mute else logging.INFO), join(rstrs, ' | '))
-    else: logging.error('execution failed [%d]:\n%s' % (rcode, join(rstrs, ' | ')))
+    else: logging.error('execution failed [%d]:\n%s', rcode, join(rstrs, ' | '))
     return rcode, rstrs
 
 def _mp_exec(params):
