@@ -15,7 +15,7 @@ import cPickle as cp
 import numpy as np
 from string import ascii_lowercase
 from copy import deepcopy
-from kagami.dtypes import NamedIndex
+from kagami.coreTypes import NamedIndex
 
 
 def _create_namedIndex():

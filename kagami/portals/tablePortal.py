@@ -10,38 +10,40 @@ origin: 06-28-2014
 """
 
 
-import logging, os, csv
-from kagami.core import na, available, autoeval, smap, pickmap, checkInputFile, checkOutputFile
+import os, csv
+from pathlib import Path
+from typing import List, Iterable, Union, Optional, Any
+from kagami.common import available, smap, drop, partial, checkall, checkInputFile, checkOutputFile
+
+
+__all__ = ['load', 'save', 'loadcsv', 'savecsv']
 
 
 # csv portals
-def loadcsv(tabFile, headRows = na, autoEval = False, wrap = na, mode = 'rU', **kwargs):
-    logging.debug('loading table from [%s]', tabFile)
-    checkInputFile(tabFile)
+def loadcsv(fname: Union[str, Path], *, mode: str = 'r',
+            skips: Optional[int] = 0, comment: Optional[str] = '#', strip: bool = True,
+            **kwargs: Any) -> List[List[str]]:
+    checkInputFile(fname)
+    with open(fname, mode) as f:
+        if available(skips) and skips > 0:
+            for _ in range(skips): next(f)
+        tb = csv.reader(f, **kwargs)
+        if strip: tb = drop(tb, lambda x: len(x) == 0 or checkall(x, lambda v: v.strip() == ''))
+        if available(comment): tb = drop(tb, lambda x: x[0].startswith(comment))
+        tb = list(tb)
+    return tb
 
-    with open(tabFile, mode) as f:
-        hd = [next(f).rstrip('\n') for _ in range(headRows)] if available(headRows) else None
-        tb = list(csv.reader(f, **kwargs))
-    if autoEval: tb = smap(tb, lambda x: smap(x, autoeval))
-
-    if available(wrap): tb = wrap(tb)
-    return (hd, tb) if available(headRows) else tb
-
-def savecsv(table, tabFile, heads = na, mode = 'w', **kwargs):
-    logging.debug('saving table to [%s]', tabFile)
-    checkOutputFile(tabFile)
-
-    with open(tabFile, mode) as f:
-        if available(heads): f.writelines(pickmap(smap(heads, str), lambda x: not x.endswith('\n'), lambda x: x + '\n'))
-        csv.writer(f, **kwargs).writerows(smap(table, lambda x: smap(x,str)))
-
-    return os.path.isfile(tabFile)
+def savecsv(table: Iterable[Iterable[str]], fname: Union[str, Path], *, mode: str = 'w',
+            heads: Optional[Iterable[str]] = None, **kwargs: Any) -> bool:
+    checkOutputFile(fname)
+    with open(fname, mode) as f:
+        if available(heads): f.writelines(smap(heads, lambda x: x.rstrip('\n') + '\n'))
+        csv.writer(f, **kwargs).writerows(table)
+    return os.path.isfile(fname)
 
 
 # general / tsv portals
-def load(tabFile, delimiter = '\t', headRows = na, autoEval = False, wrap = na, mode = 'rU', **kwargs):
-    return loadcsv(tabFile, headRows = headRows, autoEval = autoEval, wrap = wrap, mode = mode, delimiter = delimiter, **kwargs)
+load = partial(loadcsv, delimiter = '\t')
 
-def save(table, tabFile, delimiter = '\t', heads = na, mode = 'w', **kwargs):
-    return savecsv(table, tabFile, heads =  heads, mode = mode, delimiter = delimiter, **kwargs)
+save = partial(savecsv, delimiter = '\t')
 

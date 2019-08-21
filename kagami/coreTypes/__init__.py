@@ -11,7 +11,6 @@ origin: 08-07-2018
 
 
 from .coreType import *
-from .factor import *
 from .namedIndex import *
 from .structArray import *
 from .table import *

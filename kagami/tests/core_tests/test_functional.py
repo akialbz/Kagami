@@ -11,7 +11,7 @@ origin: 11-20-2018
 
 
 import numpy as np
-from kagami.core import *
+from kagami.common import *
 
 
 def test_partial():

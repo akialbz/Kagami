@@ -10,5 +10,5 @@ origin: 03-18-2017
 """
 
 
-__all__ = ['configPortal', 'tablePortal', 'textPortal', 'webPortal']
+__all__ = ['tablePortal', 'textPortal', 'webPortal']
 

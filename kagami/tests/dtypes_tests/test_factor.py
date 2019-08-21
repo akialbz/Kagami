@@ -15,7 +15,7 @@ import cPickle as cp
 import numpy as np
 from copy import deepcopy
 from bidict import bidict
-from kagami.dtypes import factor, asFactor
+from kagami.coreTypes import factor, asFactor
 
 
 # factor

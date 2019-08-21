@@ -12,7 +12,7 @@ origin: 10-01-2018
 
 import pytest
 import numpy as np
-from kagami.dtypes import CoreType
+from kagami.coreTypes import CoreType
 
 
 def test_coretype_creation():

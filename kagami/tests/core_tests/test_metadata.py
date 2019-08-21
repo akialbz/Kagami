@@ -11,7 +11,7 @@ origin: 11-14-2018
 
 
 import cPickle as cp
-from kagami.core import *
+from kagami.common import *
 
 
 def test_metadata():

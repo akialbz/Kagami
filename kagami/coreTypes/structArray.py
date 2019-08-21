@@ -13,10 +13,9 @@ origin: 08-23-2018
 import logging, os
 import numpy as np
 import tables as ptb
-from string import join
 from collections import OrderedDict
 from types import NoneType
-from kagami.core import na, NAType, missing, checkall, checkany, listable, isstring, mappable, autoeval, smap, pickmap, unpack, checkInputFile, checkOutputFile
+from kagami.common import missing, checkall, checkany, listable, isstring, ismapping, autoeval, smap, pickmap, unpack, checkInputFile, checkOutputFile
 from kagami.portals import tablePortal
 from .coreType import CoreType
 

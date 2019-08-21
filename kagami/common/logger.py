@@ -11,7 +11,7 @@ origin: 12-11-2014
 
 
 import logging, sys
-from .null import na, available, optional
+from .types import available, optional
 
 
 __all__ = [
@@ -35,11 +35,11 @@ EXCEPTION_FORMAT = '%(class)s: %(message)s'
 class _LevelFormatter(logging.Formatter): # pragma: no cover
     def __init__(self, *args, **kwargs):
         self._fmtdict = LEVEL_FORMATS
-        logging.Formatter.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def format(self, record):
-        if not self._fmtdict.has_key(record.levelno):
-            raise KeyError('unknown logging level [%s]' % str(record.levelno))
+        if record.levelno not in self._fmtdict:
+            raise KeyError(f'unknown logging level [{record.levelno}]')
         self._fmt = self._fmtdict[record.levelno]
         return logging.Formatter.format(self, record)
 
@@ -50,8 +50,10 @@ class _QuitHandler(logging.Handler): # pragma: no cover
 
 
 # config interface
-def configLogger(level = logging.INFO, fatalLevel = logging.FATAL,
-                 consoleFmt = na, logFile = na, logMode = 'a+', logFmt = na, exceptionFmt = na): # pragma: no cover
+def configLogger(*, level: int = logging.INFO, fatalLevel: int = logging.FATAL,
+                 consoleFmt: logging.Formatter = None,
+                 logFmt: logging.Formatter = None, logFile: str = None, logMode: str = 'a+',
+                 exceptionFmt: str = None) -> logging.Logger: # pragma: no cover
     logger = logging.getLogger()
     logger.handlers = [] # remove existing handlers
     logger.setLevel(level)

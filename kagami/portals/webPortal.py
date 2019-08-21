@@ -10,42 +10,42 @@ origin: Jun. 28, 2014
 """
 
 
-import logging, requests, json
+import logging, requests
 from time import sleep
-from kagami.core import na, optional, available, missing, partial
+from typing import Any, Mapping, Optional, Union
+from kagami.common import optional, available, partial
 
 
-def _request(req, wait, tries, manualRetry):
+__all__ = ['get', 'post']
+
+
+def _request(req, wait, tries, manual):
     def _conn(ti):
         try:
             resp = req()
             if resp.ok: return resp.text
             logging.warning('[%d] attempt connection failed: [%d] %s', ti, resp.status_code, resp.reason)
-        except Exception, e:
+        except Exception as e:
             logging.warning('[%d] attempt connection failed: %s', ti, str(e))
         if ti > 0 and wait > 0: sleep(wait)
-        return na
+        return None
 
-    tries = max(tries, 1)
+    res = None
     while True:
         for i in range(tries)[::-1]:
             res = _conn(i)
             if available(res): break
-        if available(res) or not manualRetry: break
-        if raw_input('\n[press any key to retry connection, or press "q" to quit] >> \n').strip().lower() == 'q': break
-
-    if missing(res): return na
-    if res is None: return None
-    try: return json.loads(res)
-    except ValueError: return res.strip()
+        if available(res) or not manual: break
+        if input('\n[press any key to retry connection, or press "q" to quit] >> \n').strip().lower() == 'q': break
+    return res
 
 
-def get(url, params = na, headers = na, timeout = 3.05, wait = 1, tries = 1, manualRetry = False, **kwargs):
-    logging.debug('getting url [%s]', url)
+def get(url: str, *, params: Optional[Mapping] = None, headers: Optional[Mapping] = None,
+        timeout: float = 3.05, wait: float = 1, tries: int = 1, manual: bool = False, **kwargs: Any) -> Union[str, None]:
     req = partial(requests.get, url, params = optional(params, None), headers = optional(headers, None), timeout = timeout, **kwargs)
-    return _request(req, wait, tries, manualRetry)
+    return _request(req, wait, tries, manual)
 
-def post(url, data = na, headers = na, timeout = 3.05, wait = 1, tries = 1, manualRetry = False, **kwargs):
-    logging.debug('posting url [%s]', url)
+def post(url: str, *, data: Optional[Mapping] = None, headers: Optional[Mapping] = None,
+         timeout: float = 3.05, wait: float = 1, tries: int = 1, manual: bool = False, **kwargs: Any) -> Union[str, None]:
     req = partial(requests.post, url, data = optional(data, None), headers = optional(headers, None), timeout = timeout, **kwargs)
-    return _request(req, wait, tries, manualRetry)
+    return _request(req, wait, tries, manual)

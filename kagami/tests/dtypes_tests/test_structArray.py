@@ -14,8 +14,7 @@ import os, pytest
 import cPickle as cp
 import numpy as np
 from copy import deepcopy
-from kagami.core import *
-from kagami.dtypes import factor, NamedIndex, StructuredArray
+from kagami.coreTypes import factor, NamedIndex, StructuredArray
 
 
 def _create_structArray():

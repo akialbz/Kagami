@@ -9,9 +9,9 @@ origin: 11-20-2018
 
 """
 
-from .null import *
-from .metadata import *
-from .etc import *
+
+from .types import *
+from .misc import *
 from .functional import *
 from .path import *
 from .logger import *

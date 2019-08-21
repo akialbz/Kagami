@@ -13,7 +13,7 @@ origin: 11-14-2018
 import cPickle as cp
 import numpy as np
 from copy import deepcopy
-from kagami.core import *
+from kagami.common import *
 
 
 def test_na():

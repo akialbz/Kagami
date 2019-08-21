@@ -10,13 +10,9 @@ origin: 03-18-2017
 """
 
 
-from .binWrapper import BinaryWrapper
-from .sqliteWrapper import SQLiteWrapper, openSQLiteWrapper
-
-__all__ = ['BinaryWrapper', 'SQLiteWrapper', 'openSQLiteWrapper']
-
+from .binWrapper import *
+from .sqliteWrapper import *
 try:
-    from .rWrapper import RWrapper, RRuntimeError
-    __all__ += ['RWrapper', 'RRuntimeError']
+    from .rWrapper import *
 except ImportError: pass
 

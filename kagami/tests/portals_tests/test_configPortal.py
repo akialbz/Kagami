@@ -11,7 +11,7 @@ origin: 11-22-2018
 
 
 import os
-from kagami.core import *
+from kagami.common import *
 from kagami.portals import textPortal, configPortal
 
 

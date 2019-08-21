@@ -14,8 +14,8 @@ import os, pytest
 import cPickle as cp
 import numpy as np
 from copy import deepcopy
-from kagami.core import na, isna, Metadata
-from kagami.dtypes import Table
+from kagami.common import na, isna, Metadata
+from kagami.coreTypes import Table
 
 
 # table

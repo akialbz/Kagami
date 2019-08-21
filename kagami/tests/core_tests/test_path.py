@@ -11,7 +11,7 @@ origin: 11-21-2018
 
 
 import os, shutil, pytest
-from kagami.core import *
+from kagami.common import *
 
 
 def test_file_names():

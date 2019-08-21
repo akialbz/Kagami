@@ -12,7 +12,7 @@ origin: 11-14-2018
 
 import numpy as np
 from collections import defaultdict, OrderedDict
-from kagami.core import *
+from kagami.common import *
 
 
 def test_autoeval():
