@@ -15,7 +15,7 @@ from __future__ import annotations
 import logging, sqlite3
 from pathlib import Path
 from typing import List, Iterable, Optional, Union, Any
-from kagami.common import available, missing, optional, smap, collapse, paste, fileTitle
+from kagami.common import available, missing, optional, smap, lzip, collapse, paste, fileTitle
 
 
 __all__ = ['SQLiteWrapper', 'openSQLiteWrapper']
@@ -74,7 +74,7 @@ class SQLiteWrapper:
 
     # table routines
     def createTable(self, tableName: str, columns: Iterable[Iterable[str]] = ()) -> SQLiteWrapper:
-        tcols = paste(smap(columns, lambda x: paste(x, sep = ' ')), sep = ', ')
+        tcols = paste(*smap(columns, lambda x: paste(*x, sep = ' ')), sep = ', ')
         self.execute(f"CREATE TABLE '{tableName}'({tcols})")
         return self
 
@@ -92,7 +92,7 @@ class SQLiteWrapper:
 
     # column routines
     def addColumn(self, tableName: str, colName: str, types: Optional[Iterable[str]] = None) -> SQLiteWrapper:
-        tstr = paste(optional(types, []), sep = ' ')
+        tstr = paste(*optional(types, []), sep = ' ')
         self.execute(f"ALTER TABLE '{tableName}' ADD COLUMN '{colName}' {tstr}" )
         return self
 
@@ -104,7 +104,7 @@ class SQLiteWrapper:
 
     def listColNames(self, tableName: str) -> List:
         cols = self.listColumns(tableName)
-        return list(zip(*cols))[1] if len(cols) > 0 else []
+        return lzip(*cols)[1] if len(cols) > 0 else []
 
     # export
     def toList(self, tableName: str) -> List:

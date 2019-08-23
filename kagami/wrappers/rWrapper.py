@@ -20,11 +20,10 @@ try:
 except ImportError:
     raise ImportError('rWrapper requires r environment and rpy2 package')
 from typing import Iterable, Any
-from kagami.common import missing, pickmap
+from kagami.common import ll, missing, smap, pickmap, listable
 
 
 __all__ = ['RWrapper']
-
 
 
 class RWrapper: # pragma: no cover
@@ -55,7 +54,7 @@ class RWrapper: # pragma: no cover
 
     @staticmethod
     def asVector(val: Iterable) -> robj.Vector:
-        val = np.array(val)
+        val = np.array(ll(val))
         _pack = {
             'i': robj.IntVector, 'u': robj.IntVector,
             'f': robj.FloatVector,
@@ -67,7 +66,7 @@ class RWrapper: # pragma: no cover
 
     @staticmethod
     def asMatrix(val: Iterable[Iterable], nrow = None, ncol = None) -> robj.Matrix:
-        val = np.array(val)
+        val = np.array(smap(val, list))
         if missing(nrow) and missing(ncol): nrow, ncol = val.shape
         return robj.r.matrix(val, nrow = nrow, ncol = ncol)
 

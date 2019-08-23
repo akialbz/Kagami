@@ -10,203 +10,228 @@ origin: 08-23-2018
 """
 
 
-import logging, os
+from __future__ import annotations
+
+import os
 import numpy as np
-import tables as ptb
+import tables as tb
+from typing import List, Tuple, Iterable, Mapping, Union, Optional, Any
+from operator import itemgetter
 from collections import OrderedDict
-from types import NoneType
-from kagami.common import missing, checkall, checkany, listable, isstring, ismapping, autoeval, smap, pickmap, unpack, checkInputFile, checkOutputFile
+from kagami.common import l, ll, available, missing, checkall, iterable, listable, ismapping, isstring, smap, unpack, paste, checkInputFile, checkOutputFile
 from kagami.portals import tablePortal
-from .coreType import CoreType
+from .coreType import CoreType, Indices2D
 
 
 __all__ = ['StructuredArray']
 
 
 class StructuredArray(CoreType):
-    __slots__ = ('_dict', '_length')
+    __slots__ = ('_arrs', '_length')
 
-    def __init__(self, items = na, **kwargs):
-        items = items if listable(items) and checkall(items, lambda x: len(x) == 2) else \
-                items._dict.items() if isinstance(items, StructuredArray) else \
-                items.items() if mappable(items) else \
-                kwargs.items() if missing(items) else na
-        if missing(items): raise TypeError('unknow data type')
+    def __init__(self, items: Optional[Union[Iterable, Mapping, np.ndarray, StructuredArray]] = None, **kwargs: Iterable):
+        if isinstance(items, StructuredArray): self._arrs, self._length = items._arrs.copy(), items._length; return
 
-        self._dict = OrderedDict()
-        self._length = na
-        for k,v in items: self[k] = v
+        vals = [items[k] for k in items.dtype.names] if isinstance(items, np.ndarray) and available(items.dtype.names) else \
+               items.items()  if ismapping(items) else \
+               items          if iterable(items) else \
+               kwargs.items() if missing(items) else None
+        if missing(vals): raise TypeError('unknow data type')
+
+        self._arrs = OrderedDict()
+        self._length = None
+        for k,v in vals: self[k] = v
 
     # privates
-    def _parseIndices(self, idx, mapNames = True):
+    def _parseids(self, idx, mapslice = True):
         sids, aids = (idx, slice(None)) if not isinstance(idx, tuple) else \
                      (idx[0], slice(None)) if len(idx) == 1 else idx
 
         def _wrap(ids):
             if isinstance(ids, slice): return ids
-            ids = np.array(ids)
-            if ids.ndim != 1: ids = ids.reshape((1,))
+            if not listable(ids): return [ids]
             return ids
         sids, aids = smap((sids, aids), _wrap)
 
-        if mapNames and (isinstance(sids, slice) or sids.dtype.kind not in ('S', 'U')): sids = self.names[sids]
+        if mapslice: sids = self.names[sids]
         return sids, aids
+
+    def _parsevals(self, value):
+        if not iterable(value): return value
+        if isinstance(value, StructuredArray): return [value._arrs[n].copy() for n in self._arrs.keys()]
+
+        _wrap = lambda x: np.array(ll(x))
+        value = ll(value)
+        if not iterable(value[0]): return _wrap(value)
+
+        value = smap(value, _wrap)
+        if not len(set(smap(value, len))) == 1: raise ValueError('input arrays not in the same size')
+        return value
 
     # built-ins
     def __getitem__(self, item):
-        if isstring(item): return self._dict[item]
-        sids, aids = self._parseIndices(item)
-        return StructuredArray([(k, self._dict[k][aids]) for k in sids])
+        return self.take(item)
 
     def __setitem__(self, key, value):
-        if isstring(key):
-            if isinstance(value, np.ndarray) and (value.dtype.kind == 'u' or (value.dtype.kind == 'i' and value.dtype.itemsize < 8)):
-                logging.warning('special integer dtype may cause na comparison failure')
-
-            value = value.copy() if isinstance(value, CoreType) else np.array(value)
-            if value.ndim != 1: raise ValueError('input value not in 1-dimensional')
-
-            if missing(self._length): self._length = len(value)
-            elif self._length != len(value): raise ValueError('input value size not match')
-
-            self._dict[key] = value
-        else:
-            sids, aids = self._parseIndices(key)
-            if not isinstance(value, CoreType): value = np.array(value, dtype = object)
-
-            if value.ndim in (0, 1):
-                for k in sids: self._dict[k][aids] = value
-            elif value.ndim == 2:
-                if len(sids) != len(value): raise ValueError('input names and values size not match')
-                if isinstance(value, StructuredArray):
-                    if not np.all(value.names == self.names): raise KeyError('input array has different names')
-                    value = value.series
-                for k,nv in zip(sids, value): self._dict[k][aids] = nv
-            else: raise IndexError('input values dimension too high')
+        self.put(key, value, inline = True)
 
     def __delitem__(self, key):
-        if isstring(key): del self._dict[key]; return
-
-        sids, aids = self._parseIndices(key, mapNames = False)
-        slic = isinstance(sids, slice) and sids == slice(None)
-        alic = isinstance(aids, slice) and aids == slice(None)
-
-        if slic and alic:
-            self._dict = OrderedDict()
-            self._length = na
-        elif slic and not alic:
-            for k in self.names: self._dict[k] = np.delete(self._dict[k], aids)
-            self._length = len(self._dict[self._dict.keys()[0]])
-        elif not slic and alic:
-            if isinstance(sids, slice) or sids.dtype.kind not in ('S', 'U'): sids = self.names[sids]
-            for k in sids: del self._dict[k]
-        else: raise IndexError('unable to delete portion of the array')
+        self.delete(key, inline = True)
 
     def __iter__(self):
-        return iter(self._dict.keys())
+        return self._arrs.keys()
 
     def __contains__(self, item):
-        return self._dict.has_key(item)
+        return item in self._arrs
 
     def __len__(self):
         return self.size
 
     def __eq__(self, other):
-        if not isinstance(other, StructuredArray): return self.values == np.array(other, dtype = object)
-        return self.shape == other.shape and np.all(np.sort(self._dict.keys()) == np.sort(other._dict.keys())) and \
-               checkall(self._dict.keys(), lambda k: np.all(self._dict[k] == other[k]))
-
-    def __iadd__(self, other):
-        if not isinstance(other, StructuredArray): raise TypeError('unknown input data type')
-        if self.size != other.size or not np.all(self.names == other.names): raise KeyError('input array has different names')
-        for k, v in self._dict.items(): self._dict[k] = v.append(other[k]) if isinstance(v, CoreType) else np.r_[v, other[k].astype(v.dtype)]
-        self._length += other.length
-        return self
+        if isinstance(other, StructuredArray):
+            equ = self.shape == other.shape and \
+                  set(self._arrs.keys()) == set(other._arrs.keys()) and \
+                  checkall(self._arrs.keys(), lambda k: np.all(self._arrs[k] == other._arrs[k]))
+        else:
+            equ = self.arrays == np.array(other, dtype = object)
+        return equ
 
     def __str__(self):
-        nptn = '%%%ds' % max(smap(self.names, len))
-        return join([nptn % k + ' : ' + str(v) for k,v in zip(self.names, self.values)], '\n')
+        nlen = max(smap(self._arrs.keys(), len))
+        olns = [(('{'+f':{nlen}s'+'} : ').format(k) if i == 0 else (' ' * (nlen + 3))) + ln
+                for k,v in zip(self._arrs.keys(), smap(self._arrs.values(), str)) for i,ln in enumerate(v.split('\n'))]
+        return paste(*olns, sep = '\n')
 
     def __repr__(self):
         rlns = str(self).split('\n')
         rlns = ['StructuredArray(' + rlns[0]] + \
                ['                ' + ln for ln in rlns[1:]]
-        return join(rlns, '\n') + ', size = (%d, %d))' % (self.size, self.length)
+        return paste(*rlns, sep = '\n') + ', size = (%d, %d))' % (self.size, self.length)
 
     # for numpy
     def __array__(self, dtype = None):
-        arr = self.values
-        return arr if dtype is None else arr.astype(dtype)
+        if available(dtype): return np.array(self.arrays, dtype = dtype)
+        arr = np.array([*zip(*self._arrs.values())],
+                       dtype = [(n, v.dtype.str) for n,v in zip(self._arrs.keys(), self._arrs.values())])
+        return arr
+
+    def __array_wrap__(self, arr):
+        if missing(arr.dtype.names): raise TypeError('cannot assign non-structured ndarray to StructuredArray')
+        return StructuredArray(arr)
 
     # properties
     @property
-    def names(self):
-        return np.array(self._dict.keys())
+    def names(self) -> np.ndarray:
+        return np.array(l(self._arrs.keys()))
 
     @property
-    def values(self):
-        return np.array(smap(self.series, np.array), dtype = object)
+    def arrays(self) -> List[np.ndarray]:
+        return l(self._arrs.values())
 
     @property
-    def series(self):
-        return self._dict.values()
+    def fields(self) -> List[Tuple[str, np.ndarray]]:
+        return l(self._arrs.items())
 
     @property
-    def items(self):
-        return self._dict.items()
+    def size(self) -> int:
+        return len(self._arrs)
 
     @property
-    def size(self):
-        return len(self._dict)
-
-    @property
-    def length(self):
+    def length(self) -> int:
         return self._length
 
     @property
-    def shape(self):
+    def shape(self) -> Tuple[int, int]:
         return self.size, self.length
 
     @property
-    def ndim(self):
+    def ndim(self) -> int:
         return 2
 
     # publics
-    def append(self, other):
-        if not isinstance(other, StructuredArray): raise TypeError('unknown input data type')
-        if self.size != other.size or not np.all(np.unique(self.names) == np.unique(other.names)): raise KeyError('input array has different names')
-        return StructuredArray([(k, v.append(other[k]) if isinstance(v, CoreType) else np.r_[v, other[k].astype(v.dtype)]) for k,v in self._dict.items()])
+    def take(self, pos: Union[str, Indices2D]) -> StructuredArray:
+        if isstring(pos): return self._arrs[pos]
+        sids, aids = self._parseids(pos)
+        return StructuredArray([(k, self._arrs[k][aids]) for k in sids])
 
-    def insert(self, other, pos = na):
-        if not isinstance(other, StructuredArray): raise TypeError('unknown input data type')
-        if self.size != other.size or not np.all(np.unique(self.names) == np.unique(other.names)): raise KeyError('input array has different names')
-        if missing(pos): pos = self.length
-        return StructuredArray([(k, v.insert(other[k], pos) if isinstance(v, CoreType) else np.insert(v, pos, other[k])) for k,v in self._dict.items()])
+    def put(self, pos: Union[str, Indices2D], value: Any, inline: bool = True) -> StructuredArray:
+        narr = self if inline else self.copy()
+        vals = self._parsevals(value)
 
-    def drop(self, pos):
-        return StructuredArray([(k, v.drop(pos) if isinstance(v, CoreType) else np.delete(v, pos)) for k,v in self._dict.items()])
+        if isstring(pos):
+            if not isinstance(vals, np.ndarray): raise ValueError('input array not in 1-dimensional')
+            if missing(narr._length): narr._length = vals.size
+            elif narr._length != vals.size: raise ValueError('input array size not match')
+            narr._arrs[pos] = vals
+        else:
+            sids, aids = self._parseids(pos)
+            if not isinstance(vals, list):
+                for k in sids: narr._arrs[k][aids] = vals
+            else:
+                if len(sids) != len(vals): raise ValueError('input names and values size not match')
+                for k,vals in zip(sids, vals): narr._arrs[k][aids] = vals
+        return narr
 
-    def copy(self):
-        arr = StructuredArray()
-        arr._dict = self._dict.copy()
-        arr._length = self._length
-        return arr
+    def append(self, value: Iterable[Iterable], inline: bool = True) -> StructuredArray:
+        narr = self if inline else self.copy()
+        vals = self._parsevals(value)
+        if not isinstance(vals, list) or len(vals) != narr.size: raise ValueError('input values size not match')
+        for k,v in narr._arrs.items(): narr._arrs[k] = np.r_[v, vals[k]]
+        narr._length += vals[0].size
+        return narr
+
+    def insert(self, pos: Indices2D, value: Iterable[Iterable], inline: bool = True) -> StructuredArray:
+        narr = self if inline else self.copy()
+        vals = self._parsevals(value)
+        if not isinstance(vals, list) or len(vals) != narr.size: raise ValueError('input values size not match')
+        for k,v in narr._arrs.items(): narr._arrs[k] = np.insert(v, pos, vals[k])
+        narr._length += vals[0].size
+        return narr
+
+    def delete(self, pos: Indices2D, inline: bool = True) -> StructuredArray:
+        narr = self if inline else self.copy()
+        if isstring(pos): del narr._arrs[pos]; return narr
+
+        sids, aids = self._parseids(pos, mapslice = False)
+        slic = isinstance(sids, slice) and sids == slice(None)
+        alic = isinstance(aids, slice) and aids == slice(None)
+
+        if slic and alic:
+            narr._arrs = OrderedDict()
+            narr._length = None
+        elif slic and not alic:
+            for k,v in narr._arrs.items(): narr._arrs[k] = np.delete(v, aids)
+            narr._length = len(narr._arrs[l(narr._arrs.keys())[0]])
+        elif not slic and alic:
+            if isinstance(sids, slice) or sids.dtype.kind not in ('S', 'U'): sids = narr.names[sids]
+            for k in sids: del narr._arrs[k]
+        else: raise IndexError('unable to delete portion of the array')
+
+        return narr
+
+    def tolist(self) -> List[Tuple[str, np.ndarray]]:
+        return self.fields
+
+    def tostring(self) -> str:
+        return str(self)
+
+    def copy(self) -> StructuredArray:
+        narr = StructuredArray()
+        narr._arrs = self._arrs.copy()
+        narr._length = self._length
+        return narr
 
     # file portals
     @classmethod
-    def fromsarray(cls, array):
+    def fromsarray(cls, array: Iterable[Iterable[str]]):
+        if not isinstance(array, np.ndarray): array = np.array(smap(array, ll))
         nams, vals = array[:,0], array[:,1:]
-
-        nams = pickmap(nams, lambda x: x[0] == '<' and x[-1] == '>', lambda x: x[1:-1])
-
-        vdts = smap(vals, lambda x: type(autoeval(x[0])))
-        if checkany(vdts, lambda x: x in (NAType, NoneType)): logging.warning('invalid data type detected')
-        vals = smap(zip(vals, vdts), unpack(lambda v,d: np.array(v).astype(d) if d != bool else (np.array(v) == 'True')))
-
-        return StructuredArray([(k, v) for k,v in zip(nams, vals)])
+        nams, vdts = itemgetter(0, -1)(l(zip(*smap(nams, lambda x: x.lstrip('<').rstrip('>').partition('::')))))
+        vals = smap(zip(vals,vdts), unpack(lambda v,d: np.array(v).astype(d)))
+        return StructuredArray(zip(nams, vals))
 
     def tosarray(self):
-        return np.array([np.r_[['<%s>' % k], np.array(v, dtype = str)] for k,v in self._dict.items()])
+        return np.array([np.r_[[f'<{k}::{v.dtype.descr.kind}>'], v.astype(str)] for k,v in self._arrs.items()])
 
     @classmethod
     def loadcsv(cls, fname, delimiter = ',', transposed = False):
@@ -226,20 +251,19 @@ class StructuredArray(CoreType):
         return StructuredArray(zip(nams, vals))
 
     def tohtable(self, root, tabname):
-        vdct = {n: v for n,v in zip(self._dict.keys(), smap(self._dict.values(), np.array))}
-        desc = type('_struct_array', (ptb.IsDescription,), {n: ptb.Col.from_dtype(v.dtype) for n,v in vdct.items()})
-        tabl = ptb.Table(root, tabname, desc)
-        tabl.append([vdct[n] for n in tabl.colnames]) # desc.columns is an un-ordered dict
-        tabl.attrs.names = self._dict.keys()
+        desc = type('_struct_array', (tb.IsDescription,), {n: tb.Col.from_dtype(v.dtype) for n,v in self._arrs.items()})
+        tabl = tb.Table(root, tabname, desc)
+        tabl.append([self._arrs[n] for n in tabl.colnames]) # desc.columns is an un-ordered dict
+        tabl.attrs.names = self.names
         return tabl
 
     @classmethod
     def loadhdf(cls, fname):
         checkInputFile(fname)
-        with ptb.open_file(fname, mode = 'r') as hdf: arr = cls.fromhtable(hdf.root.StructuredArray)
+        with tb.open_file(fname, mode = 'r') as hdf: arr = cls.fromhtable(hdf.root.StructuredArray)
         return arr
 
     def savehdf(self, fname, compression = 0):
         checkOutputFile(fname)
-        with ptb.open_file(fname, mode = 'w', filters = ptb.Filters(compression)) as hdf: self.tohtable(hdf.root, 'StructuredArray')
+        with tb.open_file(fname, mode = 'w', filters = tb.Filters(compression)) as hdf: self.tohtable(hdf.root, 'StructuredArray')
         return os.path.isfile(fname)

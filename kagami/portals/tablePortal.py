@@ -13,7 +13,7 @@ origin: 06-28-2014
 import os, csv
 from pathlib import Path
 from typing import List, Iterable, Union, Optional, Any
-from kagami.common import available, smap, drop, partial, checkall, checkInputFile, checkOutputFile
+from kagami.common import l, available, smap, drop, partial, checkall, checkInputFile, checkOutputFile
 
 
 __all__ = ['load', 'save', 'loadcsv', 'savecsv']
@@ -30,7 +30,7 @@ def loadcsv(fname: Union[str, Path], *, mode: str = 'r',
         tb = csv.reader(f, **kwargs)
         if strip: tb = drop(tb, lambda x: len(x) == 0 or checkall(x, lambda v: v.strip() == ''))
         if available(comment): tb = drop(tb, lambda x: x[0].startswith(comment))
-        tb = list(tb)
+        tb = l(tb)
     return tb
 
 def savecsv(table: Iterable[Iterable[str]], fname: Union[str, Path], *, mode: str = 'w',

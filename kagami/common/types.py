@@ -52,7 +52,7 @@ class Metadata(dict):
         else: super().__setattr__(item, value)
 
     def __delattr__(self, item):
-        if self.__contains__(item): del self[item]
+        if item in self: del self[item]
         else: super().__delattr__(item)
 
     def __getstate__(self):

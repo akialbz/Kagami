@@ -14,7 +14,7 @@ import logging, os, shutil
 from pathlib import Path
 from typing import Union, List, Optional
 from .types import missing, optional, isstring
-from .functional import pick, drop
+from .functional import l, pick, drop
 
 
 __all__ = [
@@ -53,7 +53,7 @@ def listPath(path: Union[str, Path], *, recursive: bool = False, fileonly: bool 
 
     if missing(globptn): globptn = ('**/' if recursive else '*/') + optional(prefix, '') + '*' + optional(suffix, '')
     if isstring(path): path = Path(path)
-    fds = list(path.glob(globptn))
+    fds = l(path.glob(globptn))
 
     if fileonly: fds = pick(fds, lambda x: x.is_file())
     if dironly:  fds = pick(fds, lambda x: x.is_dir())
@@ -75,7 +75,7 @@ def checkInputFile(fpath: Union[str, Path]) -> None:
 def checkInputDir(dpath: Union[str, Path]) -> None:
     if isstring(dpath): dpath = Path(dpath)
     if not dpath.is_dir(): raise IOError(f'input dir [{dpath}] not found')
-    if not len(list(dpath.glob('**/*'))) > 0: logging.warning('input dir [%s] is empty', dpath)
+    if not len(l(dpath.glob('**/*'))) > 0: logging.warning('input dir [%s] is empty', dpath)
 
 def checkOutputFile(fpath: Union[str, Path], override: bool = True) -> None:
     if isstring(fpath): fpath = Path(fpath)

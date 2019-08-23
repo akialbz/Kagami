@@ -21,7 +21,7 @@ from .types import available, optional, missing, listable
 
 __all__ = [
     'partial', 'compose', 'unpack', 'imap', 'smap', 'tmap', 'pmap', 'cmap', 'call',
-    'pick', 'pickmap', 'drop', 'fold', 'collapse', 'checkany', 'checkall'
+    'l', 'll', 'lzip', 'pick', 'pickmap', 'drop', 'fold', 'collapse', 'checkany', 'checkall'
 ]
 
 
@@ -48,7 +48,7 @@ def imap(x: Iterable, func: Callable) -> Iterator:
     return map(func, x)
 
 def smap(x: Iterable, func: Callable) -> List:
-    return list(map(func, x))
+    return l(map(func, x))
 
 def _mmap(x, func, ptype, nps):
     mpool = ptype(processes = nps)
@@ -65,7 +65,7 @@ def pmap(x: Iterable, func: Callable, nprocs: Optional[int] = None) -> List:
 
 def cmap(x: Collection, func: Callable, nchunks: Optional[int] = None) -> List:
     if missing(nchunks): nchunks = cpu_count() - 1
-    if not listable(x): x = list(x)
+    x = ll(x)
     xln = len(x)
     ids = pickmap(np.array_split(np.arange(xln), min(nchunks, xln)), lambda i: len(i) == 1, lambda i: [i])
     pms = smap(ids, lambda i: itemgetter(*i)(x))
@@ -83,9 +83,17 @@ def call(x: Iterable, funcs: Collection[Callable], nthreads: Optional[int] = Non
 
 
 # utils
+l = list # fuck the stupid iterator
+
+def ll(x: Any) -> List:
+    return x if listable(x) else list(x)
+
+def lzip(*args: Any) -> List:
+    return l(zip(*args))
+
 def pick(x: Iterable, cond: Union[Callable, Any]) -> List:
     _check = cond if callable(cond) else (lambda v: v == cond)
-    return list(filter(_check, x))
+    return l(filter(_check, x))
 
 def pickmap(x: Iterable, cond: Union[Callable, Any], func: Callable) -> List:
     _check = cond if callable(cond) else (lambda v: v == cond)
