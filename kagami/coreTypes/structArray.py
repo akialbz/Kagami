@@ -18,7 +18,7 @@ import tables as tb
 from typing import List, Tuple, Iterable, Mapping, Union, Optional, Any
 from operator import itemgetter
 from collections import OrderedDict
-from kagami.common import l, ll, available, missing, checkall, iterable, listable, ismapping, isstring, smap, unpack, paste, checkInputFile, checkOutputFile
+from kagami.common import l, ll, available, missing, checkall, checkany, iterable, listable, ismapping, isstring, smap, unpack, paste, checkInputFile, checkOutputFile
 from kagami.portals import tablePortal
 from .coreType import CoreType, Indices2D
 
@@ -53,7 +53,7 @@ class StructuredArray(CoreType):
             return ids
         sids, aids = smap((sids, aids), _wrap)
 
-        if mapslice: sids = self.names[sids]
+        if (isinstance(sids, slice) and mapslice) or checkany(sids, lambda x: not isstring(x)): sids = self.names[sids]
         return sids, aids
 
     def _parsevals(self, value):

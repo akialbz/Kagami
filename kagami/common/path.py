@@ -79,7 +79,7 @@ def checkInputDir(dpath: Union[str, Path]) -> None:
 
 def checkOutputFile(fpath: Union[str, Path], override: bool = True) -> None:
     if isstring(fpath): fpath = Path(fpath)
-    if not fpath.is_file(): checkOutputDir(fpath.parent)
+    if not fpath.is_file(): checkOutputDir(fpath.parent); return
     if not override: return
     logging.warning('output file [%s] already exists, override', fpath)
     fpath.unlink()

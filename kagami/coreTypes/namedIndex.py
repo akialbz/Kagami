@@ -117,7 +117,7 @@ class NamedIndex(CoreType):
 
     # public
     @staticmethod
-    def uniqueRenaming(names: Iterable[str], suffix: str = '.{}') -> np.ndarray:
+    def uniquenames(names: Iterable[str], suffix: str = '.{}') -> np.ndarray:
         names = NamedIndex._parsevals(names, arrayonly = True)
 
         unam, cnts = np.unique(names, return_counts = True)

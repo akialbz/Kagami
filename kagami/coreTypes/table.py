@@ -10,16 +10,18 @@ origin: 02-18-2017
 """
 
 
+from __future__ import annotations
+
 import logging, os
 import numpy as np
 import tables as ptb
-from string import join
-from types import NoneType
+from typing import Iterable, Mapping, Union, Optional
+from pathlib import Path
 from operator import itemgetter
-from kagami.common import na, NAType, Metadata, optional, missing, isnull, available, listable, autoeval, smap, partial, checkInputFile, checkOutputFile
+from kagami.common import l, ll, optional, missing, available, isstring, listable, checkany, paste, smap, collapse, partial, checkInputFile, checkOutputFile, Metadata
 from kagami.portals import tablePortal
-from .coreType import CoreType
-from .namedIndex import strtype_, NamedIndex
+from .coreType import CoreType, Indices2D
+from .namedIndex import NamedIndex
 from .structArray import StructuredArray
 
 
@@ -28,62 +30,112 @@ __all__ = ['Table']
 
 # table class
 class Table(CoreType):
-    __slots__ = ('_dmatx', '_rnames', '_cnames', '_rindex', '_cindex', '_metas', '_fixrep')
+    __slots__ = ('_dmatx', '_rnames', '_cnames', '_rindex', '_cindex', '_metas', '_memmap')
 
-    def __init__(self, X, dtype = na, rownames = na, colnames = na, rowindex = na, colindex = na, metadata = na, fixRepeat = False):
-        self._dmatx = np.array(X)
-        if available(dtype): self._dmatx = self._dmatx.astype(dtype)
-        if self.dtype.kind == 'u' or (self.dtype.kind == 'i' and self.dtype.itemsize < 8):
-            logging.warning('special integer dtype may cause na comparison failure')
-
+    def __init__(self, X: Iterable[Iterable], dtype: Optional[Union[str, type, np.ndarray.dtype]] = None,
+                 rownames: Optional[Union[Iterable[str], NamedIndex]] = None, colnames: Optional[Union[Iterable[str], NamedIndex]] = None,
+                 rowindex: Optional[StructuredArray] = None, colindex: Optional[StructuredArray] = None,
+                 metas: Optional[Mapping] = None, memmap: Optional[Union[str, Path]] = None):
+        if not isinstance(X, np.ndarray): X = smap(X, ll)
+        self._dmatx = np.asarray(X, dtype = dtype)
         if self._dmatx.ndim != 2: raise ValueError('input data is not a 2-dimensional matrix')
 
-        self._metas = Metadata() if isnull(metadata) else Metadata(metadata)
+        self._memmap = None
+        if available(memmap): self.offload(Path(memmap))
 
-        self._fixrep = fixRepeat
-        self._rnames = self._cnames = na
+        self._rnames = self._cnames = None
         self.rownames = rownames
         self.colnames = colnames
 
-        self._rindex = self._cindex = na
+        self._rindex = self._cindex = None
         self.rowindex = rowindex
         self.colindex = colindex
 
+        self._metas = Metadata(optional(metas, ()))
+
     # privates
-    def _parseIndices(self, idx, mapSlice = True):
+    def _parseids(self, idx, mapslice = True):
         rids, cids = (idx, slice(None)) if not isinstance(idx, tuple) else \
                      (idx[0], slice(None)) if len(idx) == 1 else idx
 
-        def _wrap(ids, nams):
-            ids = np.array(ids)
-            if ids.ndim != 1: ids = ids.reshape((1,))
-            if ids.dtype.kind in ('i', 'u', 'b'): return ids
-            if missing(nams): raise KeyError('input names not recongnised')
-            return nams.idsof(ids)
+        def _wrap(ids, num, names):
+            if isinstance(ids, slice): return ids if not mapslice else np.arange(num)[ids]
+            if not listable(ids): ids = [ids]
+            if not checkany(ids, isstring): return ids
+            if missing(names): raise KeyError('table names not set')
+            return names.idsof(ids, safe = False)
 
-        rids = _wrap(rids, self._rnames) if not isinstance(rids, slice) else \
-               np.arange(self.nrow)[rids] if mapSlice else rids
-        cids = _wrap(cids, self._cnames) if not isinstance(cids, slice) else \
-               np.arange(self.ncol)[cids] if mapSlice else cids
-
+        rids = _wrap(rids, self.nrow, self._rnames)
+        cids = _wrap(cids, self.ncol, self._cnames)
         return rids, cids
 
-    def _toStrList(self, delimiter, transpose = False, withindex = True):
-        slns = smap(self.tolist(transpose = transpose, withindex = withindex), lambda x: smap(x, str))
+    def _tostrlns(self, delimiter, transpose = False, withindex = True, strinkrows = 15, strinkcols = 10):
+        def _fmt(mtx, rnam, cnam, ridx, cidx):
+            nr, nc = mtx.shape
 
-        lmtx = np.array(smap(slns, lambda x: smap(x, len)))
-        nidx = len(optional(self.colindex if transpose else self.rowindex, ())) if withindex else 0
-        ilen, nlen, vlen = smap((lmtx[:,:nidx], lmtx[:,nidx:nidx+1], lmtx[:,nidx+1:]), lambda x: 0 if 0 in x.shape else np.max(x))
+            if missing(rnam): rnam = smap(range(nr), lambda x: f'#{x}')
+            if missing(cnam): cnam = smap(range(nc), lambda x: f'#{x}')
 
-        _fmt = lambda l,v: '{0:>{1}s}'.format(v, l+1) if v is not None else ' ... '
-        _fmtidx, _fmtnam, _fmtval = smap((ilen, nlen, vlen), lambda x: partial(_fmt, x))
+            _sln = lambda x,sr,hd,tl,rp: (smap(x[:hd],str) + [rp] + smap(x[tl:],str)) if sr else smap(x, str)
+            _scol = lambda x: _sln(x, nc > strinkcols, 3, -1, ' ... ')
+            _srow = lambda x: _sln(x, nr > strinkrows, 5, -3, '')
 
-        _fmtdln = lambda x: '[' + join(smap(x[:nidx],_fmtidx) + [_fmtnam(x[nidx])] + smap(x[nidx+1:],_fmtval), delimiter) + ']'
-        _fmtlns = lambda x: smap(x, lambda v: _fmtdln(v) if v is not None else ' ... ')
+            slns = [_scol(cnam)] + \
+                 (([_scol(ln) for ln in mtx[:5]] + [_scol([' ... ... '] + [''] * (nc-1))] + [_scol(ln) for ln in mtx[-3:]]) if nr > 15 else \
+                   [_scol(ln) for ln in mtx])
+            slns = [['#'] + slns[0]] + [[n] + ln for n,ln in zip(_srow(rnam), slns[1:])]
 
-        if len(slns[0])-1-nidx > 4 and len(slns[0])*vlen > 80: slns = smap(slns, lambda x: x[:nidx+1+3] + [None] + x[-1:])
-        if len(slns) > 15: slns = slns[:6] + [None] + slns[-3:]
-        return _fmtlns(slns)
+            nri = ridx.size if available(ridx) else 0
+            nci = cidx.size if available(cidx) else 0
+
+            if nci > 0: slns = [[f'<{k}>'] + _scol(cidx[k]) for k in cidx.names] + slns
+            if nri > 0:
+                sidx = [['' * nci] + [f'<{k}>'] + _srow(ridx[k]) for k in ridx.names]
+                slns = [list(ix) + ln for ix,ln in zip(zip(*sidx), slns)]
+
+            def _sfmt(lns, pos):
+                size = max(collapse(smap(lns, lambda x: smap(x[pos], lambda v: len(v) if v not in (' ... ', ' ... ... ') else 0)))) + 1
+                for ln in lns: ln[pos] = smap(ln[pos], lambda x: '{0:>{1}s}'.format(x, size) if x != ' ... ' else x)
+                return lns
+
+            if nri > 0: slns = _sfmt(slns, slice(None,nri))
+            slns = _sfmt(slns, slice(nri,nri+1))
+            slns = _sfmt(slns, slice(nri+1,None))
+
+            return smap(slns, lambda ln: paste(*ln, delimiter))
+
+        sdm = _fmt(self._dmatx, self._rnames, self._cnames, self._rindex if withindex else None, self._cindex if withindex  else None) if not transpose else \
+              _fmt(self._dmatx.T, self._cnames, self._rnames, self._cindex if withindex else None, self._rindex if withindex else None)
+        return sdm
+
+    # portals
+    def onload(self, removefile: bool = True) -> Table:
+        if not isinstance(self._dmatx, np.memmap): logging.warning('Table not offloaded, skip'); return self
+        checkInputFile(self._memmap.file)
+
+        mdmatx = np.memmap(self._memmap.file, dtype = self._memmap.dtype, mode = 'r', shape = self._memmap.shape)
+        self._dmatx = np.array(mdmatx)
+        del mdmatx
+
+        if removefile: self._memmap.file.unlink()
+        self._memmap = None
+        return self
+
+    def offload(self, fname: Union[str, Path]) -> Table:
+        if isinstance(self._dmatx, np.memmap): logging.warning('Table already offloaded, skip'); return self
+        checkOutputFile(fname)
+
+        self._memmap = Metadata(file = fname, dtype = self._dmatx.dtype, shape = self._dmatx.shape)
+        mdmatx = np.memmap(self._memmap.file, dtype = self._memmap.dtype, mode = 'w+', shape = self._memmap.shape)
+        mdmatx[:] = self._dmatx[:]
+
+        del self._dmatx
+        self._dmatx = mdmatx
+        return self
+
+
+
+
 
     # built-ins
     def __getitem__(self, item):
@@ -401,7 +453,7 @@ class Table(CoreType):
                [' ' + ln for ln in rlns[1:]]
         return join(rlns, '\n') + ']'
 
-    # portals
+
     @classmethod
     def fromsarray(cls, array, dtype = na, rowindex = na, colindex = na):
         if missing(rowindex) or missing(colindex):
