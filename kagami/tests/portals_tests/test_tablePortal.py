@@ -12,7 +12,7 @@ origin: 11-22-2018
 
 import os
 import numpy as np
-from kagami.common import *
+from kagami.comm import *
 from kagami.portals import tablePortal
 
 

@@ -13,8 +13,8 @@ origin: 08-23-2018
 from __future__ import annotations
 
 import numpy as np
-from typing import List, Tuple, Iterable, Union, Any
-from kagami.common import ll, optional, missing, isstring, iterable, listable, checkany, paste
+from typing import List, Tuple, Iterable, Union
+from kagami.comm import l, ll, optional, missing, isstring, iterable, listable, checkany, paste
 from .coreType import CoreType, Indices
 
 
@@ -25,6 +25,7 @@ class NamedIndex(CoreType):
     __slots__ = ('_names', '_nidct')
 
     def __init__(self, names: Iterable[str] = ()):
+        self._names = self._nidct = None
         self.names = names
 
     # private
@@ -35,6 +36,7 @@ class NamedIndex(CoreType):
     def _parseids(self, ids):
         if isinstance(ids, tuple): raise IndexError('too many dimensions for array')
         if (listable(ids) and checkany(ids, isstring)) or isstring(ids): ids = self.idsof(ids, safe = False)
+        if ids is None: ids = slice(None)
         return ids
 
     @staticmethod
@@ -51,15 +53,6 @@ class NamedIndex(CoreType):
         return val
 
     # built-ins
-    def __getitem__(self, item):
-        return self.take(item)
-
-    def __setitem__(self, key, value):
-        self.put(key, value, inline = True)
-
-    def __delitem__(self, key):
-        self.delete(key, inline = True)
-
     def __getattr__(self, item):
         return self._nidct[item] if item in self else super().__getattribute__(item)
 
@@ -105,7 +98,7 @@ class NamedIndex(CoreType):
 
     @property
     def size(self) -> int:
-        return self._names.size
+        return self._names.shape[0]
 
     @property
     def shape(self) -> Tuple[int]:
@@ -167,7 +160,8 @@ class NamedIndex(CoreType):
         if len(nid._names) != len(nid._nidct): raise KeyError('index names not unique')
         return nid
 
-    def insert(self, pos: Indices, value: Union[str, Iterable[str]], inline: bool = True) -> NamedIndex:
+    def insert(self, pos: Union[Indices, None], value: Union[str, Iterable[str]], inline: bool = True) -> NamedIndex:
+        if missing(pos): return self.append(value, inline)
         pos = self._parseids(pos)
         val = self._parsevals(value)
         nid = self if inline else self.copy()
@@ -182,8 +176,8 @@ class NamedIndex(CoreType):
         nid._reindex(check = False)
         return nid
 
-    def tolist(self) -> Any:
-        return self._names.tolist()
+    def tolist(self) -> List:
+        return l(self._names.tolist())
 
     def tostring(self) -> bytes:
         return self._names.tostring()

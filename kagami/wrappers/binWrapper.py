@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Tuple, List, Iterable, Sequence, Optional, Union
 from subprocess import Popen, PIPE
 from distutils.spawn import find_executable
-from kagami.common import ll, optional, missing, available, smap, pmap, tmap, partial, paste
+from kagami.comm import ll, optional, missing, available, smap, pmap, tmap, partial, paste
 
 
 __all__ = ['BinaryWrapper']

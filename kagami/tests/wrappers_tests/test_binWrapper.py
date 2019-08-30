@@ -11,7 +11,7 @@ origin: 11-22-2018
 
 
 import os, pytest
-from kagami.common import *
+from kagami.comm import *
 from kagami.wrappers import BinaryWrapper
 
 

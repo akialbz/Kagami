@@ -20,7 +20,7 @@ try:
 except ImportError:
     raise ImportError('rWrapper requires r environment and rpy2 package')
 from typing import Iterable, Any
-from kagami.common import ll, missing, smap, pickmap, listable
+from kagami.comm import ll, missing, smap, pickmap, listable
 
 
 __all__ = ['RWrapper']
@@ -61,7 +61,7 @@ class RWrapper: # pragma: no cover
             'b': robj.BoolVector,
             'S': robj.StrVector, 'U': robj.StrVector,
         }.get(val.dtype.kind, None)
-        if missing(_pack): raise TypeError('unknown vector type [%s]' % val.dtype.kind)
+        if missing(_pack): raise TypeError(f'unknown vector type [{val.dtype.kind}]')
         return _pack(val)
 
     @staticmethod
@@ -69,6 +69,10 @@ class RWrapper: # pragma: no cover
         val = np.array(smap(val, list))
         if missing(nrow) and missing(ncol): nrow, ncol = val.shape
         return robj.r.matrix(val, nrow = nrow, ncol = ncol)
+
+    @staticmethod
+    def assign(val: Any, name: str) -> None:
+        return robj.r.assign(name, val)
 
     @staticmethod
     def apply(func: str, *args: Any, **kwargs: Any) -> Any:

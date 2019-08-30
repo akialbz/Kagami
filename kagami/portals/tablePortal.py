@@ -13,7 +13,7 @@ origin: 06-28-2014
 import os, csv
 from pathlib import Path
 from typing import List, Iterable, Union, Optional, Any
-from kagami.common import l, available, smap, drop, partial, checkall, checkInputFile, checkOutputFile
+from kagami.comm import l, available, smap, drop, partial, checkall, checkInputFile, checkOutputFile
 
 
 __all__ = ['load', 'save', 'loadcsv', 'savecsv']
@@ -44,6 +44,4 @@ def savecsv(table: Iterable[Iterable[str]], fname: Union[str, Path], *, mode: st
 
 # general / tsv portals
 load = partial(loadcsv, delimiter = '\t')
-
 save = partial(savecsv, delimiter = '\t')
-

@@ -12,17 +12,20 @@ origin: 02-18-2017
 
 from __future__ import annotations
 
-import logging, os
+import logging, os, re
 import numpy as np
 import tables as ptb
-from typing import Iterable, Mapping, Union, Optional
+from typing import List, Iterable, Sequence, Mapping, Union, Optional, Any
 from pathlib import Path
-from operator import itemgetter
-from kagami.common import l, ll, optional, missing, available, isstring, listable, checkany, paste, smap, collapse, partial, checkInputFile, checkOutputFile, Metadata
+from kagami.comm import l, ll, optional, missing, available, isstring, iterable, listable, checkany, paste, smap, collapse, checkInputFile, checkOutputFile, Metadata
 from kagami.portals import tablePortal
-from .coreType import CoreType, Indices2D
+from .coreType import CoreType, Indices, Indices2D
 from .namedIndex import NamedIndex
 from .structArray import StructuredArray
+try:
+    from kagami.wrappers.rWrapper import RWrapper as rw
+except ImportError as e:
+    rw = None
 
 
 __all__ = ['Table']
@@ -32,12 +35,12 @@ __all__ = ['Table']
 class Table(CoreType):
     __slots__ = ('_dmatx', '_rnames', '_cnames', '_rindex', '_cindex', '_metas', '_memmap')
 
-    def __init__(self, X: Iterable[Iterable], dtype: Optional[Union[str, type, np.ndarray.dtype]] = None,
+    def __init__(self, X: Iterable[Iterable], *, dtype: Optional[Union[str, type, np.ndarray.dtype]] = None,
                  rownames: Optional[Union[Iterable[str], NamedIndex]] = None, colnames: Optional[Union[Iterable[str], NamedIndex]] = None,
                  rowindex: Optional[StructuredArray] = None, colindex: Optional[StructuredArray] = None,
-                 metas: Optional[Mapping] = None, memmap: Optional[Union[str, Path]] = None):
+                 metas: Optional[Union[Sequence, Mapping]] = None, memmap: Optional[Union[str, Path]] = None):
         if not isinstance(X, np.ndarray): X = smap(X, ll)
-        self._dmatx = np.asarray(X, dtype = dtype)
+        self._dmatx = np.array(X, dtype = dtype) # make a copy
         if self._dmatx.ndim != 2: raise ValueError('input data is not a 2-dimensional matrix')
 
         self._memmap = None
@@ -54,11 +57,16 @@ class Table(CoreType):
         self._metas = Metadata(optional(metas, ()))
 
     # privates
-    def _parseids(self, idx, mapslice = True):
-        rids, cids = (idx, slice(None)) if not isinstance(idx, tuple) else \
-                     (idx[0], slice(None)) if len(idx) == 1 else idx
+    def _parseids(self, idx, axis, mapslice = True):
+        if missing(axis):
+            rids, cids = (idx, slice(None)) if not isinstance(idx, tuple) else \
+                         (idx[0], slice(None)) if len(idx) == 1 else idx
+        else:
+            if axis not in (0, 1): raise ValueError('invalid axis value')
+            rids, cids = (idx, slice(None)) if axis == 0 else (slice(None), idx)
 
         def _wrap(ids, num, names):
+            if ids is None: return slice(None) if not mapslice else np.arange(num)
             if isinstance(ids, slice): return ids if not mapslice else np.arange(num)[ids]
             if not listable(ids): ids = [ids]
             if not checkany(ids, isstring): return ids
@@ -69,7 +77,17 @@ class Table(CoreType):
         cids = _wrap(cids, self.ncol, self._cnames)
         return rids, cids
 
-    def _tostrlns(self, delimiter, transpose = False, withindex = True, strinkrows = 15, strinkcols = 10):
+    def _parsevals(self, value):
+        if not iterable(value): return value
+        if isinstance(value, Table): return value._dmatx.astype(self.dtype)
+
+        value = ll(value)
+        if not iterable(value[0]): return np.array(value, dtype = self.dtype)
+
+        value = np.array(smap(value, ll), dtype = self.dtype)
+        return value
+
+    def _tostrlns(self, delimiter, *, transpose = False, withindex = True, strinkrows = 15, strinkcols = 10):
         def _fmt(mtx, rnam, cnam, ridx, cidx):
             nr, nc = mtx.shape
 
@@ -81,8 +99,8 @@ class Table(CoreType):
             _srow = lambda x: _sln(x, nr > strinkrows, 5, -3, '')
 
             slns = [_scol(cnam)] + \
-                 (([_scol(ln) for ln in mtx[:5]] + [_scol([' ... ... '] + [''] * (nc-1))] + [_scol(ln) for ln in mtx[-3:]]) if nr > 15 else \
-                   [_scol(ln) for ln in mtx])
+                  ([_scol(ln) for ln in mtx] if nr <= strinkrows else
+                  ([_scol(ln) for ln in mtx[:5]] + [_scol([' ... ... '] + [''] * (nc-1))] + [_scol(ln) for ln in mtx[-3:]]))
             slns = [['#'] + slns[0]] + [[n] + ln for n,ln in zip(_srow(rnam), slns[1:])]
 
             nri = ridx.size if available(ridx) else 0
@@ -102,102 +120,32 @@ class Table(CoreType):
             slns = _sfmt(slns, slice(nri,nri+1))
             slns = _sfmt(slns, slice(nri+1,None))
 
-            return smap(slns, lambda ln: paste(*ln, delimiter))
+            return smap(slns, lambda ln: paste(*ln, sep = delimiter))
 
         sdm = _fmt(self._dmatx, self._rnames, self._cnames, self._rindex if withindex else None, self._cindex if withindex  else None) if not transpose else \
               _fmt(self._dmatx.T, self._cnames, self._rnames, self._cindex if withindex else None, self._rindex if withindex else None)
         return sdm
 
-    # portals
-    def onload(self, removefile: bool = True) -> Table:
-        if not isinstance(self._dmatx, np.memmap): logging.warning('Table not offloaded, skip'); return self
-        checkInputFile(self._memmap.file)
-
-        mdmatx = np.memmap(self._memmap.file, dtype = self._memmap.dtype, mode = 'r', shape = self._memmap.shape)
-        self._dmatx = np.array(mdmatx)
-        del mdmatx
-
-        if removefile: self._memmap.file.unlink()
-        self._memmap = None
-        return self
-
-    def offload(self, fname: Union[str, Path]) -> Table:
-        if isinstance(self._dmatx, np.memmap): logging.warning('Table already offloaded, skip'); return self
-        checkOutputFile(fname)
-
-        self._memmap = Metadata(file = fname, dtype = self._dmatx.dtype, shape = self._dmatx.shape)
-        mdmatx = np.memmap(self._memmap.file, dtype = self._memmap.dtype, mode = 'w+', shape = self._memmap.shape)
-        mdmatx[:] = self._dmatx[:]
-
-        del self._dmatx
-        self._dmatx = mdmatx
-        return self
-
-
-
-
-
     # built-ins
-    def __getitem__(self, item):
-        rids, cids = self._parseIndices(item)
-        ntab = Table(self._dmatx[np.ix_(rids, cids)], dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
-
-        if available(self._rnames): ntab.rownames = self._rnames[rids]
-        if available(self._cnames): ntab.colnames = self._cnames[cids]
-        if available(self._rindex): ntab.rowindex = self._rindex[:,rids]
-        if available(self._cindex): ntab.colindex = self._cindex[:,cids]
-        return ntab
-
-    def __setitem__(self, key, value):
-        if isinstance(key, np.ndarray) and key.shape == self.shape and key.dtype.kind == 'b' and \
-           isinstance(value, (int, float, basestring, bool)): self._dmatx[key] = value; return # just for convenience
-
-        rids, cids = self._parseIndices(key)
-        if not isinstance(value, Table):
-            self._dmatx[np.ix_(rids, cids)] = np.array(value)
-        else:
-            self._dmatx[np.ix_(rids, cids)] = np.array(value.X_)
-            if available(self._rnames): self._rnames[rids] = value.rownames
-            if available(self._cnames): self._cnames[cids] = value.colnames
-            if available(self._rindex): self._rindex[:,rids] = value.rowindex
-            if available(self._cindex): self._cindex[:,cids] = value.colindex
-
-    def __delitem__(self, key):
-        rids, cids = self._parseIndices(key, mapSlice = False)
-        rlic = isinstance(rids, slice) and rids == slice(None)
-        clic = isinstance(cids, slice) and cids == slice(None)
-
-        if rlic and clic:
-            self._dmatx = np.array([], dtype = self.dtype).reshape((0,0))
-            if available(self._rnames): del self._rnames[:]
-            if available(self._cnames): del self._cnames[:]
-            if available(self._rindex): del self._rindex[:,np.arange(self.nrow)]
-            if available(self._cindex): del self._cindex[:,np.arange(self.ncol)]
-            return
-
-        if not rlic:
-            self._dmatx = np.delete(self._dmatx, rids, axis = 0)
-            if available(self._rnames): del self._rnames[rids]
-            if available(self._rindex): del self._rindex[:,rids]
-        if not clic:
-            self._dmatx = np.delete(self._dmatx, cids, axis = 1)
-            if available(self._cnames): del self._cnames[cids]
-            if available(self._cindex): del self._cindex[:,cids]
-
     def __iter__(self):
-        return iter(self._dmatx)
+        return map(np.array, self._dmatx)
 
     def __contains__(self, item):
         return np.any(self._dmatx == item)
 
     def __len__(self):
-        return self.shape[0]
+        return self.size
 
     def __eq__(self, other):
-        if not isinstance(other, Table): return self._dmatx == other
-        return self.shape == other.shape and np.all(self._dmatx == other._dmatx) and \
-               np.all(self._rnames == other._rnames) and np.all(self._cnames == other._cnames) and \
-               self._rindex == other._rindex and self._cindex == other._cindex
+        if isinstance(other, Table):
+            equ = self.shape == other.shape and np.all(self._dmatx == other._dmatx)
+            if available(self._rnames) and available(other._rnames): equ = equ and np.all(self._rnames == other._rnames)
+            if available(self._cnames) and available(other._cnames): equ = equ and np.all(self._cnames == other._cnames)
+            if available(self._rindex) and available(other._rindex): equ = equ and self._rindex == other._rindex
+            if available(self._cindex) and available(other._cindex): equ = equ and self._cindex == other._cindex
+        else:
+            equ = self._dmatx == other
+        return equ
 
     def __lt__(self, other):
         return self._dmatx < other
@@ -211,34 +159,26 @@ class Table(CoreType):
     def __ge__(self, other):
         return self._dmatx >= other
 
-    def __iadd__(self, other):
-        if not isinstance(other, Table): raise TypeError('unknown input data type')
-        if other.ncol != self.ncol: raise IndexError('input table has different number of columns')
-        if available(self._cnames) and available(other._cnames) and np.any(other._cnames != self._cnames): raise IndexError('input table has different column names')
-        if available(self._cindex) and available(other._cindex) and other._cindex != self._cindex: raise IndexError('input table has different column index')
-
-        self._dmatx = np.r_[self._dmatx, other._dmatx]
-        if available(self._rnames): self._rnames += other._rnames
-        if available(self._rindex): self._rindex += other._rindex
-        return self
-
     def __str__(self):
-        return self.tostr(delimiter = ',', transpose = False, withindex = True)
+        return self.tostring(delimiter = ',', transpose = False, withindex = True)
 
     def __repr__(self):
-        rlns = self._toStrList(delimiter = ',')
+        rlns = self._tostrlns(delimiter = ',')
         rlns = ['Table([' + rlns[0]] + \
                ['       ' + ln for ln in rlns[1:]]
-        return join(rlns, '\n') + '], size = (%d, %d))' % (self.nrow, self.ncol)
+        return paste(*rlns, sep = '\n') + f'], size = ({self.nrow}, {self.ncol}))'
 
     # for numpy
     def __array__(self, dtype = None):
-        return self._dmatx.copy() if dtype is None else self._dmatx.astype(dtype)
+        return np.array(self._dmatx, dtype = dtype)
+
+    def __array_wrap__(self, arr):
+        return Table(arr)
 
     # properties
     @property
     def values(self):
-        return self._dmatx.copy()
+        return np.array(self._dmatx)
 
     @property
     def X_(self):
@@ -255,8 +195,10 @@ class Table(CoreType):
     @dtype.setter
     def dtype(self, value):
         self._dmatx = self._dmatx.astype(value)
-        if self.dtype.kind == 'u' or (self.dtype.kind == 'i' and self.dtype.itemsize < 8):
-            logging.warning('special integer dtype may cause na comparison failure')
+
+    @property
+    def rows(self):
+        return self._rnames
 
     @property
     def rownames(self):
@@ -264,9 +206,13 @@ class Table(CoreType):
 
     @rownames.setter
     def rownames(self, value):
-        if isnull(value): self._rnames = na; return
-        self._rnames = NamedIndex(value, fixRepeat = self._fixrep)
+        if missing(value): self._rnames = None; return
+        self._rnames = NamedIndex(value)
         if self._rnames.size != self.nrow: raise ValueError('input row names size not match')
+
+    @property
+    def cols(self):
+        return self._cnames
 
     @property
     def colnames(self):
@@ -274,9 +220,13 @@ class Table(CoreType):
 
     @colnames.setter
     def colnames(self, value):
-        if isnull(value): self._cnames = na; return
-        self._cnames = NamedIndex(value, fixRepeat = self._fixrep)
+        if missing(value): self._cnames = None; return
+        self._cnames = NamedIndex(value)
         if self._cnames.size != self.ncol: raise ValueError('input column names size not match')
+
+    @property
+    def ridx(self):
+        return self._rindex
 
     @property
     def rowindex(self):
@@ -284,9 +234,13 @@ class Table(CoreType):
 
     @rowindex.setter
     def rowindex(self, value):
-        if isnull(value): self._rindex = na; return
+        if missing(value): self._rindex = None; return
         self._rindex = StructuredArray(value)
         if self._rindex.size != 0 and self._rindex.length != self.nrow: raise ValueError('input row index size not match')
+
+    @ property
+    def cidx(self):
+        return self._cindex
 
     @property
     def colindex(self):
@@ -294,7 +248,7 @@ class Table(CoreType):
 
     @colindex.setter
     def colindex(self, value):
-        if isnull(value): self._cindex = na; return
+        if missing(value): self._cindex = None; return
         self._cindex = StructuredArray(value)
         if self._cindex.size != 0 and self._cindex.length != self.ncol: raise ValueError('input column index size not match')
 
@@ -304,10 +258,18 @@ class Table(CoreType):
 
     @property
     def T(self):
-        tab = Table(self._dmatx.T, dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
+        tab = Table(self._dmatx.T, dtype = self.dtype, metas = self._metas)
         tab._rnames, tab._cnames = self._cnames.copy(), self._rnames.copy()
         tab._rindex, tab._cindex = self._cindex.copy(), self._rindex.copy()
         return tab
+
+    @property
+    def size(self):
+        return self._dmatx.shape[0]
+
+    @property
+    def shape(self):
+        return self._dmatx.shape
 
     @property
     def nrow(self):
@@ -318,194 +280,202 @@ class Table(CoreType):
         return self.shape[1]
 
     @property
-    def size(self):
-        return self.shape[0]
-
-    @property
-    def shape(self):
-        return self._dmatx.shape
-
-    @property
     def ndim(self):
         return 2
 
-    @property
-    def fixRepeat(self):
-        return self._fixrep
-
-    @fixRepeat.setter
-    def fixRepeat(self, value):
-        self._fixrep = bool(value)
-        if available(self._rnames): self._rnames.fixRepeat = self._fixrep
-        if available(self._cnames): self._cnames.fixRepeat = self._fixrep
-
     # publics
-    def append(self, other, axis = 0):
-        if not isinstance(other, Table): raise TypeError('unknown input data type')
+    def take(self, pos: Indices2D, axis: Optional[int] = None) -> Table:
+        rids, cids = self._parseids(pos, axis = axis)
+        ntab = Table(
+            self._dmatx[np.ix_(rids, cids)], dtype = self.dtype, metas = self._metas,
+            rownames = self._rnames[rids] if available(self._rnames) else None,
+            colnames = self._cnames[cids] if available(self._cnames) else None,
+            rowindex = self._rindex[:,rids] if available(self._rindex) else None,
+            colindex = self._cindex[:,cids] if available(self._cindex) else None,
+        )
+        return ntab
+
+    def put(self, pos: Indices2D, value: Any, axis: Optional[int] = None, inline: bool = True) -> Table:
+        ntab = self if inline else self.copy()
+        vals = self._parsevals(value)
+
+        if isinstance(pos, np.ndarray) and pos.shape == ntab.shape and pos.dtype.kind == 'b':
+            ntab._dmatx[pos] = vals # for e.g. tab[tab == 0] = 1
+        else:
+            rids, cids = self._parseids(pos, axis = axis)
+            ntab._dmatx[np.ix_(rids, cids)] = vals
+            if isinstance(value, Table):
+                if available(ntab._rnames): ntab._rnames[rids] = value.rownames
+                if available(ntab._cnames): ntab._cnames[cids] = value.colnames
+                if available(ntab._rindex): ntab._rindex[:,rids] = value.rowindex
+                if available(ntab._cindex): ntab._cindex[:,cids] = value.colindex
+        return ntab
+
+    def append(self, value: Table, axis: int = 0, inline: bool = True) -> Table:
+        return self.insert(None, value = value, axis = axis, inline = inline)
+
+    def insert(self, pos: Union[Indices, None], value: Table, axis: int = 0, inline: bool = True) -> Table:
+        if not isinstance(value, Table): raise TypeError('unknown input data type')
+
+        ntab = self if inline else self.copy()
         if axis == 0:
-            if other.ncol != self.ncol: raise IndexError('input table has different number of columns')
-            if available(self._cnames) and available(other._cnames) and np.any(other._cnames != self._cnames): raise IndexError('input table has different column names')
-            if available(self._cindex) and available(other._cindex) and other._cindex != self._cindex: raise IndexError('input table has different column index')
-
-            tab = Table(np.r_[self._dmatx, other._dmatx], dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
-            if available(self._rnames): tab.rownames = self._rnames + other._rnames
-            if available(self._cnames): tab.colnames = self._cnames.copy()
-            if available(self._rindex): tab.rowindex = self._rindex + other._rindex
-            if available(self._cindex): tab.colindex = self._cindex.copy()
-            return tab
+            if value.ncol != ntab.ncol: raise IndexError('input table has different number of columns')
+            ntab._dmatx = np.vstack([ntab._dmatx, value._dmatx.astype(ntab.dtype)]) if missing(pos) else \
+                          np.insert(ntab._dmatx, pos, value._dmatx.astype(ntab.dtype), axis = 0)
+            if available(ntab._rnames): ntab._rnames.insert(pos, value._rnames)
+            if available(ntab._cnames) and available(value._cnames) and np.any(value._cnames != ntab._cnames): raise IndexError('input table has different column names')
+            if available(ntab._rindex): ntab._rindex.insert(pos, value._rindex)
+            if available(ntab._cindex) and available(value._cindex) and value._cindex != ntab._cindex: raise IndexError('input table has different column index')
         elif axis == 1:
-            if other.nrow != self.nrow: raise IndexError('input table has different number of rows')
-            if available(self._rnames) and available(other._rnames) and np.any(other._rnames != self._rnames): raise IndexError('input table has different row names')
-            if available(self._rindex) and available(other._rindex) and other._rindex != self._rindex: raise IndexError('input table has different row index')
+            if value.nrow != ntab.nrow: raise IndexError('input table has different number of rows')
+            ntab._dmatx = np.hstack([ntab._dmatx, value._dmatx.astype(ntab.dtype)]) if missing(pos) else \
+                          np.insert(ntab._dmatx, pos, value._dmatx.astype(ntab.dtype), axis = 1)
+            if available(ntab._rnames) and available(value._rnames) and np.any(value._rnames != ntab._rnames): raise IndexError('input table has different row names')
+            if available(ntab._cnames): ntab._cnames.insert(pos, value._cnames)
+            if available(ntab._rindex) and available(value._rindex) and value._rindex != self._rindex: raise IndexError('input table has different row index')
+            if available(ntab._cindex): ntab._cindex.insert(pos, value._cindex)
+        else: raise IndexError(f'unsupported axis [{axis}]')
 
-            tab = Table(np.c_[self._dmatx, other._dmatx], dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
-            if available(self._rnames): tab.rownames = self._rnames.copy()
-            if available(self._cnames): tab.colnames = self._cnames + other._cnames
-            if available(self._rindex): tab.rowindex = self._rindex.copy()
-            if available(self._cindex): tab.colindex = self._cindex + other._cindex
-            return tab
-        else: raise IndexError('unsupported axis [%d]' % axis)
+        return ntab
 
-    def insert(self, other, pos = na, axis = 0):
-        if not isinstance(other, Table): raise TypeError('unknown input data type')
-        if axis == 0:
-            if other.ncol != self.ncol: raise IndexError('input table has different number of columns')
-            if available(self._cnames) and available(other._cnames) and np.any(other._cnames != self._cnames): raise IndexError('input table has different column names')
-            if available(self._cindex) and available(other._cindex) and other._cindex != self._cindex: raise IndexError('input table has different column index')
+    def delete(self, pos: Indices2D, axis: Optional[int] = None, inline: bool = True) -> Table:
+        ntab = self if inline else self.copy()
 
-            if missing(pos): pos = self.nrow
-            elif available(self._rnames) and strtype_(pos): pos = self._rnames.idsof(pos)
+        rids, cids = self._parseids(pos, axis = axis, mapslice = False)
+        rlic = isinstance(rids, slice) and rids == slice(None)
+        clic = isinstance(cids, slice) and cids == slice(None)
 
-            tab = Table(np.insert(self._dmatx, pos, other._dmatx, axis = 0), dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
-            if available(self._rnames): tab.rownames = self._rnames.insert(other._rnames, pos) # in case np.inert etc will change array shape
-            if available(self._cnames): tab.colnames = self._cnames.copy()
-            if available(self._rindex): tab.rowindex = self._rindex.insert(other._rindex, pos)
-            if available(self._cindex): tab.colindex = self._cindex.copy()
-            return tab
-        elif axis == 1:
-            if other.nrow != self.nrow: raise IndexError('input table has different number of rows')
-            if available(self._rnames) and available(other._rnames) and np.any(other._rnames != self._rnames): raise IndexError('input table has different row names')
-            if available(self._rindex) and available(other._rindex) and other._rindex != self._rindex: raise IndexError('input table has different row index')
+        if rlic and clic:
+            ntab._dmatx = np.array([], dtype = ntab.dtype).reshape((0,0))
+            if available(ntab._rnames): ntab._rnames.delete(rids)
+            if available(ntab._rindex): ntab._rindex.delete(rids, axis = 1)
+            if available(ntab._cnames): ntab._cnames.delete(cids)
+            if available(ntab._cindex): ntab._cindex.delete(cids, axis = 1)
+        elif rlic and not clic:
+            ntab._dmatx = np.delete(ntab._dmatx, cids, axis = 1)
+            if available(ntab._cnames): ntab._cnames.delete(cids)
+            if available(ntab._cindex): ntab._cindex.delete(cids, axis = 1)
+        elif clic and not rlic:
+            ntab._dmatx = np.delete(ntab._dmatx, rids, axis = 0)
+            if available(ntab._rnames): ntab._rnames.delete(rids)
+            if available(ntab._rindex): ntab._rindex.delete(rids, axis = 1)
+        else: raise IndexError('unable to delete portion of the table')
 
-            if missing(pos): pos = self.ncol
-            elif available(self._cnames) and strtype_(pos): pos = self._cnames.idsof(pos)
+        return ntab
 
-            tab = Table(np.insert(self._dmatx, pos if listable(pos) else [pos], other._dmatx, axis = 1), dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
-            if available(self._rnames): tab.rownames = self._rnames.copy()
-            if available(self._cnames): tab.colnames = self._cnames.insert(other._cnames, pos)
-            if available(self._rindex): tab.rowindex = self._rindex.copy()
-            if available(self._cindex): tab.colindex = self._cindex.insert(other._cindex, pos)
-            return tab
-        else: raise IndexError('unsupported axis [%d]' % axis)
+    def tolist(self) -> List:
+        return l(self._dmatx.tolist())
 
-    def drop(self, pos, axis = 0):
-        if axis == 0:
-            if missing(pos): pos = self.nrow
-            elif available(self._rnames) and strtype_(pos): pos = self._rnames.idsof(pos)
-
-            tab = Table(np.delete(self._dmatx, pos, axis = 0), dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
-            if available(self._rnames): tab.rownames = self._rnames.drop(pos)
-            if available(self._cnames): tab.colnames = self._cnames.copy()
-            if available(self._rindex): tab.rowindex = self._rindex.drop(pos)
-            if available(self._cindex): tab.colindex = self._cindex.copy()
-            return tab
-        elif axis == 1:
-            if missing(pos): pos = self.ncol
-            elif available(self._cnames) and strtype_(pos): pos = self._cnames.idsof(pos)
-
-            tab = Table(np.delete(self._dmatx, pos, axis = 1), dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
-            if available(self._rnames): tab.rownames = self._rnames.copy()
-            if available(self._cnames): tab.colnames = self._cnames.drop(pos)
-            if available(self._rindex): tab.rowindex = self._rindex.copy()
-            if available(self._cindex): tab.colindex = self._cindex.drop(pos)
-            return tab
-        else: raise IndexError('unsupported axis [%d]' % axis)
-
-    def copy(self):
-        tab = Table(self._dmatx, dtype = self.dtype, metadata = self._metas, fixRepeat = self._fixrep)
-        tab._rnames, tab._cnames = self._rnames.copy(), self._cnames.copy()
-        tab._rindex, tab._cindex = self._rindex.copy(), self._cindex.copy()
-        return tab
-
-    def astype(self, dtype):
-        ds = self.copy()
-        ds.dtype = dtype
-        return ds
-
-    def tolist(self, transpose = False, withindex = False):
-        smtx = [['#'] + list(optional(self._cnames, np.arange(self.ncol)))] + \
-               [[rn] + list(ln) for rn, ln in zip(optional(self._rnames, np.arange(self.nrow)), self._dmatx)]
-
-        if withindex:
-            if available(self._rindex):
-                ridx = smap(zip(*[['<%s>' % n] + list(v) for n, v in zip(self._rindex.names, self._rindex.series)]), list)
-                smtx = [ri + sl for ri, sl in zip(ridx, smtx)]
-            if available(self._cindex):
-                cidx = smap([['<%s>' % n] + list(v) for n, v in zip(self._cindex.names, self._cindex.series)], list)
-                smtx = [[''] * len(optional(self._rindex, [])) + ci for ci in cidx] + smtx
-
-        if transpose: smtx = zip(*smtx)
-        return smtx
-
-    def tostr(self, delimiter = ',', transpose = False, withindex = False):
-        rlns = self._toStrList(delimiter = delimiter, transpose = transpose, withindex = withindex)
+    def tostring(self, delimiter: str = ',', transpose: bool = False, withindex: bool = False) -> str:
+        rlns = self._tostrlns(delimiter = delimiter, transpose = transpose, withindex = withindex)
         rlns = ['[' + rlns[0]] + \
                [' ' + ln for ln in rlns[1:]]
-        return join(rlns, '\n') + ']'
+        return paste(*rlns, sep = '\n') + ']'
 
+    def copy(self) -> Table:
+        return self.astype()
 
+    def astype(self, dtype: Optional[Union[str, np.dtype, type]] = None) -> Table:
+        ntab = Table(self._dmatx, dtype = optional(dtype, self.dtype), metas = self._metas)
+        ntab._rnames, ntab._cnames = self._rnames.copy(), self._cnames.copy()
+        ntab._rindex, ntab._cindex = self._rindex.copy(), self._cindex.copy()
+        return ntab
+
+    # memory offload
+    def onload(self, removefile: bool = False) -> Table:
+        if not isinstance(self._dmatx, np.memmap): logging.warning('Table not offloaded, skip'); return self
+        checkInputFile(self._memmap.file)
+
+        mdmatx = np.memmap(self._memmap.file, dtype = self._memmap.dtype, mode = 'r', shape = self._memmap.shape)
+        self._dmatx = np.array(mdmatx)
+        del mdmatx
+
+        if removefile: self._memmap.file.unlink()
+        self._memmap = None
+        return self
+
+    def offload(self, fname: Union[str, Path]) -> Table:
+        if isinstance(self._dmatx, np.memmap): logging.warning('Table already offloaded, skip'); return self
+        checkOutputFile(fname)
+
+        mdmatx = np.memmap(fname, dtype = self.dtype, mode = 'w+', shape = self.shape)
+        mdmatx[:] = self._dmatx
+        self._dmatx = mdmatx
+
+        self._memmap = Metadata(file = fname, dtype = self.dtype, shape = self.shape)
+        return self
+
+    # portals
     @classmethod
-    def fromsarray(cls, array, dtype = na, rowindex = na, colindex = na):
-        if missing(rowindex) or missing(colindex):
-            if '#' not in array: raise ValueError('Unknown array format')
-            colindex, rowindex = smap(np.where(array == '#'), itemgetter(0))
-        ridx = StructuredArray.fromsarray(array[colindex:,:rowindex].T) if rowindex > 0 else na
-        cidx = StructuredArray.fromsarray(array[:colindex,rowindex:])   if colindex > 0 else na
+    def fromsarray(cls, array: np.ndarray, dtype: Union[str, type, np.ndarray.dtype] = str,
+                   rowindex: Optional[int] = None, colindex: Optional[int] = None) -> Table:
+        _r = re.compile('#<::([biufcmMOSUV])::>')
+        mtab = np.vectorize(lambda x: (lambda v: v[0] if len(v) > 0 else '')(_r.findall(x)))(array[:100,:100])
+
+        dpos = np.c_[np.where(mtab != '')]
+        if dpos.shape[0] >= 2: raise ValueError('string array has multiple headers')
+        if dpos.shape[0] == 1:
+            rowindex, colindex = dpos[0]
+            dtype = mtab[rowindex, colindex]
+        if missing(rowindex) or missing(colindex): raise ValueError('string array header not found in the first 100 rows / cols')
+
+        ridx = StructuredArray.fromsarray(array[colindex:,:rowindex].T) if rowindex > 0 else None
+        cidx = StructuredArray.fromsarray(array[:colindex,rowindex:])   if colindex > 0 else None
         array = array[colindex:,rowindex:]
 
         cnam = array[0,1:]
-        if np.all(cnam == np.arange(cnam.shape[0]).astype(str)): cnam = na
+        if np.all(cnam == np.arange(cnam.size).astype(str)): cnam = None
         rnam = array[1:,0]
-        if np.all(rnam == np.arange(rnam.shape[0]).astype(str)): rnam = na
+        if np.all(rnam == np.arange(rnam.size).astype(str)): rnam = None
         array = array[1:,1:]
-
-        if missing(dtype): dtype = type(autoeval(array[0,0]))
-        if dtype in (NAType, NoneType): logging.warning('invalid data type detected')
 
         return Table(array, dtype = dtype, rownames = rnam, colnames = cnam, rowindex = ridx, colindex = cidx)
 
-    def tosarray(self, withindex = True):
-        return np.array(self.tolist(transpose = False, withindex = withindex), dtype = str)
+    def tosarray(self, withindex: bool = True) -> np.ndarray:
+        rnam = np.array(self._rnames) if available(self._rnames) else np.arange(self.nrow).astype(str)
+        cnam = np.array(self._cnames) if available(self._cnames) else np.arange(self.ncol).astype(str)
+        smtx = np.vstack([np.hstack([f'#<::{self.dtype.kind}::>', cnam]), np.hstack(rnam.reshape((-1,1)), np.array(self._dmatx, dtype = str))])
+        if not withindex: return smtx
+
+        if available(self._rindex):
+            ridx = self._rindex.tosarray()
+            smtx = np.hstack([ridx.T, smtx])
+        if available(self._cindex):
+            cidx = self._cindex.tosarray()
+            if available(self._rindex): cidx = np.hstack([np.tile([''], (self._cindex.size, self._rindex.size)), cidx])
+            smtx = np.vstack([cidx, smtx])
+        return smtx
 
     @classmethod
-    def loadcsv(cls, fname, dtype = na, delimiter = ',', transposed = False, rowindex = na, colindex = na):
+    def loadcsv(cls, fname: Union[str, Path], *, delimiter: str = ',', transposed: bool = True,
+                dtype: Union[str, type, np.ndarray.dtype] = str, rowindex: Optional[int] = None, colindex: Optional[int] = None) -> Table:
         idm = np.array(tablePortal.load(fname, delimiter = delimiter))
         if transposed: idm = idm.T
         return cls.fromsarray(idm, dtype = dtype, rowindex = rowindex, colindex = colindex)
 
-    def savecsv(self, fname, delimiter = ',', transpose = False, withindex = True):
-        odm = self.tosarray(withindex)
+    def savecsv(self, fname: Union[str, Path], delimiter: str = ',', transpose: bool = True, withindex: bool = True) -> bool:
+        odm = self.tosarray(withindex = withindex)
         if transpose: odm = odm.T
         tablePortal.save(odm, fname, delimiter = delimiter)
         return os.path.isfile(fname)
 
     @classmethod
-    def loadhdf(cls, fname):
+    def loadhdf(cls, fname: Union[str, Path]) -> Table:
         checkInputFile(fname)
         hdf = ptb.open_file(fname, mode = 'r')
 
         darr = hdf.root.DataMatx.read()
         meta = [(n, getattr(hdf.root.DataMatx.attrs, n)) for n in hdf.root.DataMatx.attrs._f_list('user')]
 
-        rnam = hdf.root.RowNames.read() if hasattr(hdf.root, 'RowNames') else na
-        cnam = hdf.root.ColNames.read() if hasattr(hdf.root, 'ColNames') else na
-        ridx = StructuredArray.fromhtable(hdf.root.RowIndex) if hasattr(hdf.root, 'RowIndex') else na
-        cidx = StructuredArray.fromhtable(hdf.root.ColIndex) if hasattr(hdf.root, 'ColIndex') else na
+        rnam = hdf.root.RowNames.read() if hasattr(hdf.root, 'RowNames') else None
+        cnam = hdf.root.ColNames.read() if hasattr(hdf.root, 'ColNames') else None
+        ridx = StructuredArray.fromhtable(hdf.root.RowIndex) if hasattr(hdf.root, 'RowIndex') else None
+        cidx = StructuredArray.fromhtable(hdf.root.ColIndex) if hasattr(hdf.root, 'ColIndex') else None
 
         hdf.close()
-        return Table(darr, metadata = meta, rownames = rnam, colnames = cnam, rowindex = ridx, colindex = cidx)
+        return Table(darr, rownames = rnam, colnames = cnam, rowindex = ridx, colindex = cidx, metas = meta)
 
-    def savehdf(self, fname, compression = 0):
+    def savehdf(self, fname: Union[str, Path], compression: int = 0) -> bool:
         checkOutputFile(fname)
         hdf = ptb.open_file(fname, mode = 'w', filters = ptb.Filters(compression))
 
@@ -521,45 +491,42 @@ class Table(CoreType):
         return os.path.isfile(fname)
 
     @classmethod
-    def loadrdata(cls, fname, dname, rowindex = na, colindex = na, dataTransposed = True):
-        from kagami.wrappers.rWrapper import RWrapper as rw
-
+    def loadrdata(cls, fname: Union[str, Path], dataobj: str, *,
+                  ridxobj: Optional[str] = None, cidxobj: Optional[str] = None, transposed: bool = True) -> Table:
+        if missing(rw): raise RuntimeError('RWrapper not available for this installation')
         checkInputFile(fname)
         rw.r.load(fname)
 
-        dm, rn, cn = rw.r[dname], rw.run('rownames(%s)' % dname), rw.run('colnames(%s)' % dname) # stupid numpy conversion
-        if dataTransposed: dm, rn, cn = dm.T, cn, rn
-
-        tabl = Table(dm, metadata = {'_rdata_file_name': fname})
-        if rn is not rw.null: tabl.rownames = rn
-        if cn is not rw.null: tabl.colnames = cn
+        dm, rn, cn = rw.r[dataobj], rw.run(f'rownames({dataobj})'), rw.run(f'colnames({dataobj})') # stupid numpy conversion
+        if rn is rw.null: rn = None
+        if cn is rw.null: cn = None
 
         def _parseidx(iname):
             idx = rw.r[iname]
             return zip(idx.dtype.names, zip(*idx))
-        if available(rowindex): tabl.rowindex = _parseidx(rowindex)
-        if available(colindex): tabl.colindex = _parseidx(colindex)
+        ri = _parseidx(ridxobj) if available(ridxobj) else None
+        ci = _parseidx(cidxobj) if available(cidxobj) else None
 
-        return tabl
+        if transposed: dm, rn, cn, ri, ci = dm.T, cn, rn, ci, ri
+        ntab = Table(dm, rownames = rn, colnames = cn, rowindex = ri, colindex = ci)
+        return ntab
 
-    def saverdata(self, fname, dname = 'data', rowindex = 'row.index', colindex = 'col.index', dataTranspose = True):
-        from kagami.wrappers.rWrapper import RWrapper as rw
-
+    def saverdata(self, fname, *, dataobj: str = 'data.matrix',
+                  ridxobj: Optional[str] = 'row.index', cidxobj: Optional[str] = 'col.index', transpose: bool = True) -> bool:
+        if missing(rw): raise RuntimeError('RWrapper not available for this installation')
         checkOutputFile(fname)
 
-        dm, rn, cn = (self._dmatx,   self._rnames, self._cnames) if not dataTranspose else \
-                     (self._dmatx.T, self._cnames, self._rnames)
+        dm, rn, cn, ri, ci = (self._dmatx,   self._rnames, self._cnames, self._rindex, self._cindex) if not transpose else \
+                             (self._dmatx.T, self._cnames, self._rnames, self._cindex, self._rindex)
 
         dmtx = rw.asMatrix(dm)
         if available(rn): dmtx.rownames = rw.asVector(rn)
         if available(cn): dmtx.colnames = rw.asVector(cn)
-        rw.assign(dmtx, dname)
+        rw.assign(dmtx, dataobj)
 
-        if available(self._rindex): rw.assign(rw.r['data.frame'](**{k: rw.asVector(self._rindex[k]) for k in self._rindex.names}), rowindex)
-        if available(self._cindex): rw.assign(rw.r['data.frame'](**{k: rw.asVector(self._cindex[k]) for k in self._cindex.names}), colindex)
+        if available(ri): rw.assign(rw.r['data.frame'](**{k: rw.asVector(v) for k,v in ri.fields}), ridxobj)
+        if available(ci): rw.assign(rw.r['data.frame'](**{k: rw.asVector(v) for k,v in ci.fields}), cidxobj)
 
-        vnames = [dname] + ([rowindex] if available(self._rindex) else []) + ([colindex] if available(self._cindex) else [])
-        rw.run('save(%s, file = "%s")' % (join(vnames, ','), fname)) # avoid bug in rw.save
-
+        vnames = [dataobj] + ([ridxobj] if available(ri) else []) + ([cidxobj] if available(ci) else [])
+        rw.run(f'save({paste(*vnames, sep = ",")}, file = "{fname}")') # avoid bug in rw.save
         return os.path.isfile(fname)
-

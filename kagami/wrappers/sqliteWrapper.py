@@ -15,7 +15,7 @@ from __future__ import annotations
 import logging, sqlite3
 from pathlib import Path
 from typing import List, Iterable, Optional, Union, Any
-from kagami.common import available, missing, optional, smap, lzip, collapse, paste, fileTitle
+from kagami.comm import available, missing, optional, smap, lzip, collapse, paste, fileTitle
 
 
 __all__ = ['SQLiteWrapper', 'openSQLiteWrapper']

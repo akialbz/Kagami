@@ -13,7 +13,7 @@ origin: Jun. 28, 2014
 import logging, requests
 from time import sleep
 from typing import Any, Mapping, Optional, Union
-from kagami.common import optional, available, partial
+from kagami.comm import optional, available, partial
 
 
 __all__ = ['get', 'post']

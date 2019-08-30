@@ -16,11 +16,12 @@ import os
 import numpy as np
 import tables as tb
 from typing import List, Tuple, Iterable, Mapping, Union, Optional, Any
+from pathlib import Path
 from operator import itemgetter
 from collections import OrderedDict
-from kagami.common import l, ll, available, missing, checkall, checkany, iterable, listable, ismapping, isstring, smap, unpack, paste, checkInputFile, checkOutputFile
+from kagami.comm import l, ll, available, missing, checkall, checkany, iterable, listable, ismapping, isstring, smap, unpack, paste, checkInputFile, checkOutputFile
 from kagami.portals import tablePortal
-from .coreType import CoreType, Indices2D
+from .coreType import CoreType, Indices, Indices2D
 
 
 __all__ = ['StructuredArray']
@@ -43,11 +44,16 @@ class StructuredArray(CoreType):
         for k,v in vals: self[k] = v
 
     # privates
-    def _parseids(self, idx, mapslice = True):
-        sids, aids = (idx, slice(None)) if not isinstance(idx, tuple) else \
-                     (idx[0], slice(None)) if len(idx) == 1 else idx
+    def _parseids(self, idx, axis, mapslice = True):
+        if missing(axis):
+            sids, aids = (idx, slice(None)) if not isinstance(idx, tuple) else \
+                         (idx[0], slice(None)) if len(idx) == 1 else idx
+        else:
+            if axis not in (0, 1): raise ValueError('invalid axis value')
+            sids, aids = (idx, slice(None)) if axis == 0 else (slice(None), idx)
 
         def _wrap(ids):
+            if ids is None: return slice(None)
             if isinstance(ids, slice): return ids
             if not listable(ids): return [ids]
             return ids
@@ -60,24 +66,14 @@ class StructuredArray(CoreType):
         if not iterable(value): return value
         if isinstance(value, StructuredArray): return [value._arrs[n].copy() for n in self._arrs.keys()]
 
-        _wrap = lambda x: np.array(ll(x))
         value = ll(value)
-        if not iterable(value[0]): return _wrap(value)
+        if not iterable(value[0]): return np.array(value)
 
-        value = smap(value, _wrap)
+        value = smap(value, lambda x: np.array(ll(x)))
         if not len(set(smap(value, len))) == 1: raise ValueError('input arrays not in the same size')
         return value
 
     # built-ins
-    def __getitem__(self, item):
-        return self.take(item)
-
-    def __setitem__(self, key, value):
-        self.put(key, value, inline = True)
-
-    def __delitem__(self, key):
-        self.delete(key, inline = True)
-
     def __iter__(self):
         return self._arrs.keys()
 
@@ -106,7 +102,7 @@ class StructuredArray(CoreType):
         rlns = str(self).split('\n')
         rlns = ['StructuredArray(' + rlns[0]] + \
                ['                ' + ln for ln in rlns[1:]]
-        return paste(*rlns, sep = '\n') + ', size = (%d, %d))' % (self.size, self.length)
+        return paste(*rlns, sep = '\n') + f', size = ({self.size}, {self.length}))'
 
     # for numpy
     def __array__(self, dtype = None):
@@ -149,22 +145,22 @@ class StructuredArray(CoreType):
         return 2
 
     # publics
-    def take(self, pos: Union[str, Indices2D]) -> StructuredArray:
+    def take(self, pos: Indices2D, axis: Optional[int] = None) -> StructuredArray:
         if isstring(pos): return self._arrs[pos]
-        sids, aids = self._parseids(pos)
+        sids, aids = self._parseids(pos, axis = axis)
         return StructuredArray([(k, self._arrs[k][aids]) for k in sids])
 
-    def put(self, pos: Union[str, Indices2D], value: Any, inline: bool = True) -> StructuredArray:
+    def put(self, pos: Indices2D, value: Any, axis: Optional[int] = None, inline: bool = True) -> StructuredArray:
         narr = self if inline else self.copy()
         vals = self._parsevals(value)
 
         if isstring(pos):
             if not isinstance(vals, np.ndarray): raise ValueError('input array not in 1-dimensional')
-            if missing(narr._length): narr._length = vals.size
-            elif narr._length != vals.size: raise ValueError('input array size not match')
+            if missing(narr._length): narr._length = vals.shape[0]
+            elif narr._length != vals.shape[0]: raise ValueError('input array size not match')
             narr._arrs[pos] = vals
         else:
-            sids, aids = self._parseids(pos)
+            sids, aids = self._parseids(pos, axis = axis)
             if not isinstance(vals, list):
                 for k in sids: narr._arrs[k][aids] = vals
             else:
@@ -172,27 +168,27 @@ class StructuredArray(CoreType):
                 for k,vals in zip(sids, vals): narr._arrs[k][aids] = vals
         return narr
 
-    def append(self, value: Iterable[Iterable], inline: bool = True) -> StructuredArray:
+    def append(self, value: Any, inline: bool = True) -> StructuredArray:
+        return self.insert(None, value = value, inline = inline)
+
+    def insert(self, pos: Union[Indices, None], value: Any, inline: bool = True) -> StructuredArray:
         narr = self if inline else self.copy()
         vals = self._parsevals(value)
-        if not isinstance(vals, list) or len(vals) != narr.size: raise ValueError('input values size not match')
-        for k,v in narr._arrs.items(): narr._arrs[k] = np.r_[v, vals[k]]
-        narr._length += vals[0].size
+        _upd = (lambda x,y: np.insert(x, pos, y)) if available(pos) else (lambda x,y: np.hstack([x, y]))
+        if not isinstance(vals, list):
+            for k, v in narr._arrs.items(): narr._arrs[k] = _upd(v, vals)
+            narr._length += vals.shape[0] if isinstance(vals, np.ndarray) else 1
+        else:
+            if len(vals) != narr.size: raise ValueError('input values size not match')
+            for k, v in narr._arrs.items(): narr._arrs[k] = _upd(v, vals[k])
+            narr._length += vals[0].shape[0]
         return narr
 
-    def insert(self, pos: Indices2D, value: Iterable[Iterable], inline: bool = True) -> StructuredArray:
-        narr = self if inline else self.copy()
-        vals = self._parsevals(value)
-        if not isinstance(vals, list) or len(vals) != narr.size: raise ValueError('input values size not match')
-        for k,v in narr._arrs.items(): narr._arrs[k] = np.insert(v, pos, vals[k])
-        narr._length += vals[0].size
-        return narr
-
-    def delete(self, pos: Indices2D, inline: bool = True) -> StructuredArray:
+    def delete(self, pos: Indices2D, axis: Optional[int] = None, inline: bool = True) -> StructuredArray:
         narr = self if inline else self.copy()
         if isstring(pos): del narr._arrs[pos]; return narr
 
-        sids, aids = self._parseids(pos, mapslice = False)
+        sids, aids = self._parseids(pos, axis = axis, mapslice = False)
         slic = isinstance(sids, slice) and sids == slice(None)
         alic = isinstance(aids, slice) and aids == slice(None)
 
@@ -209,8 +205,8 @@ class StructuredArray(CoreType):
 
         return narr
 
-    def tolist(self) -> List[Tuple[str, np.ndarray]]:
-        return self.fields
+    def tolist(self) -> List:
+        return self.arrays
 
     def tostring(self) -> str:
         return str(self)
@@ -223,34 +219,33 @@ class StructuredArray(CoreType):
 
     # file portals
     @classmethod
-    def fromsarray(cls, array: Iterable[Iterable[str]]):
-        if not isinstance(array, np.ndarray): array = np.array(smap(array, ll))
+    def fromsarray(cls, array: np.ndarray) -> StructuredArray:
         nams, vals = array[:,0], array[:,1:]
         nams, vdts = itemgetter(0, -1)(l(zip(*smap(nams, lambda x: x.lstrip('<').rstrip('>').partition('::')))))
         vals = smap(zip(vals,vdts), unpack(lambda v,d: np.array(v).astype(d)))
         return StructuredArray(zip(nams, vals))
 
-    def tosarray(self):
+    def tosarray(self) -> np.ndarray:
         return np.array([np.r_[[f'<{k}::{v.dtype.descr.kind}>'], v.astype(str)] for k,v in self._arrs.items()])
 
     @classmethod
-    def loadcsv(cls, fname, delimiter = ',', transposed = False):
+    def loadcsv(cls, fname: Union[str, Path], delimiter: str = ',', transposed: bool = True) -> StructuredArray:
         idm = np.array(tablePortal.load(fname, delimiter = delimiter))
         if transposed: idm = idm.T
         return cls.fromsarray(idm)
 
-    def savecsv(self, fname, delimiter = ',', transpose = False):
+    def savecsv(self, fname: Union[str, Path], delimiter: str = ',', transpose: bool = True) -> bool:
         odm = self.tosarray()
         if transpose: odm = odm.T
-        tablePortal.save(odm, fname, delimiter = delimiter)
+        return tablePortal.save(odm, fname, delimiter = delimiter)
 
     @classmethod
-    def fromhtable(cls, hdftable):
+    def fromhtable(cls, hdftable: tb.Table) -> StructuredArray:
         nams = hdftable.attrs.names
         vals = [np.array(hdftable.colinstances[n]) for n in nams]
         return StructuredArray(zip(nams, vals))
 
-    def tohtable(self, root, tabname):
+    def tohtable(self, root: tb.Group, tabname: str) -> tb.Table:
         desc = type('_struct_array', (tb.IsDescription,), {n: tb.Col.from_dtype(v.dtype) for n,v in self._arrs.items()})
         tabl = tb.Table(root, tabname, desc)
         tabl.append([self._arrs[n] for n in tabl.colnames]) # desc.columns is an un-ordered dict
@@ -258,12 +253,12 @@ class StructuredArray(CoreType):
         return tabl
 
     @classmethod
-    def loadhdf(cls, fname):
+    def loadhdf(cls, fname: Union[str, Path]) -> StructuredArray:
         checkInputFile(fname)
         with tb.open_file(fname, mode = 'r') as hdf: arr = cls.fromhtable(hdf.root.StructuredArray)
         return arr
 
-    def savehdf(self, fname, compression = 0):
+    def savehdf(self, fname: Union[str, Path], compression: int = 0) -> bool:
         checkOutputFile(fname)
         with tb.open_file(fname, mode = 'w', filters = tb.Filters(compression)) as hdf: self.tohtable(hdf.root, 'StructuredArray')
         return os.path.isfile(fname)

@@ -14,14 +14,14 @@ import pickle
 import numpy as np
 from typing import Tuple, Sequence, Union, Optional
 from copy import deepcopy
-from kagami.common import pickmap
+from kagami.comm import pickmap
 
 
 __all__ = ['CoreType', 'Indices', 'Indices2D']
 
 
-Indices = Union[int, str, Sequence[Union[int, bool, str]], slice]
-Indices2D = Union[Tuple[Indices], Tuple[Indices, Optional[Indices]]]
+Indices = Union[int, str, Sequence[Union[int, str]], slice, None]
+Indices2D = Union[Indices, Tuple[Indices], Tuple[Indices, Optional[Indices]]]
 
 
 class CoreType:
@@ -29,13 +29,13 @@ class CoreType:
 
     # built-ins
     def __getitem__(self, item):
-        raise NotImplementedError(f'method not implemented for {self.__class__.__name__}')
+        return self.take(item)
 
     def __setitem__(self, key, value):
-        raise NotImplementedError(f'method not implemented for {self.__class__.__name__}')
+        self.put(key, value, inline = True)
 
     def __delitem__(self, key):
-        raise NotImplementedError(f'method not implemented for {self.__class__.__name__}')
+        self.delete(key, inline = True)
 
     def __iter__(self):
         raise NotImplementedError(f'method not implemented for {self.__class__.__name__}')

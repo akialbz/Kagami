@@ -13,7 +13,7 @@ origin: 06-28-2014
 import os
 from typing import List, Iterable, Union
 from pathlib import Path
-from kagami.common import smap, drop, checkInputFile, checkOutputFile
+from kagami.comm import smap, drop, checkInputFile, checkOutputFile
 
 
 __all__ = ['load', 'save', 'loadlns', 'savelns']
