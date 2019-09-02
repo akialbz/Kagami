@@ -10,32 +10,38 @@ origin: 11-22-2018
 """
 
 
-import urllib2, pytest
+import pytest, json
+from urllib.request import urlopen
+from urllib.error import URLError
 from kagami.comm import *
 from kagami.portals import webPortal
 
 
 def _connected():
-    try: urllib2.urlopen('http://rest.kegg.jp', timeout = 1); return True
-    except urllib2.URLError: return False
+    try: urlopen('https://httpbin.org/', timeout = 1); return True
+    except URLError: return False
 
-@pytest.mark.skipif(not _connected(), reason = 'no connection to KEGG rest APIs')
+@pytest.mark.skipif(not _connected(), reason = 'no connection to internet')
 def test_get_io():
-    ret = webPortal.get('http://rest.kegg.jp/link/ko/cge:113831488')
-    assert ret == 'cge:113831488\tko:K19752'
+    ret = json.loads(webPortal.get('https://httpbin.org/get', params = {'b': 'bb'}, headers = {'a': 'aa'}))
+    assert ret['args'] == {'b': 'bb'}
+    assert ret['headers']['A'] == 'aa' and ret['headers']['Host'] == 'httpbin.org'
+    assert ret['url'] == 'https://httpbin.org/get?b=bb'
 
-    ret = webPortal.get('http://rest.kegg.jp/no-such-website', tries = 3)
+    ret = webPortal.get('https://httpbin.org/no-such-website', tries = 3)
     assert missing(ret)
 
     ret = webPortal.get('http://no-such-website.com', tries = 3)
     assert missing(ret)
 
-@pytest.mark.skipif(not _connected(), reason = 'no connection to KEGG rest APIs')
+@pytest.mark.skipif(not _connected(), reason = 'no connection to internet')
 def test_post_io():
-    ret = webPortal.post('http://rest.kegg.jp/link/ko/cge:113831488')
-    assert ret == 'cge:113831488\tko:K19752'
+    ret = json.loads(webPortal.post('https://httpbin.org/post', params = {'b': 'bb'}, headers = {'a': 'aa'}))
+    assert ret['args'] == {'b': 'bb'}
+    assert ret['headers']['A'] == 'aa' and ret['headers']['Host'] == 'httpbin.org'
+    assert ret['url'] == 'https://httpbin.org/post?b=bb'
 
-    ret = webPortal.post('http://rest.kegg.jp/no-such-website', tries = 3)
+    ret = webPortal.post('https://httpbin.org/no-such-website', tries = 3)
     assert missing(ret)
 
     ret = webPortal.post('http://no-such-website.com', tries = 3)

@@ -39,7 +39,7 @@ class BinaryWrapper:
 
         procs = Popen(exlst, stdin = PIPE, stdout = PIPE, stderr = PIPE, shell = self._shell)
         rvals = procs.communicate(input = stdin)
-        rstrs = smap(rvals, lambda x: '' if x is None else x.strip())
+        rstrs = smap(rvals, lambda x: '' if x is None else x.decode('utf-8').strip())
         rcode = procs.returncode
 
         prstr = paste(*rstrs, sep = ' | ')

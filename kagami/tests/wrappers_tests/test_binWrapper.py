@@ -26,13 +26,13 @@ def test_stats():
 @pytest.mark.skipif(os.name != 'posix', reason = 'BinaryWrapper is designed for POSIX only')
 def test_runs():
     bw = BinaryWrapper('ls')
-    flst = set(smap(listPath(filePath(__file__), recursive = False, fileOnly = True, suffix = '.py'), fileName))
+    flst = set(smap(listPath(filePath(__file__), recursive = False, fileonly = True, suffix = '.py'), fileName))
 
     rcode, (rstd, rerr) = bw.execute([ filePath(__file__) ])
     assert rcode == 0 and rerr == '' and \
            set(pick(rstd.strip().split('\n'), lambda x: x.endswith('.py'))) == flst
 
-    def _testmap(nt = na, np = na):
+    def _testmap(nt = None, np = None):
         rcodes, rstrs = zip(*bw.mapexec([[filePath(__file__)] for _ in range(3)], nthreads = nt, nprocs = np))
         rstds, rerrs = zip(*rstrs)
         assert set(rcodes) == {0} and set(rerrs) == {''} and \

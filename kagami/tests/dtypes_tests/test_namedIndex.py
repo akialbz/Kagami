@@ -11,11 +11,11 @@ origin: 08-23-2018
 
 
 import pytest
-import cPickle as cp
+import pickle as pkl
 import numpy as np
 from string import ascii_lowercase
 from copy import deepcopy
-from kagami.coreTypes import NamedIndex
+from kagami.dtypes import NamedIndex
 
 
 def _create_namedIndex():
@@ -24,25 +24,24 @@ def _create_namedIndex():
 
 def test_namedIndex_creation():
     NamedIndex()
-    NamedIndex('aa')
     NamedIndex(['aa'])
-    NamedIndex(['a', u'b', 'cc'])
+    NamedIndex(['a', 'b', 'cc'])
 
     with pytest.raises(TypeError): NamedIndex(['a', ['b', 'c']])
     with pytest.raises(KeyError): NamedIndex(['a', 'a', 'b'])
 
-    idx = NamedIndex(['a', 'a', 'b'], fixRepeat = True)
-    assert np.all(idx == ['a', 'a.2', 'b'])
+    idx = NamedIndex(NamedIndex.uniquenames(['a', 'a', 'b']))
+    assert np.all(idx == ['a', 'a.1', 'b'])
     assert np.all(idx == NamedIndex(idx))
 
-    print '\n', repr(NamedIndex(['%s%d' % (c,n) for c in ascii_lowercase for n in range(5)]))
+    print('\n', repr(NamedIndex(['%s%d' % (c,n) for c in ascii_lowercase for n in range(5)])))
 
 def test_namedIndex_built_ins():
     idx, vals = _create_namedIndex()
 
     # item oprtations
     assert np.all(idx[:3] == vals[:3])
-    assert np.all(idx[-1] == NamedIndex('dddd'))
+    assert np.all(idx[-1] == NamedIndex(['dddd']))
     assert np.all(idx[[0,2]] == NamedIndex(vals[[0,2]]))
     assert np.all(idx == vals)
 
@@ -63,7 +62,10 @@ def test_namedIndex_built_ins():
     del cidx[[1,2]]
     assert np.all(cidx == ['a', 'dddd'])
     del cidx[-1]
-    assert np.all(cidx == NamedIndex('a'))
+    assert np.all(cidx == NamedIndex(['a']))
+
+    # attr access
+    assert idx.a == 0 and idx.bbb == 1 and idx.cc == 2 and idx.dddd == 3
 
     # sequence oprtations
     assert np.all(vals == [n for n in idx])
@@ -93,11 +95,12 @@ def test_namedIndex_built_ins():
     with pytest.raises(KeyError): cidx += ['dddd']
 
     # representation oprtations
-    print idx
-    print str(idx)
-    print repr(idx)
+    print(idx)
+    print(str(idx))
+    print(repr(idx))
 
     # numpy array interface
+    assert np.all(np.append(idx, 'ff') == np.append(vals, 'ff'))
     assert np.all(np.insert(idx, 1, 'ff') == np.insert(vals, 1, 'ff'))
     assert np.all(np.insert(idx, [2,3], ['ee','gg']) == np.insert(vals, [2,3], ['ee','gg']))
     assert np.all(np.delete(idx, -1) == np.delete(vals, -1))
@@ -107,7 +110,7 @@ def test_namedIndex_built_ins():
     with pytest.raises(KeyError): np.insert(idx, -1, 'a')
 
     # pickle
-    assert np.all(idx == cp.loads(cp.dumps(idx)))
+    assert np.all(idx == pkl.loads(idx.dumps()))
 
 def test_namedIndex_properties():
     idx, vals = _create_namedIndex()

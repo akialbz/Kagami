@@ -35,7 +35,8 @@ def fileName(fpath: Union[str, Path]) -> str:
 
 def filePrefix(fpath: Union[str, Path], absolute: bool = True) -> str:
     if isstring(fpath): fpath = Path(fpath)
-    return str(fpath.absolute() if absolute else fpath)[:-len(fpath.suffix)]
+    sfx = len(fpath.suffix)
+    return str(fpath.absolute() if absolute else fpath)[:(-sfx if sfx > 0 else None)]
 
 def fileSuffix(fpath: Union[str, Path]) -> str:
     if isstring(fpath): fpath = Path(fpath)
@@ -51,8 +52,8 @@ def listPath(path: Union[str, Path], *, recursive: bool = False, fileonly: bool 
              visible: bool = True, prefix: Optional[str] = None, suffix: Optional[str] = None, globptn: Optional[str] = None) -> List[Path]:
     if fileonly and dironly: logging.warning('nothing to expect after excluding both dirs and files')
 
-    if missing(globptn): globptn = ('**/' if recursive else '*/') + optional(prefix, '') + '*' + optional(suffix, '')
     if isstring(path): path = Path(path)
+    if missing(globptn): globptn = ('**/' if recursive else '') + optional(prefix, '') + '*' + optional(suffix, '')
     fds = l(path.glob(globptn))
 
     if fileonly: fds = pick(fds, lambda x: x.is_file())
@@ -87,9 +88,8 @@ def checkOutputFile(fpath: Union[str, Path], override: bool = True) -> None:
 
 def checkOutputDir(dpath: Union[str, Path], override: bool = False) -> None:
     if isstring(dpath): dpath = Path(dpath)
-    if dpath.samefile(Path.cwd()): return
     if dpath.is_dir():
-        if not override: return
+        if dpath.samefile(Path.cwd()) or not override: return
         logging.warning('output dir [%s] already exists, override', dpath)
         shutil.rmtree(dpath)
     os.makedirs(dpath, exist_ok = False)

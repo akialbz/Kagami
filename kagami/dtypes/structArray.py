@@ -19,7 +19,7 @@ from typing import List, Tuple, Iterable, Mapping, Union, Optional, Any
 from pathlib import Path
 from operator import itemgetter
 from collections import OrderedDict
-from kagami.comm import l, ll, available, missing, checkall, checkany, iterable, listable, ismapping, isstring, smap, unpack, paste, checkInputFile, checkOutputFile
+from kagami.comm import l, ll, lzip, available, missing, checkall, checkany, iterable, listable, ismapping, isstring, smap, unpack, paste, checkInputFile, checkOutputFile
 from kagami.portals import tablePortal
 from .coreType import CoreType, Indices, Indices2D
 
@@ -221,7 +221,7 @@ class StructuredArray(CoreType):
     @classmethod
     def fromsarray(cls, array: np.ndarray) -> StructuredArray:
         nams, vals = array[:,0], array[:,1:]
-        nams, vdts = itemgetter(0, -1)(l(zip(*smap(nams, lambda x: x.lstrip('<').rstrip('>').partition('::')))))
+        nams, vdts = itemgetter(0, -1)(lzip(*smap(nams, lambda x: x.lstrip('<').rstrip('>').partition('::'))))
         vals = smap(zip(vals,vdts), unpack(lambda v,d: np.array(v).astype(d)))
         return StructuredArray(zip(nams, vals))
 

@@ -10,31 +10,31 @@ origin: 11-22-2018
 """
 
 
-import os
+from pathlib import Path
 from kagami.comm import *
 from kagami.wrappers import SQLiteWrapper, openSQLiteWrapper
 
 
 def test_creation_context():
-    fn = 'test_sqlite_wrapper.db'
+    fn = Path('test_sqlite_wrapper.db')
     with openSQLiteWrapper(fn) as db:
-        assert os.path.isfile(fn)
+        assert fn.is_file()
         assert db.connected
     assert not db.connected
-    os.remove(fn)
+    fn.unlink()
 
 def test_basic_operations():
-    fn = 'test_sqlite_wrapper.db'
+    fn = Path('test_sqlite_wrapper.db')
     db = SQLiteWrapper(fn).connect()
-    assert os.path.isfile(fn)
+    assert fn.is_file()
     assert db.connected
 
     db.close()
     assert not db.connected
-    os.remove(fn)
+    fn.unlink()
 
 def test_table_operations():
-    fn = 'test_sqlite_wrapper.db'
+    fn = Path('test_sqlite_wrapper.db')
 
     with openSQLiteWrapper(fn) as db:
         tabn = 'new table'
@@ -47,10 +47,10 @@ def test_table_operations():
         db.dropTable(tabn).commit()
         assert not db.tableExists(tabn)
 
-    os.remove(fn)
+    fn.unlink()
 
 def test_column_operations():
-    fn = 'test_sqlite_wrapper.db'
+    fn = Path('test_sqlite_wrapper.db')
 
     with openSQLiteWrapper(fn) as db:
         tabn = 'new table'
@@ -63,11 +63,11 @@ def test_column_operations():
         db.addColumn(tabn, coln, ('TEXT',)).commit()
         assert db.columnExists(tabn, coln)
         assert coln in db.listColNames(tabn)
-        assert coln in zip(*db.listColumns(tabn))[1]
+        assert coln in lzip(*db.listColumns(tabn))[1]
 
         dm = [(1, 'a', 'val 1'), (2, 'b', 'val 2')]
-        for d in dm: db.execute("INSERT INTO %s VALUES (%d,'%s','%s')" % ((tabn,) + d))
-        assert checkall(zip(db.toList(tabn), dm), unpack(lambda x,y: x == y))
+        for d in dm: db.execute(f"INSERT INTO {tabn} VALUES (%d,'%s','%s')" % d)
+        assert checkall(zip(db.tolist(tabn), dm), unpack(lambda x,y: x == y))
 
-    os.remove(fn)
+    fn.unlink()
 

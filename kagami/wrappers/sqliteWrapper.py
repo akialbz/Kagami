@@ -64,7 +64,6 @@ class SQLiteWrapper:
 
     def query(self, query: str) -> List:
         if self._dbconn is None: raise IOError('database not connected')
-        logging.debug('sqlite query = [%s]', query)
         try:
             res = self._dbconn.execute(query).fetchall()
         except Exception as e:
@@ -88,7 +87,7 @@ class SQLiteWrapper:
 
     def listTables(self) -> List:
         res = self.query("SELECT name FROM sqlite_master WHERE type='table'")
-        return collapse(res, [])
+        return collapse(res, ())
 
     # column routines
     def addColumn(self, tableName: str, colName: str, types: Optional[Iterable[str]] = None) -> SQLiteWrapper:
@@ -107,7 +106,7 @@ class SQLiteWrapper:
         return lzip(*cols)[1] if len(cols) > 0 else []
 
     # export
-    def toList(self, tableName: str) -> List:
+    def tolist(self, tableName: str) -> List:
         return self.query(f"SELECT * FROM '{tableName}'")
 
 

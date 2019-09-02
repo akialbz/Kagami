@@ -66,6 +66,7 @@ class NamedIndex(CoreType):
         return self.size
 
     def __eq__(self, other):
+        if isinstance(other, NamedIndex): other = other._names
         return self._names == other
 
     def __str__(self):
@@ -74,7 +75,7 @@ class NamedIndex(CoreType):
     def __repr__(self):
         rlns = str(self._names).split('\n')
         rlns = [f'NamedIndex({rlns[0]}'] + \
-               [f'           {ln}' for ln in rlns[1:]]
+               [f'            {ln}' for ln in rlns[1:]]
         return paste(*rlns, sep = '\n') + f', size = {self.size})'
 
     # for numpy

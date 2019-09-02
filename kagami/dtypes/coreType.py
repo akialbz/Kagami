@@ -53,7 +53,10 @@ class CoreType:
         return np.logical_not(self.__eq__(other))
 
     def __add__(self, other):
-        return self.append(other)
+        return self.append(other, inline = False)
+
+    def __iadd__(self, other):
+        return self.append(other, inline = True)
 
     def __str__(self):
         raise NotImplementedError(f'method not implemented for {self.__class__.__name__}')
