@@ -35,8 +35,9 @@ class NamedIndex(CoreType):
 
     def _parseids(self, ids):
         if isinstance(ids, tuple): raise IndexError('too many dimensions for array')
-        if (listable(ids) and checkany(ids, isstring)) or isstring(ids): ids = self.idsof(ids, safe = False)
-        if ids is None: ids = slice(None)
+        if (listable(ids) and checkany(ids, isstring)) or isstring(ids): return self.idsof(ids, safe = False)
+        if listable(ids) and checkany(ids, lambda v: isinstance(v, bool)): return np.where(ids)[0]
+        if ids is None: return slice(None)
         return ids
 
     @staticmethod
@@ -120,7 +121,7 @@ class NamedIndex(CoreType):
         cdct = {n:c for n,c in zip(unam, cnts-1)}
         for i,n in enumerate(names[::-1]):
             c = cdct[n]
-            if c > 0: names[-i-1], cdct[n] = n + suffix.format(i), c - 1
+            if c > 0: names[-i-1], cdct[n] = n + suffix.format(c), c - 1
         return names
 
     def namesof(self, ids: Union[int, Iterable[int]]) -> Union[str, np.ndarray]:
@@ -139,7 +140,7 @@ class NamedIndex(CoreType):
         pos = self._parseids(pos)
         return self._names[pos] if isinstance(pos, int) else NamedIndex(self._names[pos])
 
-    def put(self, pos: Indices, value: Union[str, Iterable[str]], inline: bool = True) -> NamedIndex:
+    def put(self, pos: Indices, value: Union[str, Iterable[str]], inline: bool = False) -> NamedIndex:
         pos = self._parseids(pos)
         val = self._parsevals(value)
         nid = self if inline else self.copy()
@@ -153,15 +154,18 @@ class NamedIndex(CoreType):
             nid._reindex()
         return nid
 
-    def append(self, value: Union[str, Iterable[str]], inline: bool = True) -> NamedIndex:
+    def append(self, value: Union[str, Iterable[str]], inline: bool = False) -> NamedIndex:
         val = self._parsevals(value)
+        if not listable(val): val = [val]
+
         nid = self if inline else self.copy()
         nid._names = np.hstack([nid._names, val])
         for i,n in enumerate(val): nid._nidct[n] = nid.size + i
+
         if len(nid._names) != len(nid._nidct): raise KeyError('index names not unique')
         return nid
 
-    def insert(self, pos: Union[Indices, None], value: Union[str, Iterable[str]], inline: bool = True) -> NamedIndex:
+    def insert(self, pos: Union[Indices, None], value: Union[str, Iterable[str]], inline: bool = False) -> NamedIndex:
         if missing(pos): return self.append(value, inline)
         pos = self._parseids(pos)
         val = self._parsevals(value)
@@ -170,7 +174,7 @@ class NamedIndex(CoreType):
         nid._reindex()
         return nid
 
-    def delete(self, pos: Indices, inline: bool = True) -> NamedIndex:
+    def delete(self, pos: Indices, inline: bool = False) -> NamedIndex:
         pos = self._parseids(pos)
         nid = self if inline else self.copy()
         nid._names = np.delete(self._names, pos)

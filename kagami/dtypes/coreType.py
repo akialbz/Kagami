@@ -95,16 +95,16 @@ class CoreType:
     def take(self, pos):
         raise NotImplementedError(f'method not implemented for {self.__class__.__name__}')
 
-    def put(self, pos, value, inline = True):
+    def put(self, pos, value, inline = False):
         raise NotImplementedError(f'method not implemented for {self.__class__.__name__}')
 
-    def append(self, value, inline = True):
+    def append(self, value, inline = False):
         raise NotImplementedError(f'method not implemented for {self.__class__.__name__}')
 
-    def insert(self, pos, value, inline = True):
+    def insert(self, pos, value, inline = False):
         raise NotImplementedError(f'method not implemented for {self.__class__.__name__}')
 
-    def delete(self, pos, inline = True):
+    def delete(self, pos, inline = False):
         raise NotImplementedError(f'method not implemented for {self.__class__.__name__}')
 
     def tolist(self):

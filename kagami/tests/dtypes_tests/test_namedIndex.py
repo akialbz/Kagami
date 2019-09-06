@@ -55,7 +55,16 @@ def test_namedIndex_built_ins():
     cidx[:2] = cidx[:2]
     assert np.all(cidx == vals)
 
-    with pytest.raises(KeyError): cidx[1] = 'a'
+    cidx = deepcopy(idx)
+    cidx['a'] = 'aa'
+    assert np.all(cidx == ['aa', 'bbb', 'cc', 'dddd'])
+    cidx[['bbb', 'dddd']] = iter(['bb', 'dd'])
+    assert np.all(cidx == ['aa', 'bb', 'cc', 'dd'])
+    cidx[[False, True, True, False]] = ['ee', 'ff']
+    cidx[[1,2]] = ['ee', 'ff']
+    with pytest.raises(IndexError): cidx[1,2] = ['ee', 'ff']
+
+    with pytest.raises(KeyError): cidx[1] = 'aa'
     with pytest.raises(TypeError): cidx[:] = 1
 
     cidx = deepcopy(idx)
@@ -63,6 +72,8 @@ def test_namedIndex_built_ins():
     assert np.all(cidx == ['a', 'dddd'])
     del cidx[-1]
     assert np.all(cidx == NamedIndex(['a']))
+    del cidx['a']
+    assert np.all(cidx == [])
 
     # attr access
     assert idx.a == 0 and idx.bbb == 1 and idx.cc == 2 and idx.dddd == 3
@@ -92,7 +103,7 @@ def test_namedIndex_built_ins():
     cidx += np.array(['ff', 'gg'])
     assert np.all(cidx == idx + ['eee', 'ff', 'gg'])
 
-    with pytest.raises(KeyError): cidx += ['dddd']
+    with pytest.raises(KeyError): cidx += 'dddd'
 
     # representation oprtations
     print(idx)
@@ -101,6 +112,7 @@ def test_namedIndex_built_ins():
 
     # numpy array interface
     assert np.all(np.append(idx, 'ff') == np.append(vals, 'ff'))
+    assert np.all(np.append(idx, ['ff', 'gg']) == np.append(vals, ['ff', 'gg']))
     assert np.all(np.insert(idx, 1, 'ff') == np.insert(vals, 1, 'ff'))
     assert np.all(np.insert(idx, [2,3], ['ee','gg']) == np.insert(vals, [2,3], ['ee','gg']))
     assert np.all(np.delete(idx, -1) == np.delete(vals, -1))
@@ -129,43 +141,68 @@ def test_namedIndex_properties():
     assert idx.shape == vals.shape
     assert idx.ndim == 1
 
-    # fixRepeat
-    assert idx.fixRepeat == False
-    idx.fixRepeat = True
-    idx = idx[[0, 0, 1, 2, 3]]
-    assert np.all(idx == ['a', 'a.2', 'bbb', 'cc', 'dddd'])
-
 def test_namedIndex_methods():
     idx, vals = _create_namedIndex()
+
+    # unique naming
+    assert np.all(NamedIndex.uniquenames(vals[[0, 0, 1, 2, 3, 3, 3]], suffix = '_{}') == ['a', 'a_1', 'bbb', 'cc', 'dddd', 'dddd_1', 'dddd_2'])
 
     # indexing
     assert idx.namesof(1) == 'bbb'
     assert idx.namesof(-1) == 'dddd'
-    assert np.all(idx.namesof([0,2]) == vals[[0,2]])
+    assert np.all(idx.namesof([0,'cc']) == vals[[0,2]])
     with pytest.raises(IndexError): idx.namesof([4,5])
 
     assert isinstance(idx.idsof('cc'), int) and idx.idsof('cc') == 2
     assert np.all(idx.idsof(['a', 'dddd']) == [0,3])
+    assert np.all(idx.idsof([0, 'dddd']) == [0,3])
+    assert idx.idsof(['a', 'b', 'cc'], safe = True) == [0, None, 2]
     with pytest.raises(KeyError): idx.idsof(['a', 'b', 'cc'])
 
     # manipulations
+    assert np.all(idx.take([0,2]) == ['a', 'cc'])
+    assert np.all(idx.take(1) == 'bbb')
+    assert np.all(idx.take('bbb') == 'bbb')
+    assert np.all(idx.take(slice(1,-1)) == ['bbb', 'cc'])
+    assert np.all(idx.take([True, False, True, False]) == ['a', 'cc'])
+    with pytest.raises(IndexError): idx.take((0,1))
+
+    assert np.all(idx.put(1, 'bb') == ['a', 'bb', 'cc', 'dddd'])
+    assert np.all(idx.put([0,2], iter(['1','2'])) == ['1', 'bbb', '2', 'dddd'])
+    assert np.all(idx.put(['a', 'cc'], ['c', 'aa']) == ['c', 'bbb', 'aa', 'dddd'])
+    assert np.all(idx.put(slice(1,-1), ['3', '4']) == ['a', '3', '4', 'dddd'])
+    assert np.all(idx.put([False, True, False, True], ['5', '6']) == ['a', '5', 'cc', '6'])
+    with pytest.raises(TypeError): idx.put(1, ['b', 'c'])
+    with pytest.raises(KeyError): idx.put(1, 'a')
+    assert np.all(idx.put(0, 'a') == idx)
+
+    cidx = deepcopy(idx)
+    cidx.put(['bbb', 2, -1], ['b', 'c', 'd'], inline = True)
+    assert np.all(cidx == ['a', 'b', 'c', 'd'])
+
     assert np.all(idx.append('ee') == np.hstack((vals, 'ee')))
     assert np.all(idx.append(['ff', 'gg']) == list(vals) + ['ff', 'gg'])
     with pytest.raises(KeyError): idx.append(idx)
 
-    assert np.all(idx.insert('ee', 1) == np.insert(vals, 1, 'ee'))
-    assert np.all(idx.insert(['ff', 'gg'], [0,2]) == np.insert(vals, [0,2], ['ff', 'gg']))
-    assert np.all(idx.insert(['ff', 'gg'], ['a','cc']) == np.insert(vals, [0,2], ['ff', 'gg']))
-    assert np.all(idx.insert(NamedIndex(['ff', 'gg']), 1) == np.insert(vals, 1, ['ff', 'gg']))
-    assert np.all(idx.insert(['ee']) == idx.append('ee'))
-    with pytest.raises(KeyError): idx.insert(idx, 1)
+    assert np.all(idx.insert(1, 'ee') == np.insert(vals, 1, 'ee'))
+    assert np.all(idx.insert([0, 2], ['ff', 'gg']) == np.insert(vals, [0,2], ['ff', 'gg']))
+    assert np.all(idx.insert(['a','cc'], ['ff', 'gg']) == np.insert(vals, [0,2], ['ff', 'gg']))
+    assert np.all(idx.insert(1, ['ff', 'gg']) == np.insert(vals, 1, ['ff', 'gg']))
+    assert np.all(idx.insert(1, NamedIndex(['ff', 'gg'])) == np.insert(vals, 1, ['ff', 'gg']))
+    assert np.all(idx.insert(None, 'ee') == idx.append('ee'))
+    with pytest.raises(KeyError): idx.insert(1, idx)
 
-    assert np.all(idx.drop(-1) == vals[:-1])
-    assert np.all(idx.drop(['a', 'dddd']) == vals[1:3])
-    assert np.all(idx.drop([0,2]) == vals[[1,3]])
-    assert len(idx.drop([0,1,2,3])) == 0
+    assert np.all(idx.delete(-1) == vals[:-1])
+    assert np.all(idx.delete(['a', 'dddd']) == vals[1:3])
+    assert np.all(idx.delete([0,2]) == vals[[1,3]])
+    assert len(idx.delete([True, False, False, False])) == 3
+    assert len(idx.delete(slice(None))) == 0
 
     assert np.all(idx == vals)
+
+    # converts
+    assert np.all(idx.tolist() == vals)
+    print(idx.tostring())
 
     # copy
     assert np.all(idx == idx.copy())
