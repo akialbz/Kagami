@@ -409,7 +409,7 @@ class Table(CoreType):
     @classmethod
     def fromsarray(cls, array: np.ndarray, dtype: Union[str, type, np.ndarray.dtype] = str,
                    rowindex: Optional[int] = None, colindex: Optional[int] = None) -> Table:
-        _r = re.compile('#<::([biufcmMOSUV])::>')
+        _r = re.compile('#<::([<>|]?[biufcmMOSUV]\d*)::>')
         mtab = np.vectorize(lambda x: (lambda v: v[0] if len(v) > 0 else '')(_r.findall(x)))(array[:100,:100])
 
         dpos = np.c_[np.where(mtab != '')]
@@ -434,7 +434,7 @@ class Table(CoreType):
     def tosarray(self, withindex: bool = True) -> np.ndarray:
         rnam = np.array(self._rnames) if available(self._rnames) else np.arange(self.nrow).astype(str)
         cnam = np.array(self._cnames) if available(self._cnames) else np.arange(self.ncol).astype(str)
-        smtx = np.vstack([np.hstack([f'#<::{self.dtype.kind}::>', cnam]), np.hstack(rnam.reshape((-1,1)), np.array(self._dmatx, dtype = str))])
+        smtx = np.vstack([np.hstack([f'#<::{self.dtype.str}::>', cnam]), np.hstack(rnam.reshape((-1,1)), np.array(self._dmatx, dtype = str))])
         if not withindex: return smtx
 
         if available(self._rindex):

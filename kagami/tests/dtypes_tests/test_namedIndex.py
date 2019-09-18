@@ -121,6 +121,9 @@ def test_namedIndex_built_ins():
 
     with pytest.raises(KeyError): np.insert(idx, -1, 'a')
 
+    # numpy array interface
+    assert np.all(np.array(idx) == vals)
+
     # pickle
     assert np.all(idx == pkl.loads(idx.dumps()))
 

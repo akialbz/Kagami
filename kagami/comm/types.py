@@ -36,8 +36,8 @@ def autoeval(x: str) -> Any:
 isstring:  Callable[[Any], bool] = lambda x: isinstance(x, str)
 ismapping: Callable[[Any], bool] = lambda x: isinstance(x, Mapping)
 hashable:  Callable[[Any], bool] = lambda x: isinstance(x, Hashable)
-iterable:  Callable[[Any], bool] = lambda x: isinstance(x, Iterable) and not isinstance(x, str)
-listable:  Callable[[Any], bool] = lambda x: isinstance(x, (Sequence, np.ndarray)) and not isinstance(x, str)
+iterable:  Callable[[Any], bool] = lambda x: isinstance(x, Iterable) and not isinstance(x, (str, bytes))
+listable:  Callable[[Any], bool] = lambda x: isinstance(x, (Sequence, np.ndarray)) and not isinstance(x, (str, bytes))
 
 
 # metadata type

@@ -12,7 +12,7 @@ origin: 08-23-2018
 
 from __future__ import annotations
 
-import os
+import os, re
 import numpy as np
 import tables as tb
 from typing import List, Tuple, Iterable, Mapping, Union, Optional, Any
@@ -59,7 +59,7 @@ class StructuredArray(CoreType):
             return ids
         sids, aids = smap((sids, aids), _wrap)
 
-        if (isinstance(sids, slice) and mapslice) or checkany(sids, lambda x: not isstring(x)): sids = self.names[sids]
+        if (isinstance(sids, slice) and mapslice) or (listable(sids) and checkany(sids, lambda x: not isstring(x))): sids = self.names[sids]
         return sids, aids
 
     def _parsevals(self, value):
@@ -74,8 +74,11 @@ class StructuredArray(CoreType):
         return value
 
     # built-ins
+    def __getattr__(self, item):
+        return self._arrs[item] if item in self else super().__getattribute__(item)
+
     def __iter__(self):
-        return self._arrs.keys()
+        return iter(self._arrs.keys())
 
     def __contains__(self, item):
         return item in self._arrs
@@ -87,12 +90,15 @@ class StructuredArray(CoreType):
         if isinstance(other, StructuredArray):
             equ = self.shape == other.shape and \
                   set(self._arrs.keys()) == set(other._arrs.keys()) and \
-                  checkall(self._arrs.keys(), lambda k: np.all(self._arrs[k] == other._arrs[k]))
+                  checkall(self._arrs.keys(), lambda k: np.all(self._arrs[k] == other._arrs[k]) if self._arrs[k].dtype.kind != 'f' else
+                                                        np.allclose(self._arrs[k], other._arrs[k]))
         else:
-            equ = self.arrays == np.array(other, dtype = object)
+            if iterable(other): other = np.array(ll(other), dtype = object)
+            equ = np.array(self.arrays, dtype = object) == other
         return equ
 
     def __str__(self):
+        if len(self._arrs) == 0: return '[ ]'
         nlen = max(smap(self._arrs.keys(), len))
         olns = [(('{'+f':{nlen}s'+'} : ').format(k) if i == 0 else (' ' * (nlen + 3))) + ln
                 for k,v in zip(self._arrs.keys(), smap(self._arrs.values(), str)) for i,ln in enumerate(v.split('\n'))]
@@ -174,13 +180,14 @@ class StructuredArray(CoreType):
     def insert(self, pos: Union[Indices, None], value: Any, inline: bool = True) -> StructuredArray:
         narr = self if inline else self.copy()
         vals = self._parsevals(value)
+
         _upd = (lambda x,y: np.insert(x, pos, y)) if available(pos) else (lambda x,y: np.hstack([x, y]))
         if not isinstance(vals, list):
             for k, v in narr._arrs.items(): narr._arrs[k] = _upd(v, vals)
             narr._length += vals.shape[0] if isinstance(vals, np.ndarray) else 1
         else:
             if len(vals) != narr.size: raise ValueError('input values size not match')
-            for k, v in narr._arrs.items(): narr._arrs[k] = _upd(v, vals[k])
+            for (k,v), o in zip(narr._arrs.items(), vals): narr._arrs[k] = _upd(v, o)
             narr._length += vals[0].shape[0]
         return narr
 
@@ -196,6 +203,7 @@ class StructuredArray(CoreType):
             narr._arrs = OrderedDict()
             narr._length = None
         elif slic and not alic:
+            if listable(aids) and len(aids) == 1 and aids[0] < 0: aids = aids[0] # fix the issue that currently negative indices are ignored by np.delete
             for k,v in narr._arrs.items(): narr._arrs[k] = np.delete(v, aids)
             narr._length = len(narr._arrs[l(narr._arrs.keys())[0]])
         elif not slic and alic:
@@ -213,20 +221,21 @@ class StructuredArray(CoreType):
 
     def copy(self) -> StructuredArray:
         narr = StructuredArray()
-        narr._arrs = self._arrs.copy()
+        narr._arrs = OrderedDict([(k, v.copy()) for k,v in self._arrs.items()])
         narr._length = self._length
         return narr
 
     # file portals
     @classmethod
     def fromsarray(cls, array: np.ndarray) -> StructuredArray:
+        _r = re.compile('<(.*)::([<>|]?[biufcmMOSUV]\d*)>')
         nams, vals = array[:,0], array[:,1:]
-        nams, vdts = itemgetter(0, -1)(lzip(*smap(nams, lambda x: x.lstrip('<').rstrip('>').partition('::'))))
-        vals = smap(zip(vals,vdts), unpack(lambda v,d: np.array(v).astype(d)))
+        nams, vdts = np.vectorize(lambda x: (lambda v: v[0] if len(v) > 0 else '')(_r.findall(x)))(nams)
+        vals = smap(zip(vals,vdts), unpack(lambda v,d: np.array(v).astype(d) if d != '|b1' else v == 'True'))
         return StructuredArray(zip(nams, vals))
 
     def tosarray(self) -> np.ndarray:
-        return np.array([np.r_[[f'<{k}::{v.dtype.descr.kind}>'], v.astype(str)] for k,v in self._arrs.items()])
+        return np.array([np.r_[[f'<{k}::{v.dtype.str}>'], v.astype(str)] for k,v in self._arrs.items()])
 
     @classmethod
     def loadcsv(cls, fname: Union[str, Path], delimiter: str = ',', transposed: bool = True) -> StructuredArray:
@@ -242,7 +251,8 @@ class StructuredArray(CoreType):
     @classmethod
     def fromhtable(cls, hdftable: tb.Table) -> StructuredArray:
         nams = hdftable.attrs.names
-        vals = [np.array(hdftable.colinstances[n]) for n in nams]
+        knds = hdftable.attrs.kinds
+        vals = [np.array(hdftable.colinstances[n]).astype(t) for n,t in zip(nams,knds)]
         return StructuredArray(zip(nams, vals))
 
     def tohtable(self, root: tb.Group, tabname: str) -> tb.Table:
@@ -250,6 +260,7 @@ class StructuredArray(CoreType):
         tabl = tb.Table(root, tabname, desc)
         tabl.append([self._arrs[n] for n in tabl.colnames]) # desc.columns is an un-ordered dict
         tabl.attrs.names = self.names
+        tabl.attrs.kinds = [v.dtype.str for v in self.arrays]
         return tabl
 
     @classmethod
