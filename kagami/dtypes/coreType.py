@@ -29,13 +29,13 @@ class CoreType:
 
     # built-ins
     def __getitem__(self, item):
-        return self.take(item)
+        raise NotImplementedError(f'method not implemented for {self.__class__.__name__}')
 
     def __setitem__(self, key, value):
-        self.put(key, value, inline = True)
+        raise NotImplementedError(f'method not implemented for {self.__class__.__name__}')
 
     def __delitem__(self, key):
-        self.delete(key, inline = True)
+        raise NotImplementedError(f'method not implemented for {self.__class__.__name__}')
 
     def __iter__(self):
         raise NotImplementedError(f'method not implemented for {self.__class__.__name__}')

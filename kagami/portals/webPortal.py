@@ -41,11 +41,11 @@ def _request(req, wait, tries, manual):
 
 
 def get(url: str, *, params: Optional[Mapping] = None, headers: Optional[Mapping] = None,
-        timeout: float = 3.05, wait: float = 1, tries: int = 1, manual: bool = False, **kwargs: Any) -> Union[str, None]:
+        timeout: float = 3.05, wait: float = 1, tries: int = 1, manual: bool = False, **kwargs: Any) -> Optional[str]:
     req = partial(requests.get, url, params = optional(params, None), headers = optional(headers, None), timeout = timeout, **kwargs)
     return _request(req, wait, tries, manual)
 
 def post(url: str, *, data: Optional[Mapping] = None, headers: Optional[Mapping] = None,
-         timeout: float = 3.05, wait: float = 1, tries: int = 1, manual: bool = False, **kwargs: Any) -> Union[str, None]:
+         timeout: float = 3.05, wait: float = 1, tries: int = 1, manual: bool = False, **kwargs: Any) -> Optional[str]:
     req = partial(requests.post, url, data = optional(data, None), headers = optional(headers, None), timeout = timeout, **kwargs)
     return _request(req, wait, tries, manual)

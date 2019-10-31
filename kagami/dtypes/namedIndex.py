@@ -54,6 +54,15 @@ class NamedIndex(CoreType):
         return val
 
     # built-ins
+    def __getitem__(self, item):
+        return self.take(item)
+
+    def __setitem__(self, key, value):
+        self.put(key, value, inline = True)
+
+    def __delitem__(self, key):
+        self.delete(key, inline = True)
+
     def __getattr__(self, item):
         return self._nidct[item] if item in self else super().__getattribute__(item)
 
@@ -165,7 +174,7 @@ class NamedIndex(CoreType):
         if len(nid._names) != len(nid._nidct): raise KeyError('index names not unique')
         return nid
 
-    def insert(self, pos: Union[Indices, None], value: Union[str, Iterable[str]], inline: bool = False) -> NamedIndex:
+    def insert(self, pos: Indices, value: Union[str, Iterable[str]], inline: bool = False) -> NamedIndex:
         if missing(pos): return self.append(value, inline)
         pos = self._parseids(pos)
         val = self._parsevals(value)

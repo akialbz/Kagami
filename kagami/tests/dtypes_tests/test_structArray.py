@@ -149,15 +149,15 @@ def test_structArray_methods():
     carr = deepcopy(arr)
     assert np.all(carr.take('ser1') == [1,3,5,7,9])
     assert np.all(carr.take(['ser1', 'ser4']) == [[1,3,5,7,9], [0,1,1,0,1]])
-    assert np.all(carr.take((slice(None,2), [False, True, True, False, True])) == [[3,5,9], [0.4,0.6,1.]])
-    assert np.all(carr.take((slice(None), -1)) == [[9], [1.], ['v5'], [True], ['g'], ['n5']])
+    assert np.all(carr.take((slice(None,2), [False, True, True, False, True]), axis = None) == [[3,5,9], [0.4,0.6,1.]])
+    assert np.all(carr.take((slice(None), -1), axis = None) == [[9], [1.], ['v5'], [True], ['g'], ['n5']])
     assert np.all(carr.take(-1, axis = 1) == [[9], [1.], ['v5'], [True], ['g'], ['n5']])
 
     assert np.all(carr.put('ser2', [2,4,6,8,0], inline = False).ser2 == [2.,4.,6.,8.,0.])
     assert np.all(carr.put(-1, 0, axis = 1, inline = False)[:,-1] == [[0], [0.], ['0'], [False], ['0'], ['0']])
-    assert np.all(carr.put((['ser1', 'ser2'], slice(2,4)), 1, inline = False)[:2,2:4] == 1)
+    assert np.all(carr.put((['ser1', 'ser2'], slice(2,4)), 1, axis = None, inline = False)[:2,2:4] == 1)
     assert carr == arr
-    carr.put(slice(None), 1)
+    carr.put(slice(None), 1, inline = True)
     assert np.all(np.logical_or(carr == 1, carr == '1')) and carr != arr
 
     assert arr[:,:2] + arr[:,2:] == arr
@@ -170,7 +170,7 @@ def test_structArray_methods():
 
     assert np.all(arr.delete(-1, axis = 1, inline = False)[0] == [1,3,5,7])
     assert np.all(arr.delete('ser1', inline = False).names == ['ser2', 'ser3', 'ser4', 'ser5', 'ser6'])
-    assert np.all(arr.delete((None, [3,4]), inline = False)[0] == [1,3,5])
+    assert np.all(arr.delete((None, [3,4]), axis = None, inline = False)[0] == [1,3,5])
     assert np.all(arr.delete(slice(1,-1), axis = 1, inline = False)[-1] == ['n1', 'n5'])
 
     # copy

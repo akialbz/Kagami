@@ -17,9 +17,8 @@ import numpy as np
 import tables as tb
 from typing import List, Tuple, Iterable, Mapping, Union, Optional, Any
 from pathlib import Path
-from operator import itemgetter
 from collections import OrderedDict
-from kagami.comm import l, ll, lzip, available, missing, checkall, checkany, iterable, listable, ismapping, isstring, smap, unpack, paste, checkInputFile, checkOutputFile
+from kagami.comm import l, ll, available, missing, checkall, checkany, iterable, listable, ismapping, isstring, smap, unpack, paste, checkInputFile, checkOutputFile
 from kagami.portals import tablePortal
 from .coreType import CoreType, Indices, Indices2D
 
@@ -74,6 +73,15 @@ class StructuredArray(CoreType):
         return value
 
     # built-ins
+    def __getitem__(self, item):
+        return self.take(item, axis = None)
+
+    def __setitem__(self, key, value):
+        self.put(key, value, axis = None, inline = True)
+
+    def __delitem__(self, key):
+        self.delete(key, axis = None, inline = True)
+
     def __getattr__(self, item):
         return self._arrs[item] if item in self else super().__getattribute__(item)
 
@@ -151,12 +159,12 @@ class StructuredArray(CoreType):
         return 2
 
     # publics
-    def take(self, pos: Indices2D, axis: Optional[int] = None) -> StructuredArray:
+    def take(self, pos: Indices2D, axis: Optional[int] = 0) -> StructuredArray:
         if isstring(pos): return self._arrs[pos]
         sids, aids = self._parseids(pos, axis = axis)
         return StructuredArray([(k, self._arrs[k][aids]) for k in sids])
 
-    def put(self, pos: Indices2D, value: Any, axis: Optional[int] = None, inline: bool = True) -> StructuredArray:
+    def put(self, pos: Indices2D, value: Any, axis: Optional[int] = 0, inline: bool = False) -> StructuredArray:
         narr = self if inline else self.copy()
         vals = self._parsevals(value)
 
@@ -174,10 +182,10 @@ class StructuredArray(CoreType):
                 for k,vals in zip(sids, vals): narr._arrs[k][aids] = vals
         return narr
 
-    def append(self, value: Any, inline: bool = True) -> StructuredArray:
+    def append(self, value: Any, inline: bool = False) -> StructuredArray:
         return self.insert(None, value = value, inline = inline)
 
-    def insert(self, pos: Union[Indices, None], value: Any, inline: bool = True) -> StructuredArray:
+    def insert(self, pos: Indices, value: Any, inline: bool = False) -> StructuredArray:
         narr = self if inline else self.copy()
         vals = self._parsevals(value)
 
@@ -191,7 +199,7 @@ class StructuredArray(CoreType):
             narr._length += vals[0].shape[0]
         return narr
 
-    def delete(self, pos: Indices2D, axis: Optional[int] = None, inline: bool = True) -> StructuredArray:
+    def delete(self, pos: Indices2D, axis: Optional[int] = 0, inline: bool = False) -> StructuredArray:
         narr = self if inline else self.copy()
         if isstring(pos): del narr._arrs[pos]; return narr
 
@@ -228,7 +236,7 @@ class StructuredArray(CoreType):
     # file portals
     @classmethod
     def fromsarray(cls, array: np.ndarray) -> StructuredArray:
-        _r = re.compile('<(.*)::([<>|]?[biufcmMOSUV]\d*)>')
+        _r = re.compile('<(.*)::([<>|]?[biufcmMOSUV]\\d*)>')
         nams, vals = array[:,0], array[:,1:]
         nams, vdts = np.vectorize(lambda x: (lambda v: v[0] if len(v) > 0 else '')(_r.findall(x)))(nams)
         vals = smap(zip(vals,vdts), unpack(lambda v,d: np.array(v).astype(d) if d != '|b1' else v == 'True'))

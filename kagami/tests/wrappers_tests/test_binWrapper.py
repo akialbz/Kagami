@@ -28,15 +28,20 @@ def test_runs():
     bw = BinaryWrapper('ls')
     flst = set(smap(listPath(filePath(__file__), recursive = False, fileonly = True, suffix = '.py'), fileName))
 
-    rcode, (rstd, rerr) = bw.execute([ filePath(__file__) ])
+    rcode, (rstd, rerr) = bw.execute([ filePath(__file__) ], timeout = 10)
     assert rcode == 0 and rerr == '' and \
            set(pick(rstd.strip().split('\n'), lambda x: x.endswith('.py'))) == flst
 
-    def _testmap(nt = None, np = None):
-        rcodes, rstrs = zip(*bw.mapexec([[filePath(__file__)] for _ in range(3)], nthreads = nt, nprocs = np))
+    def _testmap(nt = None, np = None, to = None):
+        rcodes, rstrs = zip(*bw.mapexec([[filePath(__file__)] for _ in range(3)], nthreads = nt, nprocs = np, timeout = to))
         rstds, rerrs = zip(*rstrs)
         assert set(rcodes) == {0} and set(rerrs) == {''} and \
                set(collapse(smap(rstds, lambda rs: pick(rs.strip().split('\n'), lambda x: x.endswith('.py'))))) == flst
+
     _testmap()
+    _testmap(to = 10)
     _testmap(nt = 3)
     _testmap(np = 3)
+    _testmap(nt = 3, to = 10)
+    _testmap(np = 3, to = 10)
+

@@ -13,7 +13,7 @@ origin: 01-25-2016
 import logging
 from pathlib import Path
 from typing import Tuple, List, Iterable, Sequence, Optional, Union
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, TimeoutExpired
 from distutils.spawn import find_executable
 from kagami.comm import ll, optional, missing, available, smap, pmap, tmap, partial, paste
 
@@ -32,15 +32,20 @@ class BinaryWrapper:
 
     # privates
     def _exec(self, pms):
-        params, stdin = pms # for multiproc
+        params, stdin, timeout = pms # for multiproc
 
         exlst = [self._bin] + ([] if missing(params) else smap(params, lambda x: str(x).strip()))
         if self._shell: exlst = paste(*smap(exlst, lambda x: x.replace(' ', r'\ ')), sep = ' ')
 
         procs = Popen(exlst, stdin = PIPE, stdout = PIPE, stderr = PIPE, shell = self._shell)
-        rvals = procs.communicate(input = stdin)
-        rstrs = smap(rvals, lambda x: '' if x is None else x.decode('utf-8').strip())
-        rcode = procs.returncode
+        try:
+            rvals = procs.communicate(input = stdin, timeout = timeout)
+            rstrs = smap(rvals, lambda x: '' if x is None else x.decode('utf-8').strip())
+            rcode = procs.returncode
+        except TimeoutExpired:
+            procs.kill()
+            rstrs = ['subprocess terminated as timeout expired', '']
+            rcode = 124
 
         prstr = paste(*rstrs, sep = ' | ')
         if rcode in self._ncode:
@@ -51,17 +56,17 @@ class BinaryWrapper:
 
     # methods
     @staticmethod
-    def which(binary: Union[str, Path]) -> Union[str, None]:
+    def which(binary: Union[str, Path]) -> Optional[str]:
         return find_executable(binary)
 
     @staticmethod
     def reachable(binary: Union[str, Path]) -> bool:
         return available(BinaryWrapper.which(binary))
 
-    def execute(self, params: Optional[Sequence] = None, stdin: Optional[Union[bytes, str]] = None) -> Tuple[int, List[str]]:
-        return self._exec([params, stdin])
+    def execute(self, params: Optional[Sequence] = None, stdin: Optional[Union[bytes, str]] = None, timeout: Optional[int] = None) -> Tuple[int, List[str]]:
+        return self._exec([params, stdin, timeout])
 
-    def mapexec(self, params: Optional[Iterable[Sequence]] = None, stdin: Optional[Iterable[Union[bytes, str]]] = None,
+    def mapexec(self, params: Optional[Iterable[Sequence]] = None, stdin: Optional[Iterable[Union[bytes, str]]] = None, timeout: Optional[int] = None,
                 nthreads: Optional[int] = None, nprocs: Optional[int] = None) -> List[Tuple[int, List[str]]]:
         if available(params): params = ll(params)
         if available(stdin): stdin = ll(stdin)
@@ -69,7 +74,7 @@ class BinaryWrapper:
         if missing(params) and missing(stdin): raise RuntimeError('both parameters and stdins are missing')
 
         n = len(params)
-        mpms = [(p, s) for p,s in zip(optional(params,[None]*n), optional(stdin,[None]*n))]
+        mpms = [(p, s, timeout) for p,s in zip(optional(params,[None]*n), optional(stdin,[None]*n))]
         _map = partial(pmap, nprocs = nprocs) if available(nprocs) else \
                partial(tmap, nthreads = nthreads) if available(nthreads) else smap
         return _map(mpms, self._exec)

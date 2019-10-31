@@ -15,9 +15,9 @@ from __future__ import annotations
 import logging, os, re
 import numpy as np
 import tables as ptb
-from typing import List, Iterable, Sequence, Mapping, Union, Optional, Any
+from typing import Iterable, Sequence, Mapping, Union, Optional, Any
 from pathlib import Path
-from kagami.comm import l, ll, optional, missing, available, isstring, iterable, listable, checkany, paste, smap, collapse, checkInputFile, checkOutputFile, Metadata
+from kagami.comm import ll, optional, missing, available, isstring, iterable, listable, checkany, paste, smap, collapse, checkInputFile, checkOutputFile, Metadata
 from kagami.portals import tablePortal
 from .coreType import CoreType, Indices, Indices2D
 from .namedIndex import NamedIndex
@@ -44,15 +44,15 @@ class Table(CoreType):
         if self._dmatx.ndim != 2: raise ValueError('input data is not a 2-dimensional matrix')
 
         self._memmap = None
-        if available(memmap): self.offload(Path(memmap))
+        if available(memmap): self.offload(memmap)
 
         self._rnames = self._cnames = None
-        self.rownames = rownames
-        self.colnames = colnames
+        self.rows_ = rownames
+        self.cols_ = colnames
 
         self._rindex = self._cindex = None
-        self.rowindex = rowindex
-        self.colindex = colindex
+        self.ridx_ = rowindex
+        self.cidx_ = colindex
 
         self._metas = Metadata(optional(metas, ()))
 
@@ -79,6 +79,7 @@ class Table(CoreType):
 
     def _parsevals(self, value):
         if not iterable(value): return value
+        if isinstance(value, np.ndarray): return value.astype(self.dtype)
         if isinstance(value, Table): return value._dmatx.astype(self.dtype)
 
         value = ll(value)
@@ -127,11 +128,20 @@ class Table(CoreType):
         return sdm
 
     # built-ins
+    def __getitem__(self, item):
+        return self.take(item, axis = None)
+
+    def __setitem__(self, key, value):
+        self.put(key, value, axis = None, inline = True)
+
+    def __delitem__(self, key):
+        self.delete(key, axis = None, inline = True)
+
     def __iter__(self):
         return map(np.array, self._dmatx)
 
     def __contains__(self, item):
-        return np.any(self._dmatx == item)
+        return item in self._dmatx
 
     def __len__(self):
         return self.size
@@ -178,7 +188,7 @@ class Table(CoreType):
     # properties
     @property
     def values(self):
-        return np.array(self._dmatx)
+        return self._dmatx.copy()
 
     @property
     def X_(self):
@@ -189,68 +199,68 @@ class Table(CoreType):
         self._dmatx[:] = value
 
     @property
+    def rownames(self):
+        return self._rnames.copy()
+
+    @property
+    def rows_(self):
+        return self._rnames
+
+    @rows_.setter
+    def rows_(self, value):
+        if missing(value): self._rnames = None; return
+        self._rnames = NamedIndex(value)
+        if self._rnames.size != self.nrow: raise ValueError('input row names size not match')
+
+    @property
+    def colnames(self):
+        return self._cnames.copy()
+
+    @property
+    def cols_(self):
+        return self._cnames
+
+    @cols_.setter
+    def cols_(self, value):
+        if missing(value): self._cnames = None; return
+        self._cnames = NamedIndex(value)
+        if self._cnames.size != self.ncol: raise ValueError('input column names size not match')
+
+    @property
+    def rowindex(self):
+        return self._rindex.copy()
+
+    @property
+    def ridx_(self):
+        return self._rindex
+
+    @ridx_.setter
+    def ridx_(self, value):
+        if missing(value): self._rindex = None; return
+        self._rindex = StructuredArray(value)
+        if self._rindex.size != 0 and self._rindex.length != self.nrow: raise ValueError('input row index size not match')
+
+    @property
+    def colindex(self):
+        return self._cindex.copy()
+
+    @ property
+    def cidx_(self):
+        return self._cindex
+
+    @cidx_.setter
+    def cidx_(self, value):
+        if missing(value): self._cindex = None; return
+        self._cindex = StructuredArray(value)
+        if self._cindex.size != 0 and self._cindex.length != self.ncol: raise ValueError('input column index size not match')
+
+    @property
     def dtype(self):
         return self._dmatx.dtype
 
     @dtype.setter
     def dtype(self, value):
         self._dmatx = self._dmatx.astype(value)
-
-    @property
-    def rows(self):
-        return self._rnames
-
-    @property
-    def rownames(self):
-        return self._rnames
-
-    @rownames.setter
-    def rownames(self, value):
-        if missing(value): self._rnames = None; return
-        self._rnames = NamedIndex(value)
-        if self._rnames.size != self.nrow: raise ValueError('input row names size not match')
-
-    @property
-    def cols(self):
-        return self._cnames
-
-    @property
-    def colnames(self):
-        return self._cnames
-
-    @colnames.setter
-    def colnames(self, value):
-        if missing(value): self._cnames = None; return
-        self._cnames = NamedIndex(value)
-        if self._cnames.size != self.ncol: raise ValueError('input column names size not match')
-
-    @property
-    def ridx(self):
-        return self._rindex
-
-    @property
-    def rowindex(self):
-        return self._rindex
-
-    @rowindex.setter
-    def rowindex(self, value):
-        if missing(value): self._rindex = None; return
-        self._rindex = StructuredArray(value)
-        if self._rindex.size != 0 and self._rindex.length != self.nrow: raise ValueError('input row index size not match')
-
-    @ property
-    def cidx(self):
-        return self._cindex
-
-    @property
-    def colindex(self):
-        return self._cindex
-
-    @colindex.setter
-    def colindex(self, value):
-        if missing(value): self._cindex = None; return
-        self._cindex = StructuredArray(value)
-        if self._cindex.size != 0 and self._cindex.length != self.ncol: raise ValueError('input column index size not match')
 
     @property
     def metadata(self):
@@ -284,7 +294,7 @@ class Table(CoreType):
         return 2
 
     # publics
-    def take(self, pos: Indices2D, axis: Optional[int] = None) -> Table:
+    def take(self, pos: Indices2D, axis: Optional[int] = 0) -> Table:
         rids, cids = self._parseids(pos, axis = axis)
         ntab = Table(
             self._dmatx[np.ix_(rids, cids)], dtype = self.dtype, metas = self._metas,
@@ -295,7 +305,7 @@ class Table(CoreType):
         )
         return ntab
 
-    def put(self, pos: Indices2D, value: Any, axis: Optional[int] = None, inline: bool = True) -> Table:
+    def put(self, pos: Indices2D, value: Any, axis: Optional[int] = 0, inline: bool = False) -> Table:
         ntab = self if inline else self.copy()
         vals = self._parsevals(value)
 
@@ -305,16 +315,16 @@ class Table(CoreType):
             rids, cids = self._parseids(pos, axis = axis)
             ntab._dmatx[np.ix_(rids, cids)] = vals
             if isinstance(value, Table):
-                if available(ntab._rnames): ntab._rnames[rids] = value.rownames
-                if available(ntab._cnames): ntab._cnames[cids] = value.colnames
-                if available(ntab._rindex): ntab._rindex[:,rids] = value.rowindex
-                if available(ntab._cindex): ntab._cindex[:,cids] = value.colindex
+                if available(ntab._rnames): ntab._rnames[rids] = value._rnames
+                if available(ntab._cnames): ntab._cnames[cids] = value._cnames
+                if available(ntab._rindex): ntab._rindex[:,rids] = value._rindex
+                if available(ntab._cindex): ntab._cindex[:,cids] = value._cindex
         return ntab
 
-    def append(self, value: Table, axis: int = 0, inline: bool = True) -> Table:
+    def append(self, value: Table, axis: int = 0, inline: bool = False) -> Table:
         return self.insert(None, value = value, axis = axis, inline = inline)
 
-    def insert(self, pos: Union[Indices, None], value: Table, axis: int = 0, inline: bool = True) -> Table:
+    def insert(self, pos: Indices, value: Table, axis: int = 0, inline: bool = False) -> Table:
         if not isinstance(value, Table): raise TypeError('unknown input data type')
 
         ntab = self if inline else self.copy()
@@ -338,7 +348,7 @@ class Table(CoreType):
 
         return ntab
 
-    def delete(self, pos: Indices2D, axis: Optional[int] = None, inline: bool = True) -> Table:
+    def delete(self, pos: Indices2D, axis: Optional[int] = 0, inline: bool = False) -> Table:
         ntab = self if inline else self.copy()
 
         rids, cids = self._parseids(pos, axis = axis, mapslice = False)
@@ -363,8 +373,8 @@ class Table(CoreType):
 
         return ntab
 
-    def tolist(self) -> List:
-        return l(self._dmatx.tolist())
+    def tolist(self) -> Any:
+        return self._dmatx.tolist()
 
     def tostring(self, delimiter: str = ',', transpose: bool = False, withindex: bool = False) -> str:
         rlns = self._tostrlns(delimiter = delimiter, transpose = transpose, withindex = withindex)
@@ -402,21 +412,27 @@ class Table(CoreType):
         mdmatx[:] = self._dmatx
         self._dmatx = mdmatx
 
-        self._memmap = Metadata(file = fname, dtype = self.dtype, shape = self.shape)
+        self._memmap = Metadata(file = Path(fname), dtype = self.dtype, shape = self.shape)
         return self
 
     # portals
     @classmethod
-    def fromsarray(cls, array: np.ndarray, dtype: Union[str, type, np.ndarray.dtype] = str,
-                   rowindex: Optional[int] = None, colindex: Optional[int] = None) -> Table:
-        _r = re.compile('#<::([<>|]?[biufcmMOSUV]\d*)::>')
-        mtab = np.vectorize(lambda x: (lambda v: v[0] if len(v) > 0 else '')(_r.findall(x)))(array[:100,:100])
+    def fromsarray(cls, array: np.ndarray, dtype: Union[str, type, np.ndarray.dtype] = str, rowpos: Optional[int] = None, colpos: Optional[int] = None) -> Table:
+        _r = re.compile('#<::([<>|]?[biufcmMOSUV]\\d*)::>')
+        _findt = lambda x: (lambda v: v[0] if len(v) > 0 else '')(_r.findall(x))
 
-        dpos = np.c_[np.where(mtab != '')]
-        if dpos.shape[0] >= 2: raise ValueError('string array has multiple headers')
-        if dpos.shape[0] == 1:
-            rowindex, colindex = dpos[0]
-            dtype = mtab[rowindex, colindex]
+        if missing(rowpos) and missing(colpos):
+            mtab = np.vectorize(_findt)(array[:100,:100])
+
+            dpos = np.c_[np.where(mtab != '')]
+            if dpos.shape[0] >= 2: raise ValueError('string array has multiple headers')
+            if dpos.shape[0] == 1:
+                rids, cids = dpos[0]
+                dtype = mtab[rids, cids]
+            else:
+                pass
+
+
         if missing(rowindex) or missing(colindex): raise ValueError('string array header not found in the first 100 rows / cols')
 
         ridx = StructuredArray.fromsarray(array[colindex:,:rowindex].T) if rowindex > 0 else None
@@ -520,8 +536,8 @@ class Table(CoreType):
                              (self._dmatx.T, self._cnames, self._rnames, self._cindex, self._rindex)
 
         dmtx = rw.asMatrix(dm)
-        if available(rn): dmtx.rownames = rw.asVector(rn)
-        if available(cn): dmtx.colnames = rw.asVector(cn)
+        if available(rn): dmtx.rows_names = rw.asVector(rn)
+        if available(cn): dmtx.cols_ = rw.asVector(cn)
         rw.assign(dmtx, dataobj)
 
         if available(ri): rw.assign(rw.r['data.frame'](**{k: rw.asVector(v) for k,v in ri.fields}), ridxobj)
