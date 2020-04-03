@@ -5,7 +5,7 @@
 rWrapper
 
 author(s): Albert (aki) Zhou
-origin: 12-19-2017
+added: 12-19-2017
 
 """
 
@@ -17,10 +17,11 @@ try:
     import rpy2.robjects.packages as rpkg
     from rpy2.rinterface import RRuntimeError
     from rpy2.robjects import numpy2ri
+    if numpy2ri.original_converter is None: numpy2ri.activate()
 except ImportError:
     raise ImportError('rWrapper requires r environment and rpy2 package')
-from typing import Iterable, Any
-from kagami.comm import ll, missing, smap, pickmap
+from typing import Iterable, Union, Optional, Any
+from kagami.comm import l, ll, missing, smap, pickmap, iterable
 
 
 __all__ = ['RWrapper']
@@ -33,13 +34,13 @@ class RWrapper: # pragma: no cover
     r = robj.r
     RuntimeError = RRuntimeError
 
-    def __init__(self, *libraries: str, mute: bool = True):
+    def __init__(self, *libraries: Union[str, Iterable[str]], mute: bool = True):
         self.library(*libraries, mute = mute)
-        if numpy2ri.original_converter is None: numpy2ri.activate()
 
     # methods
     @staticmethod
-    def library(*args: str, mute: bool = True) -> None:
+    def library(*args: Union[str, Iterable[str]], mute: bool = True) -> None:
+        if len(args) == 1 and iterable(args[0]): args = args[0]
         with warnings.catch_warnings():
             if mute: warnings.filterwarnings('ignore')
             for pkg in args: rpkg.importr(pkg, suppress_messages = mute)
@@ -65,8 +66,8 @@ class RWrapper: # pragma: no cover
         return _pack(val)
 
     @staticmethod
-    def asMatrix(val: Iterable[Iterable], nrow = None, ncol = None) -> robj.Matrix:
-        val = np.array(smap(val, list))
+    def asMatrix(val: Iterable[Iterable], nrow: Optional[int] = None, ncol: Optional[int] = None) -> robj.Matrix:
+        val = np.array(smap(val,l))
         if missing(nrow) and missing(ncol): nrow, ncol = val.shape
         return robj.r.matrix(val, nrow = nrow, ncol = ncol)
 

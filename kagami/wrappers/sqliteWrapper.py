@@ -5,7 +5,7 @@
 sqliteWrapper
 
 author(s): Albert (aki) Zhou
-origin: 04-12-2017
+added: 04-12-2017
 
 """
 
@@ -87,7 +87,7 @@ class SQLiteWrapper:
 
     def listTables(self) -> List:
         res = self.query("SELECT name FROM sqlite_master WHERE type='table'")
-        return collapse(res, ())
+        return collapse(res, [])
 
     # column routines
     def addColumn(self, tableName: str, colName: str, types: Optional[Iterable[str]] = None) -> SQLiteWrapper:
