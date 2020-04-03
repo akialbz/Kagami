@@ -5,14 +5,14 @@
 webPortal
 
 author(s): Albert (aki) Zhou
-origin: Jun. 28, 2014
+added: Jun. 28, 2014
 
 """
 
 
 import logging, requests
 from time import sleep
-from typing import Any, Mapping, Optional, Union
+from typing import Any, Mapping, Optional
 from kagami.comm import optional, available, partial
 
 

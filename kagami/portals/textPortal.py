@@ -5,7 +5,7 @@
 textPortal
 
 author(s): Albert (aki) Zhou
-origin: 06-28-2014
+added: 06-28-2014
 
 """
 
@@ -13,7 +13,7 @@ origin: 06-28-2014
 import os
 from typing import List, Iterable, Union
 from pathlib import Path
-from kagami.comm import smap, drop, checkInputFile, checkOutputFile
+from kagami.comm import smap, pickmap, drop, checkInputFile, checkOutputFile
 
 
 __all__ = ['load', 'save', 'loadlns', 'savelns']
@@ -41,6 +41,6 @@ def loadlns(fname: Union[str, Path], mode: str = 'r', strip: bool = True) -> Lis
 
 def savelns(lines: Iterable[str], fname: Union[str, Path], mode = 'w', newline = True) -> bool:
     checkOutputFile(fname)
-    if newline: lines = smap(lines, lambda x: x.rstrip('\n') + '\n')
+    if newline: lines = pickmap(lines, lambda x: x[-1] != '\n', lambda x: x + '\n')
     with open(fname, mode) as ofile: ofile.writelines(lines)
     return os.path.isfile(fname)
