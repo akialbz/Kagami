@@ -5,7 +5,7 @@
 structArray
 
 author(s): Albert (aki) Zhou
-origin: 08-23-2018
+added: 08-23-2018
 
 """
 
@@ -32,7 +32,7 @@ class StructuredArray(CoreType):
     def __init__(self, items: Optional[Union[Iterable, Mapping, np.ndarray, StructuredArray]] = None, **kwargs: Iterable):
         if isinstance(items, StructuredArray): self._arrs, self._length = items._arrs.copy(), items._length; return
 
-        vals = [items[k] for k in items.dtype.names] if isinstance(items, np.ndarray) and available(items.dtype.names) else \
+        vals = [(k, items[k]) for k in items.dtype.names] if isinstance(items, np.ndarray) and available(items.dtype.names) else \
                items.items()  if ismapping(items) else \
                items          if iterable(items) else \
                kwargs.items() if missing(items) else None
@@ -48,6 +48,7 @@ class StructuredArray(CoreType):
             sids, aids = (idx, slice(None)) if not isinstance(idx, tuple) else \
                          (idx[0], slice(None)) if len(idx) == 1 else idx
         else:
+            if isinstance(idx, tuple): raise IndexError('too many dimensions for array')
             if axis not in (0, 1): raise ValueError('invalid axis value')
             sids, aids = (idx, slice(None)) if axis == 0 else (slice(None), idx)
 
@@ -62,8 +63,8 @@ class StructuredArray(CoreType):
         return sids, aids
 
     def _parsevals(self, value):
-        if not iterable(value): return value
         if isinstance(value, StructuredArray): return [value._arrs[n].copy() for n in self._arrs.keys()]
+        if not iterable(value): return value
 
         value = ll(value)
         if not iterable(value[0]): return np.array(value)
@@ -101,7 +102,6 @@ class StructuredArray(CoreType):
                   checkall(self._arrs.keys(), lambda k: np.all(self._arrs[k] == other._arrs[k]) if self._arrs[k].dtype.kind != 'f' else
                                                         np.allclose(self._arrs[k], other._arrs[k]))
         else:
-            if iterable(other): other = np.array(ll(other), dtype = object)
             equ = np.array(self.arrays, dtype = object) == other
         return equ
 
@@ -110,13 +110,13 @@ class StructuredArray(CoreType):
         nlen = max(smap(self._arrs.keys(), len))
         olns = [(('{'+f':{nlen}s'+'} : ').format(k) if i == 0 else (' ' * (nlen + 3))) + ln
                 for k,v in zip(self._arrs.keys(), smap(self._arrs.values(), str)) for i,ln in enumerate(v.split('\n'))]
-        return paste(*olns, sep = '\n')
+        return paste(olns, sep = '\n')
 
     def __repr__(self):
         rlns = str(self).split('\n')
         rlns = ['StructuredArray(' + rlns[0]] + \
                ['                ' + ln for ln in rlns[1:]]
-        return paste(*rlns, sep = '\n') + f', size = ({self.size}, {self.length}))'
+        return paste(rlns, sep = '\n') + f', size = ({self.size}, {self.length}))'
 
     # for numpy
     def __array__(self, dtype = None):

@@ -35,7 +35,7 @@ class BinaryWrapper:
         params, stdin, timeout = pms # for multiproc
 
         exlst = [self._bin] + ([] if missing(params) else smap(params, lambda x: str(x).strip()))
-        if self._shell: exlst = paste(*smap(exlst, lambda x: x.replace(' ', r'\ ')), sep = ' ')
+        if self._shell: exlst = paste(smap(exlst, lambda x: x.replace(' ', r'\ ')), sep = ' ')
 
         procs = Popen(exlst, stdin = PIPE, stdout = PIPE, stderr = PIPE, shell = self._shell)
         try:
@@ -47,7 +47,7 @@ class BinaryWrapper:
             rstrs = ['subprocess terminated as timeout expired', '']
             rcode = 124
 
-        prstr = paste(*rstrs, sep = ' | ')
+        prstr = paste(rstrs, sep = ' | ')
         if rcode in self._ncode:
             logging.log((logging.DEBUG if self._mute else logging.INFO), prstr)
         else:

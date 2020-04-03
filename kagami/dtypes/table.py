@@ -5,7 +5,7 @@
 table
 
 author(s): Albert (aki) Zhou
-origin: 02-18-2017
+added: 02-18-2017
 
 """
 
@@ -24,8 +24,7 @@ from .namedIndex import NamedIndex
 from .structArray import StructuredArray
 try:
     from kagami.wrappers.rWrapper import RWrapper as rw
-except ImportError as e:
-    rw = None
+except ImportError as e: rw = None
 
 
 __all__ = ['Table']

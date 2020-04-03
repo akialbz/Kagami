@@ -73,7 +73,7 @@ class SQLiteWrapper:
 
     # table routines
     def createTable(self, tableName: str, columns: Iterable[Iterable[str]] = ()) -> SQLiteWrapper:
-        tcols = paste(*smap(columns, lambda x: paste(*x, sep = ' ')), sep = ', ')
+        tcols = paste(smap(columns, lambda x: paste(x, sep = ' ')), sep = ', ')
         self.execute(f"CREATE TABLE '{tableName}'({tcols})")
         return self
 
@@ -91,7 +91,7 @@ class SQLiteWrapper:
 
     # column routines
     def addColumn(self, tableName: str, colName: str, types: Optional[Iterable[str]] = None) -> SQLiteWrapper:
-        tstr = paste(*optional(types, []), sep = ' ')
+        tstr = paste(optional(types, []), sep = ' ')
         self.execute(f"ALTER TABLE '{tableName}' ADD COLUMN '{colName}' {tstr}" )
         return self
 

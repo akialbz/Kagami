@@ -5,7 +5,7 @@
 namedIndex
 
 author(s): Albert (aki) Zhou
-origin: 08-23-2018
+added: 08-23-2018
 
 """
 
@@ -43,7 +43,7 @@ class NamedIndex(CoreType):
     @staticmethod
     def _parsevals(value, arrayonly = False):
         if isinstance(value, NamedIndex):
-            val = value.names
+            val = value._names
         elif iterable(value):
             val = np.array(ll(value), dtype = object)
             if checkany(val, lambda x: not isstring(x)): raise TypeError('index names must be string')
@@ -85,8 +85,8 @@ class NamedIndex(CoreType):
     def __repr__(self):
         rlns = str(self._names).split('\n')
         rlns = [f'NamedIndex({rlns[0]}'] + \
-               [f'            {ln}' for ln in rlns[1:]]
-        return paste(*rlns, sep = '\n') + f', size = {self.size})'
+               [f'           {ln}' for ln in rlns[1:]]
+        return paste(rlns, sep = '\n') + f', size = {self.size})'
 
     # for numpy
     def __array__(self, dtype = None):
@@ -133,8 +133,8 @@ class NamedIndex(CoreType):
             if c > 0: names[-i-1], cdct[n] = n + suffix.format(c), c - 1
         return names
 
-    def namesof(self, ids: Union[int, Iterable[int]]) -> Union[str, np.ndarray]:
-        return self._names[self._parseids(ids)]
+    def namesof(self, pos: Indices) -> Union[str, np.ndarray]:
+        return self._names[self._parseids(pos)]
 
     def idsof(self, names: Union[str, Iterable[str]], safe: bool = False) -> Union[None, int, List[Union[None, int]]]:
         if isstring(names):
