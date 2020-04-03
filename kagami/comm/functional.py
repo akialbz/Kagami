@@ -5,7 +5,7 @@
 functional
 
 author(s): Albert (aki) Zhou
-origin: 06-07-2016
+added: 06-07-2016
 
 """
 
