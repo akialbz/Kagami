@@ -63,7 +63,7 @@ def tmap(x: Iterable, func: Callable, nthreads: Optional[int] = None) -> List:
 def pmap(x: Iterable, func: Callable, nprocs: Optional[int] = None) -> List:
     return _mmap(x, func, Pool, optional(nprocs, cpu_count()-1))
 
-def cmap(x: Collection, func: Callable, nchunks: Optional[int] = None) -> List:
+def cmap(x: Union[Collection, np.ndarray], func: Callable, nchunks: Optional[int] = None) -> List:
     if missing(nchunks): nchunks = cpu_count() - 1
     x = ll(x)
     xln = len(x)

@@ -5,7 +5,7 @@
 test_etc.py
 
 author(s): Albert (aki) Zhou
-origin: 11-14-2018
+added: 11-14-2018
 
 """
 
@@ -18,3 +18,4 @@ def test_rlikes():
     assert F == False
     assert paste(1, 2, 3, sep = ',') == '1,2,3'
     assert paste(*['a', 'b', 'c']) == 'abc'
+    assert paste(iter(['a', 'b', 'c'])) == 'abc'

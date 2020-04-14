@@ -35,8 +35,8 @@ class Table(CoreType):
     __slots__ = ('_dmatx', '_rnames', '_cnames', '_rindex', '_cindex', '_metas', '_memmap')
 
     def __init__(self, X: Iterable[Iterable], *, dtype: Optional[Union[str, type, np.ndarray.dtype]] = None,
-                 rownames: Optional[Union[Iterable[str], NamedIndex]] = None, rowindex: Optional[StructuredArray] = None,
-                 colnames: Optional[Union[Iterable[str], NamedIndex]] = None, colindex: Optional[StructuredArray] = None,
+                 rownames: Optional[Union[Iterable[str], NamedIndex]] = None, rowindex: Optional[Union[Iterable, Mapping, np.ndarray, StructuredArray]] = None,
+                 colnames: Optional[Union[Iterable[str], NamedIndex]] = None, colindex: Optional[Union[Iterable, Mapping, np.ndarray, StructuredArray]] = None,
                  metadata: Optional[Union[Sequence, Mapping]] = None, memmap: Optional[Union[str, Path]] = None):
         if not isinstance(X, np.ndarray): X = smap(X, ll)
         self._dmatx = np.array(X, dtype = dtype) # make a copy
@@ -333,18 +333,18 @@ class Table(CoreType):
             if value.ncol != ntab.ncol: raise IndexError('input table has different number of columns')
             ntab._dmatx = np.vstack([ntab._dmatx, value._dmatx.astype(ntab.dtype)]) if missing(pos) else \
                           np.insert(ntab._dmatx, pos, value._dmatx.astype(ntab.dtype), axis = 0)
-            if available(ntab._rnames): ntab._rnames.insert(pos, value._rnames)
+            if available(ntab._rnames): ntab._rnames.insert(pos, value._rnames, inline = True)
             if available(ntab._cnames) and available(value._cnames) and np.any(value._cnames != ntab._cnames): raise IndexError('input table has different column names')
-            if available(ntab._rindex): ntab._rindex.insert(pos, value._rindex)
+            if available(ntab._rindex): ntab._rindex.insert(pos, value._rindex, inline = True)
             if available(ntab._cindex) and available(value._cindex) and value._cindex != ntab._cindex: raise IndexError('input table has different column index')
         elif axis == 1:
             if value.nrow != ntab.nrow: raise IndexError('input table has different number of rows')
             ntab._dmatx = np.hstack([ntab._dmatx, value._dmatx.astype(ntab.dtype)]) if missing(pos) else \
                           np.insert(ntab._dmatx, pos, value._dmatx.astype(ntab.dtype), axis = 1)
             if available(ntab._rnames) and available(value._rnames) and np.any(value._rnames != ntab._rnames): raise IndexError('input table has different row names')
-            if available(ntab._cnames): ntab._cnames.insert(pos, value._cnames)
+            if available(ntab._cnames): ntab._cnames.insert(pos, value._cnames, inline = True)
             if available(ntab._rindex) and available(value._rindex) and value._rindex != self._rindex: raise IndexError('input table has different row index')
-            if available(ntab._cindex): ntab._cindex.insert(pos, value._cindex)
+            if available(ntab._cindex): ntab._cindex.insert(pos, value._cindex, inline = True)
         else: raise IndexError(f'unsupported axis [{axis}]')
 
         return ntab
@@ -358,18 +358,18 @@ class Table(CoreType):
 
         if rlic and clic:
             ntab._dmatx = np.array([], dtype = ntab.dtype).reshape((0,0))
-            if available(ntab._rnames): ntab._rnames.delete(rids)
-            if available(ntab._rindex): ntab._rindex.delete(rids, axis = 1)
-            if available(ntab._cnames): ntab._cnames.delete(cids)
-            if available(ntab._cindex): ntab._cindex.delete(cids, axis = 1)
+            if available(ntab._rnames): ntab._rnames.delete(rids, inline = True)
+            if available(ntab._rindex): ntab._rindex.delete(rids, axis = 1, inline = True)
+            if available(ntab._cnames): ntab._cnames.delete(cids, inline = True)
+            if available(ntab._cindex): ntab._cindex.delete(cids, axis = 1, inline = True)
         elif rlic and not clic:
             ntab._dmatx = np.delete(ntab._dmatx, cids, axis = 1)
-            if available(ntab._cnames): ntab._cnames.delete(cids)
-            if available(ntab._cindex): ntab._cindex.delete(cids, axis = 1)
+            if available(ntab._cnames): ntab._cnames.delete(cids, inline = True)
+            if available(ntab._cindex): ntab._cindex.delete(cids, axis = 1, inline = True)
         elif clic and not rlic:
             ntab._dmatx = np.delete(ntab._dmatx, rids, axis = 0)
-            if available(ntab._rnames): ntab._rnames.delete(rids)
-            if available(ntab._rindex): ntab._rindex.delete(rids, axis = 1)
+            if available(ntab._rnames): ntab._rnames.delete(rids, inline = True)
+            if available(ntab._rindex): ntab._rindex.delete(rids, axis = 1, inline = True)
         else: raise IndexError('unable to delete portion of the table')
 
         return ntab

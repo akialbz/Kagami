@@ -102,7 +102,7 @@ class StructuredArray(CoreType):
                   checkall(self._arrs.keys(), lambda k: np.all(self._arrs[k] == other._arrs[k]) if self._arrs[k].dtype.kind != 'f' else
                                                         np.allclose(self._arrs[k], other._arrs[k]))
         else:
-            equ = np.array(self.arrays, dtype = object) == other
+            equ = np.array(self.arrays, dtype = object) == np.array(other, dtype = object)
         return equ
 
     def __str__(self):

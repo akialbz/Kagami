@@ -5,7 +5,7 @@
 test_dtypes_coreType
 
 author(s): Albert (aki) Zhou
-origin: 10-01-2018
+added: 10-01-2018
 
 """
 

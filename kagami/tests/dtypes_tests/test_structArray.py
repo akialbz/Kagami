@@ -5,7 +5,7 @@
 test_dtypes_structArray
 
 author(s): Albert (aki) Zhou
-origin: 09-25-2018
+added: 09-25-2018
 
 """
 

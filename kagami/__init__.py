@@ -5,13 +5,13 @@
 __init__
 
 author(s): Albert (aki) Zhou
-origin: 03-18-2017
+added: 03-18-2017
 
 """
 
 
-__version__ = '2.2'
-__version_name__ = 'Izumo'
+__version__ = '3.0'
+__version_name__ = 'Kaga'
 
 
 from .unitest import test

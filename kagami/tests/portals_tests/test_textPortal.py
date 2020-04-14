@@ -5,7 +5,7 @@
 test_textPortal
 
 author(s): Albert (aki) Zhou
-origin: 11-22-2018
+added: 11-22-2018
 
 """
 
@@ -20,10 +20,10 @@ from kagami.portals import textPortal
 def _createlns():
     chars = [c for c in ascii_letters + '`~!@#$%^&*()_+-={}[]|\\:;"\'<,>./?']
     dm = np.random.choice(chars, size = (50, 10))
-    return smap(dm, lambda ln: paste(*ln, sep = ''))
+    return smap(dm, lambda ln: paste(ln, sep = ''))
 
 def test_text_io():
-    otx = paste(*_createlns(), '\n')
+    otx = paste(_createlns(), '\n')
     fn = Path('test_text_portal.txt')
 
     textPortal.save(otx, fn)

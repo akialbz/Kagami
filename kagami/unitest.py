@@ -5,16 +5,21 @@
 unitest
 
 author(s): Albert (aki) Zhou
-origin: 11-06-2018
+added: 11-06-2018
 
 """
 
 
 import logging
-import os, pytest
+import os
 
 
 def test(capture = True, cov = False, covReport = False, profile = False, profileSVG = False, pyargs = ()): # pragma: no cover
+    try:
+        import pytest
+    except ImportError:
+        raise ImportError('unit tests require pytest (>= 5.3.2), pytest-cov (>= 2.8.1, optional) and pytest-profiling (>= 1.7.0, optional)')
+
     logging.debug('running self-testing ...')
 
     pms = list(pyargs)

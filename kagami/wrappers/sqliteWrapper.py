@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging, sqlite3
 from pathlib import Path
-from typing import List, Iterable, Optional, Union, Any
+from typing import List, Tuple, Iterable, Optional, Union, Any
 from kagami.comm import available, missing, optional, smap, lzip, collapse, paste, fileTitle
 
 
@@ -85,9 +85,9 @@ class SQLiteWrapper:
         res = self.query(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{tableName}'")
         return len(res) > 0
 
-    def listTables(self) -> List:
+    def listTables(self) -> Tuple:
         res = self.query("SELECT name FROM sqlite_master WHERE type='table'")
-        return collapse(res, [])
+        return collapse(res, ())
 
     # column routines
     def addColumn(self, tableName: str, colName: str, types: Optional[Iterable[str]] = None) -> SQLiteWrapper:

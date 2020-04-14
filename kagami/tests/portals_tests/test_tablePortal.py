@@ -5,7 +5,7 @@
 test_tablePortal
 
 author(s): Albert (aki) Zhou
-origin: 11-22-2018
+added: 11-22-2018
 
 """
 
@@ -25,6 +25,17 @@ def _createdm():
          [['# test comments']]
     return hd, dm
 
+def test_general_io():
+    ohd, odm = _createdm()
+    fn = Path('test_table_portal.txt')
+
+    tablePortal.save(odm, fn, heads = ohd, delimiter = ' ')
+    assert fn.is_file()
+    idm = tablePortal.load(fn, skips = len(ohd), comment = '#', delimiter = ' ')
+    assert np.all(np.array(idm) == np.array(odm[:-1]))
+
+    fn.unlink()
+
 def test_csv_io():
     ohd, odm = _createdm()
     fn = Path('test_table_portal.csv')
@@ -40,9 +51,9 @@ def test_tsv_io():
     ohd, odm = _createdm()
     fn = Path('test_table_portal.tsv')
 
-    tablePortal.save(odm, fn, heads = ohd, delimiter = '\t')
+    tablePortal.savetsv(odm, fn, heads = ohd)
     assert fn.is_file()
-    idm = tablePortal.load(fn, skips = len(ohd), comment = '#', delimiter = '\t')
+    idm = tablePortal.loadtsv(fn, skips = len(ohd), comment = '#')
     assert np.all(np.array(idm) == np.array(odm[:-1]))
 
     fn.unlink()

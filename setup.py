@@ -2,13 +2,12 @@
 #  -*- coding: utf-8 -*-
 
 import sys, setuptools, json
-from kagami.portals import configPortal
 from kagami import __version__, __version_name__
+from kagami.comm import drop
 
-def _parse_requires(pipfile = 'Pipfile', exclude = ()):
-    pcfg = configPortal.load(pipfile, autoEval = False)
-    reqs = [k if v == '"*"' else (k+v.strip('"')) for k,v in pcfg['packages'].items() if k not in exclude]
-    return reqs
+def _parse_requires():
+    with open('requirements.txt') as f: requirements = f.read().splitlines()
+    return requirements
 
 def _build_version(verfile = '.buildversion'):
     with open(verfile, 'r') as f: vers = json.load(f)
@@ -16,11 +15,10 @@ def _build_version(verfile = '.buildversion'):
     with open(verfile, 'w') as f: json.dump(vers, f)
     return vers['main'] + '.' + str(vers['build'])
 
-if "--no-rpy" in sys.argv:
-    reqs = _parse_requires(exclude = ('rpy2',))
-    sys.argv.remove("--no-rpy")
-else:
-    reqs = _parse_requires()
+reqs = _parse_requires()
+if "--no-rwrapper" in sys.argv:
+    reqs = drop(reqs, lambda x: x.startswith('rpy2'))
+    sys.argv.remove("--no-rwrapper")
 
 with open('README.md', 'r') as fh:
     long_description = fh.read()
@@ -37,7 +35,7 @@ with open('README.md', 'r') as fh:
         classifiers = [
             'Topic :: Scientific/Engineering :: Bio-Informatics',
             'Topic :: Software Development :: Libraries',
-            'Programming Language :: Python :: 2',
+            'Programming Language :: Python :: 3',
             'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
             'Operating System :: POSIX',
         ],
