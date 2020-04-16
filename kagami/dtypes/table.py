@@ -69,7 +69,7 @@ class Table(CoreType):
                          (idx[0], slice(None)) if len(idx) == 1 else idx
         else:
             if isinstance(idx, tuple): raise IndexError('too many dimensions for array')
-            if axis not in (0, 1): raise ValueError('invalid axis value')
+            if axis not in (0, 1): raise IndexError('invalid axis value')
             rids, cids = (idx, slice(None)) if axis == 0 else (slice(None), idx)
 
         def _wrap(ids, num, names):

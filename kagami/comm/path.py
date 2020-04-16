@@ -18,7 +18,7 @@ from .functional import l, pick, drop
 
 
 __all__ = [
-    'filePath', 'fileName', 'filePrefix', 'fileSuffix', 'fileTitle', 'listPath',
+    'filePath', 'fileName', 'filePrefix', 'fileSuffix', 'fileTitle', 'listPath', 'removePath',
     'checkInputFile', 'checkInputDir', 'checkOutputFile', 'checkOutputDir'
 ]
 
@@ -61,10 +61,11 @@ def listPath(path: Union[str, Path], *, recursive: bool = False, fileonly: bool 
     if visible:  fds = drop(fds, lambda x: fileName(x).startswith('.'))
     return fds
 
-def removePath(path: Union[str, Path]) -> None:
+def removePath(path: Union[str, Path]) -> bool:
     if isstring(path): path = Path(path)
     if path.is_file(): path.unlink()
-    else: shutil.rmtree(path)
+    elif path.is_dir(): shutil.rmtree(path)
+    return not path.exists()
 
 
 # check

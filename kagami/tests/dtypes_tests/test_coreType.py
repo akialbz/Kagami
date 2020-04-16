@@ -10,7 +10,7 @@ added: 10-01-2018
 """
 
 
-import pytest, pickle as pkl
+import os, pytest, pickle as pkl
 import numpy as np
 from kagami.dtypes import CoreType
 
@@ -49,5 +49,12 @@ def test_coretype_methods():
     with pytest.raises(NotImplementedError): cobj.delete(1)
     with pytest.raises(NotImplementedError): cobj.tolist()
     with pytest.raises(NotImplementedError): cobj.tostring()
+
+def test_coretype_dumps():
+    cobj = CoreType()
     assert pkl.loads(cobj.dumps()).__class__ == CoreType
 
+    fname = 'test_coreType_dump.pkl'
+    with open(fname, 'wb') as f: cobj.dump(f)
+    with open(fname, 'rb') as f: pkl.load(f)
+    if os.path.isfile(fname): os.remove(fname)

@@ -10,7 +10,7 @@ added: 11-21-2018
 """
 
 
-import shutil, pytest
+import os, shutil, pytest
 from pathlib import Path
 from kagami.comm import *
 
@@ -37,6 +37,17 @@ def test_listpath():
     assert set(smap(pys, fileTitle)) == {'__init__', 'test_misc', 'test_types', 'test_functional', 'test_path'}
     pys = listPath(Path(__file__).parent.parent, recursive = True, dironly = True, visible = True)
     assert set(smap(pys, fileTitle)) == {'comm_tests', 'dtypes_tests', 'portals_tests', 'wrappers_tests', '__pycache__'}
+
+def test_removepath():
+    fname = 'test_path_file'
+    with open(fname, 'w') as f: f.write('')
+    assert removePath(fname) == True
+    assert not os.path.isfile(fname)
+
+    dname = 'test_path_dir/sub_dir'
+    os.makedirs(dname)
+    assert removePath(dname) == True
+    assert not os.path.isdir(dname)
 
 def test_checks():
     with pytest.raises(IOError): checkInputFile('no_such_file')

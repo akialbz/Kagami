@@ -10,7 +10,7 @@ added: 08-23-2018
 """
 
 
-import pytest
+import os, pytest
 import pickle as pkl
 import numpy as np
 from string import ascii_lowercase
@@ -36,10 +36,9 @@ def test_namedIndex_creation():
 
     print('\n', repr(NamedIndex(['%s%d' % (c,n) for c in ascii_lowercase for n in range(5)])))
 
-def test_namedIndex_built_ins():
+def test_namedIndex_built_ins_item_oprtations():
     idx, vals = _create_namedIndex()
 
-    # item oprtations
     assert np.all(idx[:3] == vals[:3])
     assert np.all(idx[-1] == NamedIndex(['dddd']))
     assert np.all(idx[[0,2]] == NamedIndex(vals[[0,2]]))
@@ -75,10 +74,12 @@ def test_namedIndex_built_ins():
     del cidx['a']
     assert np.all(cidx == [])
 
-    # attr access
+def test_namedIndex_built_ins_attr_access():
+    idx, vals = _create_namedIndex()
     assert idx.a == 0 and idx.bbb == 1 and idx.cc == 2 and idx.dddd == 3
 
-    # sequence oprtations
+def test_namedIndex_built_ins_seq_operations():
+    idx, vals = _create_namedIndex()
     assert np.all(vals == [n for n in idx])
     assert 'a' in idx
     assert 'aa' not in idx
@@ -86,13 +87,16 @@ def test_namedIndex_built_ins():
     assert len(idx) == vals.shape[0]
     assert len(idx[-1]) == len(vals[-1])
 
-    # comparison oprtations
+def test_namedIndex_built_ins_comparisons():
+    idx, vals = _create_namedIndex()
     assert np.all(idx == vals)
     assert np.all((idx == 'a') == [True, False, False, False])
     assert np.sum(idx == np.array('abc')) == 0
     assert np.sum(idx == NamedIndex(['bbb'])) == 1
 
-    # arithmetic oprtations
+def test_namedIndex_built_ins_arithmetic_oprtations():
+    idx, vals = _create_namedIndex()
+
     assert np.all(idx + ['ee', 'fff'] == np.hstack((vals, ['ee', 'fff'])))
     assert np.all(idx[[0,2]] + idx[[1,3]] == idx[[0,2,1,3]])
     assert np.all(idx == vals)
@@ -105,12 +109,15 @@ def test_namedIndex_built_ins():
 
     with pytest.raises(KeyError): cidx += 'dddd'
 
-    # representation oprtations
+def test_namedIndex_built_ins_representations():
+    idx, vals = _create_namedIndex()
     print(idx)
     print(str(idx))
     print(repr(idx))
 
-    # numpy array interface
+def test_namedIndex_built_ins_numpy_interfaces():
+    idx, vals = _create_namedIndex()
+
     assert np.all(np.append(idx, 'ff') == np.append(vals, 'ff'))
     assert np.all(np.append(idx, ['ff', 'gg']) == np.append(vals, ['ff', 'gg']))
     assert np.all(np.insert(idx, 1, 'ff') == np.insert(vals, 1, 'ff'))
@@ -121,16 +128,15 @@ def test_namedIndex_built_ins():
 
     with pytest.raises(KeyError): np.insert(idx, -1, 'a')
 
-    # numpy array interface
     assert np.all(np.array(idx) == vals)
 
-    # pickle
+def test_namedIndex_built_ins_pkls():
+    idx, vals = _create_namedIndex()
     assert np.all(idx == pkl.loads(idx.dumps()))
 
-def test_namedIndex_properties():
+def test_namedIndex_properties_names():
     idx, vals = _create_namedIndex()
 
-    # names
     assert np.all(idx.names.astype(str) == list(vals))
 
     cidx = deepcopy(idx)
@@ -139,18 +145,19 @@ def test_namedIndex_properties():
 
     with pytest.raises(KeyError): cidx.names = ['a', 'a', 'b', 'c']
 
-    # sizes
+def test_namedIndex_properties_sizes():
+    idx, vals = _create_namedIndex()
     assert idx.size == len(idx) == len(vals)
     assert idx.shape == vals.shape
     assert idx.ndim == 1
 
-def test_namedIndex_methods():
+def test_namedIndex_methods_stats():
     idx, vals = _create_namedIndex()
-
-    # unique naming
     assert np.all(NamedIndex.uniquenames(vals[[0, 0, 1, 2, 3, 3, 3]], suffix = '_{}') == ['a', 'a_1', 'bbb', 'cc', 'dddd', 'dddd_1', 'dddd_2'])
 
-    # indexing
+def test_namedIndex_methods_indexing():
+    idx, vals = _create_namedIndex()
+
     assert idx.namesof(1) == 'bbb'
     assert idx.namesof(-1) == 'dddd'
     assert np.all(idx.namesof([0,'cc']) == vals[[0,2]])
@@ -162,7 +169,9 @@ def test_namedIndex_methods():
     assert idx.idsof(['a', 'b', 'cc'], safe = True) == [0, None, 2]
     with pytest.raises(KeyError): idx.idsof(['a', 'b', 'cc'])
 
-    # manipulations
+def test_namedIndex_methods_manipulations():
+    idx, vals = _create_namedIndex()
+
     assert np.all(idx.take([0,2]) == ['a', 'cc'])
     assert np.all(idx.take(1) == 'bbb')
     assert np.all(idx.take('bbb') == 'bbb')
@@ -203,10 +212,12 @@ def test_namedIndex_methods():
 
     assert np.all(idx == vals)
 
-    # converts
+def test_namedIndex_methods_converts():
+    idx, vals = _create_namedIndex()
     assert np.all(idx.tolist() == vals)
     print(idx.tostring())
 
-    # copy
+def test_namedIndex_methods_copy():
+    idx, vals = _create_namedIndex()
     assert np.all(idx == idx.copy())
     assert idx is not idx.copy()

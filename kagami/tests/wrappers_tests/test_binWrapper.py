@@ -32,6 +32,17 @@ def test_runs():
     assert rcode == 0 and rerr == '' and \
            set(pick(rstd.strip().split('\n'), lambda x: x.endswith('.py'))) == flst
 
+    bw = BinaryWrapper('sleep')
+    with pytest.raises(RuntimeError): rcode, _ = bw.execute([3], timeout = 1)
+
+    bw = BinaryWrapper('sleep', normcodes = [0, 124])
+    assert bw.execute([3], timeout = 1)[0] == 124
+
+@pytest.mark.skipif(os.name != 'posix', reason = 'BinaryWrapper is designed for POSIX only')
+def test_mapruns():
+    bw = BinaryWrapper('ls')
+    flst = set(smap(listPath(filePath(__file__), recursive = False, fileonly = True, suffix = '.py'), fileName))
+
     def _testmap(nt = None, np = None, to = None):
         rcodes, rstrs = zip(*bw.mapexec([[filePath(__file__)] for _ in range(3)], nthreads = nt, nprocs = np, timeout = to))
         rstds, rerrs = zip(*rstrs)

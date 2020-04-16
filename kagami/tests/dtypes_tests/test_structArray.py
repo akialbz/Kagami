@@ -38,10 +38,9 @@ def test_structArray_creation():
     with pytest.raises(ValueError): StructuredArray(a = [1,2,3], b = ['i','j'])
     with pytest.raises(ValueError): StructuredArray(a = 'abcde')
 
-def test_structArray_built_ins():
+def test_structArray_built_ins_item_operations():
     arr = _create_structArray()
 
-    # item oprtations
     assert np.all(arr['ser1'] == np.array([1,3,5,7,9]))
     assert np.all(arr['ser5'] == ['r', 'g', 'g', 'b', 'g'])
     assert np.all(arr['ser6'][:3] == ['n1', 'n2', 'n3'])
@@ -92,19 +91,23 @@ def test_structArray_built_ins():
     carr['ser7'] = ['1', '2', '3']
     assert np.all(carr.ser7.astype(int) == [1,2,3])
 
-    # sequence oprtations
+def test_structArray_built_ins_seq_operations():
+    arr = _create_structArray()
     assert np.all(np.array([n for n in arr]) == ['ser1', 'ser2', 'ser3', 'ser4', 'ser5', 'ser6'])
     assert 'ser1' in arr
     assert 'ser10' not in arr
     assert len(arr) == 6
 
-    # comparison oprtations
+def test_structArray_built_ins_comparisons():
+    arr = _create_structArray()
     assert np.all(arr == arr.arrays)
     assert np.all((arr == 1) == [[v == 1 for v in ar] for ar in arr.arrays])
     assert arr == deepcopy(arr)
     assert arr != arr[:,1:]
 
-    # arithmetic oprtations
+def test_structArray_built_ins_arithmetic_oprtations():
+    arr = _create_structArray()
+
     assert arr[:,:2] + arr[:,2:] == arr
     carr = deepcopy(arr)[:,:-1]
     carr += arr[:,-1]
@@ -113,39 +116,41 @@ def test_structArray_built_ins():
     carr['ser7'] = ['a', 'b']
     with pytest.raises(KeyError): carr += arr[:,2:]
 
-    # representation oprtations
+def test_structArray_built_ins_representations():
+    arr = _create_structArray()
     print(arr)
     print(str(arr))
     print(repr(arr))
 
-    # numpy array interface
+def test_structArray_built_ins_numpy_interfaces():
+    arr = _create_structArray()
     assert np.all(np.array(arr, dtype = object) == np.array(arr.arrays, dtype = object))
     assert np.all(np.array(arr).dtype.names == arr.names)
 
-    # pickle
+def test_structArray_built_ins_pkls():
+    arr = _create_structArray()
     assert arr == pkl.loads(pkl.dumps(arr))
 
-def test_structArray_properties():
+def test_structArray_properties_names():
     arr = _create_structArray()
-
-    # names
     assert np.all(arr.names == list(map(lambda x: 'ser%d' % (x+1), range(6))))
 
-    # series and values
+def test_structArray_properties_items():
+    arr = _create_structArray()
     assert len(arr.arrays) == 6 and set(map(len, arr.arrays)) == {5}
     assert np.all(np.array(arr.names) == list(zip(*arr.fields))[0]) and \
            np.all(np.array(arr.arrays, dtype = object) == np.array(list(zip(*arr.fields))[1], dtype = object))
 
-    # sizes
+def test_structArray_properties_sizes():
+    arr = _create_structArray()
     assert arr.size == 6
     assert arr.length == 5
     assert arr.shape == (6,5)
     assert arr.ndim == 2
 
-def test_structArray_methods():
+def test_structArray_methods_manipulations():
     arr = _create_structArray()
 
-    # manipulations
     carr = deepcopy(arr)
     assert np.all(carr.take('ser1') == [1,3,5,7,9])
     assert np.all(carr.take(['ser1', 'ser4']) == [[1,3,5,7,9], [0,1,1,0,1]])
@@ -173,7 +178,8 @@ def test_structArray_methods():
     assert np.all(arr.delete((None, [3,4]), axis = None, inline = False)[0] == [1,3,5])
     assert np.all(arr.delete(slice(1,-1), axis = 1, inline = False)[-1] == ['n1', 'n5'])
 
-    # copy
+def test_structArray_methods_copy():
+    arr = _create_structArray()
     assert arr == arr.copy()
     assert arr is not arr.copy()
 
