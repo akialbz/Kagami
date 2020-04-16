@@ -2,10 +2,10 @@
 # Modified from official python Dockerfile
 #
 # author(s): Albert (aki) Zhou
-# origin: 11-05-2018
+# added: 11-05-2018
 #
 
-FROM python:2.7.15-slim
+FROM python:3.7.7-slim-buster
 
 # envs
 ARG TIMEZONE=GB
@@ -16,28 +16,22 @@ COPY entrypoint.sh /usr/local/bin/
 
 # install python and dependencies and commonly used packages
 RUN ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && echo $TIMEZONE > /etc/timezone \
-    # install R
-    && apt-get update && apt-get install -y --no-install-recommends \
-	   r-base \
-	   r-base-dev \
+#    # install R
+#    && apt-get update && apt-get install -y --no-install-recommends \
+#	   r-base \
+#	   r-base-dev \
 	# install kagami and dependencies
     && pip install --upgrade --no-cache-dir pip \
     && pip install --no-cache-dir \
        wheel \
-       numpy \
-       scipy \
-       scikit-learn \
-       statsmodels \
-       pandas \
-       networkx \
-       matplotlib \
-       plotly \
-       bokeh \
-       numba \
-       pytest==3.10.1 \
-       pytest-profiling \
-       pytest-cov \
-       rpy2==2.8.6 \
+       numpy==1.17.4 \
+       rpy2==3.2.4 \
+       requests==2.22.0 \
+       tables==3.6.1 \
+       pytest==5.3.2 \
+       pytest-cov==2.8.1 \
+       pytest-profiling==1.7.0 \
+#       rpy2==3.2.4 \
        $PACKAGE \
     # clean
     && apt-get purge -y \
