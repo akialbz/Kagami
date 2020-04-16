@@ -15,7 +15,7 @@ import numpy as np
 try:
     import rpy2.robjects as robj
     import rpy2.robjects.packages as rpkg
-    from rpy2.rinterface import RRuntimeError
+    from rpy2.rinterface_lib.embedded import RRuntimeError
     from rpy2.robjects import numpy2ri
     if numpy2ri.original_converter is None: numpy2ri.activate()
 except ImportError:

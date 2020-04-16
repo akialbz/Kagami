@@ -88,8 +88,14 @@ def test_table_built_ins():
     assert ctable.shape == (4,9)
     del ctable[-1:]
     assert ctable.shape == (3,9)
-    del ctable[:,3:]
+    del ctable[:,-3:]
     assert ctable.shape == (3,6)
+
+    ctable = deepcopy(table)
+    del ctable[None]
+    assert ctable.shape == (0,0)
+
+    ctable = deepcopy(table)
     del ctable[:]
     assert ctable.shape == (0,0)
     assert np.all(ctable.ridx_.names == ['type', 'order'])
@@ -105,7 +111,9 @@ def test_table_built_ins():
     assert np.all(table == dm)
     assert np.all((table == 5) == (dm == 5))
     assert table == deepcopy(table)
-    assert table != Table(dm, dtype = int)
+    assert table == Table(dm, dtype = int)
+    assert table != Table(dm, dtype = int, rownames = ('a','b','c','d','e'))
+    assert table != Table(dm, dtype = int, colindex = {'cids': [f'cc{i}' for i in range(10)]})
 
     assert np.all((table < 10) == (dm < 10))
     assert np.all((table > 10) == (dm > 10))
@@ -128,7 +136,6 @@ def test_table_built_ins():
     ctable.cidx_ = None
     with pytest.raises(KeyError): table + ctable
     ctable.rows_ = map(lambda x: 'ext_row_%d' % x, range(5))
-
     assert np.all((table + ctable).values == np.vstack((dm, dm)))
     ctable += table
     assert np.all(ctable.values == np.vstack((dm, dm)))
@@ -203,19 +210,20 @@ def test_table_methods():
     table = _create_table()
 
     # manipulations
-    import pdb; pdb.set_trace()
     assert table[:2] + table[2:] == table
     assert table[:2].append(table[2:], axis = 0) == table
     assert table[:,:2].append(table[:,2:], axis = 1) == table
     assert table[:,:-1].append(table[:,-1], axis = 1) == table
 
-    assert table[['row_0', 'row_3', 'row_4'],:].insert(table[['row_1', 'row_2']], 1, axis = 0) == table
-    assert table[:,[0,1,4]].insert(table[:,[2,3]], 2, axis = 1) == table[:,:5]
-    assert table[:,:2].insert(table[:,2:], axis = 1) == table
+    assert table[['row_0', 'row_3', 'row_4'],:].insert(1, table[['row_1', 'row_2']], axis = 0) == table
+    assert table[:,[0,1,4]].insert(2, table[:,[2,3]], axis = 1) == table[:,:5]
+    assert table[:,:2].insert(None, table[:,2:], axis = 1) == table
 
     assert np.all(table.delete(-1, axis = 0).rownames == ['row_0', 'row_1', 'row_2', 'row_3'])
     assert np.all(table.delete([1,2], axis = 1).colnames == ['col_%d' % i for i in range(10) if i not in (1,2)])
     assert np.all(table.delete(slice(1,-1), axis = 1).colnames == ['col_0', 'col_9'])
+    assert np.all(table.delete(None, axis = 0).rowindex.names == ['type', 'order'])
+    assert np.all(table.delete(None, axis = 1).colindex.names == ['gene'])
 
     # copy
     assert table == table.copy()
@@ -236,7 +244,7 @@ def test_table_methods():
          [      'c',       '4',      'row_4',    '40',    '41',    '42',    '43',    '44',    '45',    '46',    '47',    '48',    '49']]
     )
 
-    assert np.all(np.array(table.tolist(), dtype = str) == sdm[1:,2:])
+    assert np.all(np.array(table.tolist(), dtype = str) == sdm[2:,3:])
     print(table.tostring(delimiter = '\t', transpose = True, withindex = True))
 
     # portals
@@ -252,6 +260,12 @@ def test_table_methods():
     ltable = Table.loadhdf(fname + '.hdf')
     print(ltable)
     assert ltable == table
+    if os.path.isfile(fname + '.hdf'): os.remove(fname + '.hdf')
+
+    table.astype(str).savehdf(fname + '.hdf', compression = 9)
+    ltable = Table.loadhdf(fname + '.hdf')
+    print(ltable)
+    assert ltable == table.astype(str)
     if os.path.isfile(fname + '.hdf'): os.remove(fname + '.hdf')
 
     table.saverdata(fname + '.rdata', dataobj = 'data', ridxobj = 'row.index', cidxobj = 'col.index')

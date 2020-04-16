@@ -56,7 +56,14 @@ class Table(CoreType):
         self._metas = Metadata(optional(metadata, ()))
 
     # privates
-    def _parseids(self, idx, axis, mapslice = True):
+    @staticmethod
+    def _mapids(ids, names):
+        if not listable(ids): ids = [ids]
+        if not checkany(ids, isstring): return ids
+        if missing(names): raise KeyError('table names not set')
+        return names.idsof(ids, safe = False)
+
+    def _parseids(self, idx, axis = None, mapslice = True):
         if missing(axis):
             rids, cids = (idx, slice(None)) if not isinstance(idx, tuple) else \
                          (idx[0], slice(None)) if len(idx) == 1 else idx
@@ -68,10 +75,7 @@ class Table(CoreType):
         def _wrap(ids, num, names):
             if ids is None: return slice(None) if not mapslice else np.arange(num)
             if isinstance(ids, slice): return ids if not mapslice else np.arange(num)[ids]
-            if not listable(ids): ids = [ids]
-            if not checkany(ids, isstring): return ids
-            if missing(names): raise KeyError('table names not set')
-            return names.idsof(ids, safe = False)
+            return self._mapids(ids, names)
 
         rids = _wrap(rids, self.nrow, self._rnames)
         cids = _wrap(cids, self.ncol, self._cnames)
@@ -92,8 +96,8 @@ class Table(CoreType):
         def _fmt(mtx, rnam, cnam, ridx, cidx):
             nr, nc = mtx.shape
 
-            if missing(rnam): rnam = smap(range(nr), lambda x: f'#{x}')
-            if missing(cnam): cnam = smap(range(nc), lambda x: f'#{x}')
+            if missing(rnam): rnam = smap(range(nr), lambda x: f'[{x}]')
+            if missing(cnam): cnam = smap(range(nc), lambda x: f'[{x}]')
 
             _sln  = lambda x,sr,hd,tl,rp: (smap(x[:hd],str) + [rp] + smap(x[tl:],str)) if sr else smap(x, str)
             _scol = lambda x: _sln(x, nc > strinkcols, 3, -1, ' ... ')
@@ -331,19 +335,21 @@ class Table(CoreType):
         ntab = self if inline else self.copy()
         if axis == 0:
             if value.ncol != ntab.ncol: raise IndexError('input table has different number of columns')
+            if available(pos): pos = self._mapids(pos, self._rnames)
             ntab._dmatx = np.vstack([ntab._dmatx, value._dmatx.astype(ntab.dtype)]) if missing(pos) else \
                           np.insert(ntab._dmatx, pos, value._dmatx.astype(ntab.dtype), axis = 0)
-            if available(ntab._rnames): ntab._rnames.insert(pos, value._rnames, inline = True)
             if available(ntab._cnames) and available(value._cnames) and np.any(value._cnames != ntab._cnames): raise IndexError('input table has different column names')
-            if available(ntab._rindex): ntab._rindex.insert(pos, value._rindex, inline = True)
             if available(ntab._cindex) and available(value._cindex) and value._cindex != ntab._cindex: raise IndexError('input table has different column index')
+            if available(ntab._rnames): ntab._rnames.insert(pos, value._rnames, inline = True)
+            if available(ntab._rindex): ntab._rindex.insert(pos, value._rindex, inline = True)
         elif axis == 1:
             if value.nrow != ntab.nrow: raise IndexError('input table has different number of rows')
+            if available(pos): pos = self._mapids(pos, self._cnames)
             ntab._dmatx = np.hstack([ntab._dmatx, value._dmatx.astype(ntab.dtype)]) if missing(pos) else \
                           np.insert(ntab._dmatx, pos, value._dmatx.astype(ntab.dtype), axis = 1)
             if available(ntab._rnames) and available(value._rnames) and np.any(value._rnames != ntab._rnames): raise IndexError('input table has different row names')
-            if available(ntab._cnames): ntab._cnames.insert(pos, value._cnames, inline = True)
             if available(ntab._rindex) and available(value._rindex) and value._rindex != self._rindex: raise IndexError('input table has different row index')
+            if available(ntab._cnames): ntab._cnames.insert(pos, value._cnames, inline = True)
             if available(ntab._cindex): ntab._cindex.insert(pos, value._cindex, inline = True)
         else: raise IndexError(f'unsupported axis [{axis}]')
 
@@ -363,10 +369,12 @@ class Table(CoreType):
             if available(ntab._cnames): ntab._cnames.delete(cids, inline = True)
             if available(ntab._cindex): ntab._cindex.delete(cids, axis = 1, inline = True)
         elif rlic and not clic:
+            if not isinstance(cids, slice) and len(cids) == 1: cids = cids[0] # fix strange numpy.delete behaviour...
             ntab._dmatx = np.delete(ntab._dmatx, cids, axis = 1)
             if available(ntab._cnames): ntab._cnames.delete(cids, inline = True)
             if available(ntab._cindex): ntab._cindex.delete(cids, axis = 1, inline = True)
         elif clic and not rlic:
+            if not isinstance(rids, slice) and len(rids) == 1: rids = rids[0]
             ntab._dmatx = np.delete(ntab._dmatx, rids, axis = 0)
             if available(ntab._rnames): ntab._rnames.delete(rids, inline = True)
             if available(ntab._rindex): ntab._rindex.delete(rids, axis = 1, inline = True)
@@ -418,7 +426,7 @@ class Table(CoreType):
 
     # portals
     @classmethod
-    def fromsarray(cls, array: np.ndarray, dtype: Union[str, type, np.ndarray.dtype] = str, headerpos: Optional[Union[Sequence[int], np.ndarray]] = None) -> Table:
+    def fromsarray(cls, array: np.ndarray, dtype: Optional[Union[str, type, np.ndarray.dtype]] = None, headerpos: Optional[Union[Sequence[int], np.ndarray]] = None) -> Table:
         _r = re.compile('#<::([<>|]?[biufcmMOSUV]\\d*)::>')
         _findt = lambda x: (lambda v: v[0] if len(v) > 0 else '')(_r.findall(x))
 
@@ -438,17 +446,17 @@ class Table(CoreType):
         cidx = StructuredArray.fromsarray(array[:rids,cids:])   if rids > 0 else None
 
         rnam = array[rids+1:,cids]
-        if np.all(rnam == smap(range(rnam.shape[0]), lambda x: f'#{x}')): rnam = None
+        if np.all(rnam == smap(range(rnam.shape[0]), lambda x: f'[{x}]')): rnam = None
         cnam = array[rids,cids+1:]
-        if np.all(cnam == smap(range(cnam.shape[0]), lambda x: f'#{x}')): cnam = None
+        if np.all(cnam == smap(range(cnam.shape[0]), lambda x: f'[{x}]')): cnam = None
 
         dmtx = array[rids+1:,cids+1:]
         return Table(dmtx, dtype = dtype, rownames = rnam, colnames = cnam, rowindex = ridx, colindex = cidx)
 
     def tosarray(self, withindex: bool = True) -> np.ndarray:
-        rnam = np.array(self._rnames) if available(self._rnames) else smap(range(self.nrow), lambda x: f'#{x}')
-        cnam = np.array(self._cnames) if available(self._cnames) else smap(range(self.ncol), lambda x: f'#{x}')
-        smtx = np.vstack([np.hstack([f'#<::{self.dtype.str}::>', cnam]), np.hstack(rnam.reshape((-1,1)), np.array(self._dmatx, dtype = str))])
+        rnam = np.array(self._rnames) if available(self._rnames) else smap(range(self.nrow), lambda x: f'[{x}]')
+        cnam = np.array(self._cnames) if available(self._cnames) else smap(range(self.ncol), lambda x: f'[{x}]')
+        smtx = np.vstack([np.hstack([f'#<::{self.dtype.str}::>', cnam]), np.hstack([rnam.reshape((-1,1)), np.array(self._dmatx, dtype = str)])])
         if not withindex: return smtx
 
         if available(self._rindex):
@@ -462,7 +470,7 @@ class Table(CoreType):
 
     @classmethod
     def loadcsv(cls,  fname: Union[str, Path], *, delimiter: str = ',', transposed: bool = True,
-                dtype: Union[str, type, np.ndarray.dtype] = str, headerpos: Optional[Union[Sequence[int], np.ndarray]] = None) -> Table:
+                dtype: Optional[Union[str, type, np.ndarray.dtype]] = None, headerpos: Optional[Union[Sequence[int], np.ndarray]] = None) -> Table:
         idm = np.array(tablePortal.load(fname, delimiter = delimiter))
         if transposed: idm = idm.T
         return cls.fromsarray(idm, dtype = dtype, headerpos = headerpos)
@@ -479,10 +487,11 @@ class Table(CoreType):
         hdf = ptb.open_file(fname, mode = 'r')
 
         darr = hdf.root.DataMatx.read()
+        if darr.dtype.kind == 'S': darr = np.array(darr, dtype = str)
         meta = [(n, getattr(hdf.root.DataMatx.attrs, n)) for n in hdf.root.DataMatx.attrs._f_list('user')]
 
-        rnam = hdf.root.RowNames.read() if hasattr(hdf.root, 'RowNames') else None
-        cnam = hdf.root.ColNames.read() if hasattr(hdf.root, 'ColNames') else None
+        rnam = np.array(hdf.root.RowNames.read(), dtype = str) if hasattr(hdf.root, 'RowNames') else None
+        cnam = np.array(hdf.root.ColNames.read(), dtype = str) if hasattr(hdf.root, 'ColNames') else None
         ridx = StructuredArray.fromhtable(hdf.root.RowIndex) if hasattr(hdf.root, 'RowIndex') else None
         cidx = StructuredArray.fromhtable(hdf.root.ColIndex) if hasattr(hdf.root, 'ColIndex') else None
 
@@ -511,9 +520,9 @@ class Table(CoreType):
         checkInputFile(fname)
         rw.r.load(fname)
 
-        dm, rn, cn = rw.r[dataobj], rw.run(f'rownames({dataobj})'), rw.run(f'colnames({dataobj})') # stupid numpy conversion
-        if rn is rw.null: rn = None
-        if cn is rw.null: cn = None
+        dm, rn, cn = np.array(rw.r[dataobj]), rw.run(f'rownames({dataobj})'), rw.run(f'colnames({dataobj})') # stupid numpy conversion
+        rn = None if rn is rw.null else np.array(rn)
+        cn = None if cn is rw.null else np.array(cn)
 
         def _parseidx(iname):
             idx = rw.r[iname]

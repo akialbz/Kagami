@@ -43,7 +43,7 @@ class StructuredArray(CoreType):
         for k,v in vals: self[k] = v
 
     # privates
-    def _parseids(self, idx, axis, mapslice = True):
+    def _parseids(self, idx, axis = None, mapslice = True):
         if missing(axis):
             sids, aids = (idx, slice(None)) if not isinstance(idx, tuple) else \
                          (idx[0], slice(None)) if len(idx) == 1 else idx
@@ -205,7 +205,7 @@ class StructuredArray(CoreType):
 
         sids, aids = self._parseids(pos, axis = axis, mapslice = False)
         slic = isinstance(sids, slice) and sids == slice(None)
-        alic = isinstance(aids, slice) and aids == slice(None)
+        alic = isinstance(aids, slice) and aids == slice(None) and (missing(axis) or axis == 0)
 
         if slic and alic:
             narr._arrs = OrderedDict()
