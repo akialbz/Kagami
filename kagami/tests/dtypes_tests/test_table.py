@@ -34,6 +34,10 @@ def test_table_creation():
     Table(np.arange(30).reshape((5,6)), rownames = ['a', 'b', 'c', 'd', 'e'], rowindex = {'order': np.arange(5)})
     Table(np.arange(30).reshape((5,6)), colnames = ['1', '2', '3', '4', '5', '6'], colindex = {'feat': map(str,np.arange(6))})
 
+    fname = 'test_table_memmap'
+    Table(np.arange(30).reshape((5,6)), colnames = ['1', '2', '3', '4', '5', '6'], colindex = {'feat': map(str,np.arange(6))}, memmap = fname)
+    if os.path.isfile(fname): os.remove(fname)
+
     with pytest.raises(ValueError): Table(np.arange(10))
     with pytest.raises(ValueError): Table(np.arange(30).reshape((5,6)), rownames = ['a', 'b', 'c'])
     with pytest.raises(ValueError): Table(np.arange(30).reshape((5,6)), colindex = {'order': range(10)})
@@ -45,11 +49,10 @@ def test_table_creation():
     assert np.all(tab.rownames == ['a', 'b', 'a.1'])
     assert np.all(tab.colnames == ['1', '2', '1.1', '1.2'])
 
-def test_table_built_ins():
+def test_table_built_ins_item_oprtations():
     table = _create_table()
     dm = np.arange(50).reshape((5,10))
 
-    # item oprtations
     assert np.all(table == dm)
     assert np.all(table[1:,:-1] == dm[1:,:-1])
     assert np.all(table[[0,2,4]].rownames == ['row_0', 'row_2', 'row_4'])
@@ -101,13 +104,18 @@ def test_table_built_ins():
     assert np.all(ctable.ridx_.names == ['type', 'order'])
     assert np.all(ctable.cidx_.names == ['gene'])
 
-    # sequence oprtations
+def test_table_built_ins_seq_oprtations():
+    table = _create_table()
+    dm = np.arange(50).reshape((5,10))
     assert all([np.all(tl == dl) for tl,dl in zip(table,dm)])
     assert 0 in table
     assert 100 not in table
     assert len(table) == 5
 
-    # comparison oprtations
+def test_table_built_ins_comparisons():
+    table = _create_table()
+    dm = np.arange(50).reshape((5,10))
+
     assert np.all(table == dm)
     assert np.all((table == 5) == (dm == 5))
     assert table == deepcopy(table)
@@ -120,7 +128,10 @@ def test_table_built_ins():
     assert np.all((table <= 10) == (dm <= 10))
     assert np.all((table >= 10) == (dm >= 10))
 
-    # arithmetic oprtations
+def test_table_built_ins_arithmetic_oprtations():
+    table = _create_table()
+    dm = np.arange(50).reshape((5,10))
+
     assert table[:2] + table[2:] == table
     ctable = deepcopy(table)[:-1]
     ctable += table[-1]
@@ -140,22 +151,25 @@ def test_table_built_ins():
     ctable += table
     assert np.all(ctable.values == np.vstack((dm, dm)))
 
-    # representation oprtations
+def test_table_built_ins_representations():
+    table = _create_table()
     print(table)
     print(str(table))
     print(repr(table))
 
-    # numpy array interface
+def test_table_built_ins_numpy_interfaces():
+    table = _create_table()
+    dm = np.arange(50).reshape((5, 10))
     assert np.all(np.array(table) == table.values) and np.all(np.array(table) == dm)
 
-    # pickle
+def test_table_built_ins_pkls():
+    table = _create_table()
     assert table == pkl.loads(pkl.dumps(table))
 
-def test_table_properties():
+def test_table_properties_values():
     table = _create_table()
     dm = np.arange(50).reshape((5,10))
 
-    # values and dtype
     ctable = deepcopy(table)
     assert np.all(ctable.values == dm)
     assert np.all(ctable.X_ == dm)
@@ -165,7 +179,8 @@ def test_table_properties():
     ctable.dtype = float
     assert ctable.dtype.kind == 'f'
 
-    # names
+def test_table_properties_names():
+    table = _create_table()
     ctable = deepcopy(table)
     assert np.all(ctable.rownames == list(map(lambda x: 'row_%d' % x, range(5 ))))
     assert np.all(ctable.colnames == list(map(lambda x: 'col_%d' % x, range(10))))
@@ -174,7 +189,8 @@ def test_table_properties():
     assert np.all(ctable.rownames == list(map(lambda x: 'new_row_%d' % x, range(5 ))))
     assert np.all(ctable.colnames == list(map(lambda x: 'new_col_%d' % x, range(10))))
 
-    # index
+def test_table_properties_index():
+    table = _create_table()
     ctable = deepcopy(table)
     assert np.all(ctable.rowindex['type'] == ['a', 'a', 'b', 'a', 'c']) and np.all(ctable.rowindex['order'] == [2, 1, 3, 5, 4])
     assert np.all(ctable.colindex['gene'] == list(map(lambda x: 'gid_%d' % x, range(10))))
@@ -183,7 +199,8 @@ def test_table_properties():
     assert np.all(ctable.rowindex.new_type == ['a', 'b', 'c', 'd', 'e']) and np.all(ctable.rowindex['new_order'] == [1, 2, 3, 4, 5])
     assert np.all(ctable.colindex.feature  == list(map(lambda x: 'feat_%d' % x, range(10)))) and np.all(ctable.colindex['normal'] == True)
 
-    # metadata
+def test_table_properties_metadata():
+    table = _create_table()
     assert table.metadata['name'] == 'test_table' and table.metadata['origin'] is None
     assert table.metadata.name == 'test_table' and table.metadata.origin is None
     table.metadata['name'] = 'new_test_table'
@@ -191,25 +208,26 @@ def test_table_properties():
     table.metadata.newval = 123
     assert table.metadata.name == 'new_test_table' and table.metadata['normal'] == True and table.metadata['newval'] == 123
 
-    # transpose
+def test_table_properties_transpose():
+    table = _create_table()
     ctable = table.T
     assert ctable.shape == (10,5)
     assert np.all(ctable.values == table.values.T)
-    assert np.all(ctable.rownames == table.colnames) and np.all(ctable.colnames == table.rownames)
+    assert np.all(ctable.rows_ == table.cols_) and np.all(ctable.cols_ == table.rows_)
     assert ctable.rowindex == table.colindex and ctable.colindex == table.rowindex
     assert set(ctable.metadata.keys()) == set(table.metadata.keys())
 
-    # sizes
+def test_table_properties_sizes():
+    table = _create_table()
     assert table.nrow == 5
     assert table.ncol == 10
     assert table.size == 5
     assert table.shape == (5,10)
     assert table.ndim == 2
 
-def test_table_methods():
+def test_table_methods_manipulations():
     table = _create_table()
 
-    # manipulations
     assert table[:2] + table[2:] == table
     assert table[:2].append(table[2:], axis = 0) == table
     assert table[:,:2].append(table[:,2:], axis = 1) == table
@@ -218,18 +236,23 @@ def test_table_methods():
     assert table[['row_0', 'row_3', 'row_4'],:].insert(1, table[['row_1', 'row_2']], axis = 0) == table
     assert table[:,[0,1,4]].insert(2, table[:,[2,3]], axis = 1) == table[:,:5]
     assert table[:,:2].insert(None, table[:,2:], axis = 1) == table
+    with pytest.raises(IndexError): table.insert(None, table[:,2:], axis = 2)
 
     assert np.all(table.delete(-1, axis = 0).rownames == ['row_0', 'row_1', 'row_2', 'row_3'])
     assert np.all(table.delete([1,2], axis = 1).colnames == ['col_%d' % i for i in range(10) if i not in (1,2)])
     assert np.all(table.delete(slice(1,-1), axis = 1).colnames == ['col_0', 'col_9'])
     assert np.all(table.delete(None, axis = 0).rowindex.names == ['type', 'order'])
     assert np.all(table.delete(None, axis = 1).colindex.names == ['gene'])
+    with pytest.raises(IndexError): table.delete([1,2], axis = 2)
 
-    # copy
+def test_table_methods_copy():
+    table = _create_table()
     assert table == table.copy()
     assert table is not table.copy()
 
-    # converts
+def test_table_methods_converts():
+    table = _create_table()
+
     ctable = table.astype(float)
     assert ctable.dtype.kind == 'f'
     assert np.all(np.isclose(ctable.values, table.values))
@@ -247,7 +270,20 @@ def test_table_methods():
     assert np.all(np.array(table.tolist(), dtype = str) == sdm[2:,3:])
     print(table.tostring(delimiter = '\t', transpose = True, withindex = True))
 
-    # portals
+def test_table_methods_offload():
+    table = _create_table()
+
+    fname = 'test_table_memmap'
+    ctable = deepcopy(table)
+    table.offload(fname)
+    assert table == ctable
+
+    table.onload(removefile = True)
+    assert table == ctable
+    assert not os.path.isfile(fname)
+
+def test_table_methods_portals():
+    table = _create_table()
     fname = 'test_table'
 
     table.savecsv(fname + '.csv')

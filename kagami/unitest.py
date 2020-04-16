@@ -14,7 +14,8 @@ import logging
 import os
 
 
-def test(capture = True, cov = False, covReport = False, profile = False, profileSVG = False, pyargs = ()): # pragma: no cover
+def test(capture = True, cov = False, covReport = False, profile = False, profileSVG = False,
+         pyargs = ('-W ignore::tables.exceptions.FlavorWarning',)): # pragma: no cover
     try:
         import pytest
     except ImportError:

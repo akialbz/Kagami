@@ -1,31 +1,35 @@
+[![Python 3.7](https://img.shields.io/badge/python-3.7-green.svg)](https://www.python.org/downloads/release/python-375/)
+[![PyPI version](https://badge.fury.io/py/kagami.svg)](https://badge.fury.io/py/kagami)
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
+
 # Kagami Library
 
-The Kagami library is a Python package to **reinvent the wheel** and make some developments easier. It's neither designed as user-friendly nor for the purpose for a broad public to use. It may include documents in the future. But nothing under plan yet. Think twice before using it in your project.
+The Kagami library is a Python package to **reinvent the wheel** and make some developments easier. It's neither designed as user-friendly nor for the purpose for a broad public to use. It may include documents in the future. But nothing under plan yet.
 
 The Kagami library is under rapid development. Compatible between the major releases are not guaranteed. Be careful about the version required.
 
-The Kagami library supports Python 2.7 and will soon be compatible with Python 3. The Kagami library is distributed under the GNU Lesser General Public License v3.0.
+The Kagami library is distributed under the GNU Lesser General Public License v3.0.
 
 ## Dependencies
 
 Kagami requires:
 
-- Python (>= 2.7.14)
-- numpy (>= 1.14.3)
-- tables (>= 3.4.4)
-- requests (>= 2.20.1)
-- bidict (>= 0.17.5)
-- pytest (>= 4.0.0)
+- Python >= 3.7.5
+- numpy >= 1.17.4
+- rpy2 >= 3.2.4
+- requests >= 2.22.0
+- tables >= 3.6.1
 
 To use RWrapper, you will also need:
 
-- rpy2 (== 2.8.6)
-- R (>= 3.3.3)
+- rpy2 >= 3.2.4
+- R >= 3.6.1
 
-To use pytest coverage and profiling, you will also need:
+To use pytest, test coverage, and profiling you will also need:
 
-- pytest-cov (>= 2.6.0)
-- pytest-profiling (>= 1.3.0)
+- pytest >= 5.3.2
+- pytest-cov >= 2.8.1
+- pytest-profiling >= 1.7.0
 
 Lower versions may work but have not been tested.
 
@@ -36,30 +40,19 @@ Using pip:
 pip install kagami
 ```
 
-Using Pipenv:
+Using Docker:
 ```bash
-pipenv install kagami
+docker pull albertaki/kagami-core:latest
 ```
 
-Using Docker
+### Testing
+
 ```bash
-docker run -v $(pwd):/home --rm albertaki/kagami-core:latest <your script>
+python -c "import kagami; kagami.test()"
 ```
 
-## Testing
+## Citation
 
-```python
-import kagami
-kagami.test()
+If you use Kagami and/or MOCA in a publication, we would appreciate citations: (coming soon)
 
-=================================== test session starts =================================== 
-platform darwin -- Python 2.7.15, pytest-3.7.0, py-1.5.4, pluggy-0.7.1
-rootdir: Kagami, inifile:
-plugins: profiling-1.3.0, cov-2.5.1
-collected 47 items
-
-kagami/tests/core_tests/test_etc.py ......                                            [ 12%]
-kagami/tests/core_tests/test_functional.py .....                                      [ 23%]
-kagami/tests/core_tests/test_path.py ...                                              [ 29%]
-....
-```
+<img src="https://i.imgur.com/XIjLVV0.png" alt="Kagami is part of Albert's scientific toolbox." width="80"/>
