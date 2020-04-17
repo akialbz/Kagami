@@ -27,7 +27,7 @@ with open('README.md', 'r') as fh:
         version          =  _build_version(),
         author           = 'Albert Zhou',
         author_email     = 'j.zhou.3@bham.ac.uk',
-        url              = 'https://github.com/albert500/Kagami',
+        url              = 'https://github.com/akialbert/Kagami',
         packages         = setuptools.find_packages(),
         description      = 'The Kagami library (%s)' % __version_name__,
         long_description = long_description,
