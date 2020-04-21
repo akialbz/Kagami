@@ -64,7 +64,3 @@ def test_folds():
     valv = [[v] for v in vals]
     assert np.allclose(fold(iter(valv), lambda x,y: x+y), vals)
     assert np.allclose(collapse(iter(valv)), vals)
-
-def test_checks():
-    assert checkall(np.ones(10), lambda x: x == 1) and not checkall(iter([1,0,1,1,1]), lambda x: x == 1)
-    assert checkany(iter([1,0,1,1,1]), lambda x: x == 1) and not checkany(np.ones(10), lambda x: x != 1)

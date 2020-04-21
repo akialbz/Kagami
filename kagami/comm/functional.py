@@ -21,7 +21,7 @@ from .types import available, optional, missing, listable
 
 __all__ = [
     'partial', 'compose', 'unpack', 'imap', 'smap', 'tmap', 'pmap', 'cmap', 'call',
-    'l', 'll', 'lzip', 'pick', 'pickmap', 'drop', 'fold', 'collapse', 'checkany', 'checkall'
+    'l', 'll', 'lzip', 'pick', 'pickmap', 'drop', 'fold', 'collapse',
 ]
 
 
@@ -111,17 +111,3 @@ def fold(x: Iterable, func: Callable, init: Optional[Any] = None) -> Any:
 
 def collapse(x: Iterable, init: Optional[Any] = None) -> Any:
     return fold(x, lambda a,b: a+b, init = init)
-
-
-# checks
-def checkall(itr: Iterable, cond: Union[Callable, Any]) -> bool:
-    _check = cond if callable(cond) else (lambda x: x is None) if cond is None else (lambda x: x == cond)
-    for val in itr:
-        if not _check(val): return False
-    return True
-
-def checkany(itr: Iterable, cond: Union[Callable, Any]) -> bool:
-    _check = cond if callable(cond) else (lambda x: x is None) if cond is None else (lambda x: x == cond)
-    for val in itr:
-        if _check(val): return True
-    return False

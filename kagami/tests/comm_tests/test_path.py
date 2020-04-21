@@ -44,7 +44,7 @@ def test_removepath():
     assert removePath(fname) == True
     assert not os.path.isfile(fname)
 
-    dname = 'test_path_dir/sub_dir'
+    dname = 'test_path_dir/'
     os.makedirs(dname)
     assert removePath(dname) == True
     assert not os.path.isdir(dname)
