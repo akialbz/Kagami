@@ -33,11 +33,14 @@ def test_maps():
 
     assert np.allclose(list(imap(iter(vals), unpack(_pow))), np.power(vals, 2))
     assert np.allclose(smap(iter(vals), unpack(_pow)), np.power(vals, 2))
-    assert np.allclose(tmap(iter(vals), _mp_pow), np.power(vals, 2))
-    assert np.allclose(pmap(iter(vals), _mp_pow), np.power(vals, 2))
+    assert np.allclose(tmap(iter(vals), _mp_pow, nthreads = 2), np.power(vals, 2))
+    assert np.allclose(pmap(iter(vals), _mp_pow, nprocs = 2), np.power(vals, 2))
     assert np.allclose(cmap(vals, _mp_pow, nchunks = 2), np.power(vals, 2))
-    assert np.allclose(call(iter(vals), (_mp_pow, _mp_pow), nthreads = 6), np.power(vals, 4))
-    assert np.allclose(call(iter(vals), (_mp_pow, _mp_pow), nprocs = 6),   np.power(vals, 4))
+
+    assert np.allclose(smap(iter(vals), _mp_pow, _mp_pow), np.power(vals, 4))
+    assert np.allclose(tmap(iter(vals), _mp_pow, _mp_pow), np.power(vals, 4))
+    assert np.allclose(pmap(iter(vals), _mp_pow, _mp_pow),   np.power(vals, 4))
+    assert np.allclose(cmap(vals, _mp_pow, _mp_pow), np.power(vals, 4))
 
 def test_listconvs():
     assert l(imap([0,1,2], lambda x: x+1)) == [1,2,3]

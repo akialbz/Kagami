@@ -16,11 +16,11 @@ from typing import Any, Iterable, Collection, List, Iterator, Callable, Optional
 from multiprocessing import cpu_count
 from multiprocessing.pool import Pool, ThreadPool
 from operator import itemgetter
-from .types import available, optional, missing, listable
+from .types import optional, missing, listable
 
 
 __all__ = [
-    'partial', 'compose', 'unpack', 'imap', 'smap', 'tmap', 'pmap', 'cmap', 'call',
+    'partial', 'compose', 'unpack', 'imap', 'smap', 'tmap', 'pmap', 'cmap',
     'l', 'll', 'lzip', 'pick', 'pickmap', 'drop', 'fold', 'collapse',
 ]
 
@@ -44,11 +44,11 @@ def unpack(func: Callable) -> Callable:
     def _wrap(x): return func(*x)
     return _wrap
 
-def imap(x: Iterable, func: Callable) -> Iterator:
-    return map(func, x)
+def imap(x: Iterable, *funcs: Callable) -> Iterator:
+    return functools.reduce(lambda v,f: map(f,v), funcs, x)
 
-def smap(x: Iterable, func: Callable) -> List:
-    return l(map(func, x))
+def smap(x: Iterable, *funcs: Callable) -> List:
+    return l(imap(x, *funcs))
 
 def _mmap(x, func, ptype, nps):
     mpool = ptype(processes = nps)
@@ -57,29 +57,21 @@ def _mmap(x, func, ptype, nps):
     mpool.join()
     return [j.get() for j in jobs]
 
-def tmap(x: Iterable, func: Callable, nthreads: Optional[int] = None) -> List:
-    return _mmap(x, func, ThreadPool, optional(nthreads, cpu_count() * 10))
+def tmap(x: Iterable, *funcs: Callable, nthreads: Optional[int] = None) -> List:
+    return l(functools.reduce(functools.partial(_mmap, ptype = ThreadPool, nps = optional(nthreads, cpu_count())), funcs, x))
 
-def pmap(x: Iterable, func: Callable, nprocs: Optional[int] = None) -> List:
-    return _mmap(x, func, Pool, optional(nprocs, cpu_count()-1))
+def pmap(x: Iterable, *funcs: Callable, nprocs: Optional[int] = None) -> List:
+    return l(functools.reduce(functools.partial(_mmap, ptype = Pool, nps = optional(nprocs, cpu_count()-1)), funcs, x))
 
-def cmap(x: Union[Collection, np.ndarray], func: Callable, nchunks: Optional[int] = None) -> List:
-    if missing(nchunks): nchunks = cpu_count() - 1
-    x = ll(x)
+def cmap(x: Union[Collection, np.ndarray], *funcs: Callable, nchunks: Optional[int] = None) -> List:
     xln = len(x)
-    ids = pickmap(np.array_split(np.arange(xln), min(nchunks, xln)), lambda i: len(i) == 1, lambda i: [i])
-    pms = smap(ids, lambda i: itemgetter(*i)(x))
-    _func = lambda ps: smap(ps, func)
-    return collapse(tmap(pms, _func, nchunks))
+    chk = min(optional(nchunks, cpu_count()), xln)
 
-def call(x: Iterable, funcs: Collection[Callable], nthreads: Optional[int] = None, nprocs: Optional[int] = None) -> List:
-    if len(funcs) == 0: raise ValueError('too few functions for piping')
-    if available(nthreads) and available(nprocs): raise ValueError('cannot use multithreading and multiprocssing as the same time')
-    _map = smap if missing(nprocs) and missing(nthreads) else \
-           partial(tmap, nthreads = nthreads) if available(nthreads) else \
-           partial(pmap, nprocs = nprocs)
-    res = functools.reduce(_map, funcs, x)
-    return res
+    ids = pickmap(np.array_split(np.arange(xln), chk), lambda i: len(i) == 1, lambda i: [i])
+    pms = smap(ids, lambda i: itemgetter(*i)(x))
+    _func = lambda ps: smap(ps, *funcs)
+
+    return collapse(tmap(pms, _func, nthreads = min(cpu_count(), chk)))
 
 
 # utils
