@@ -87,9 +87,9 @@ class Table(CoreType):
         if not iterable(value): return value
 
         value = ll(value)
-        if not iterable(value[0]): return np.array(value, dtype = self.dtype)
+        if not iterable(value[0]): return np.asarray(value, dtype = self.dtype)
 
-        value = np.array(smap(value, ll), dtype = self.dtype)
+        value = np.asarray(value if isinstance(value, np.ndarray) and value.ndim == 2 else smap(value, ll), dtype = self.dtype)
         return value
 
     def _tostrlns(self, delimiter, *, transpose = False, withindex = True, strinkrows = 15, strinkcols = 10):
@@ -184,7 +184,7 @@ class Table(CoreType):
 
     # for numpy
     def __array__(self, dtype = None):
-        return np.array(self._dmatx, dtype = dtype)
+        return np.asarray(self._dmatx, dtype = dtype)
 
     def __array_wrap__(self, arr):
         return Table(arr)
@@ -454,9 +454,9 @@ class Table(CoreType):
         return Table(dmtx, dtype = dtype, rownames = rnam, colnames = cnam, rowindex = ridx, colindex = cidx)
 
     def tosarray(self, withindex: bool = True) -> np.ndarray:
-        rnam = np.array(self._rnames) if available(self._rnames) else smap(range(self.nrow), lambda x: f'[{x}]')
-        cnam = np.array(self._cnames) if available(self._cnames) else smap(range(self.ncol), lambda x: f'[{x}]')
-        smtx = np.vstack([np.hstack([f'#<::{self.dtype.str}::>', cnam]), np.hstack([rnam.reshape((-1,1)), np.array(self._dmatx, dtype = str)])])
+        rnam = np.asarray(self._rnames) if available(self._rnames) else smap(range(self.nrow), lambda x: f'[{x}]')
+        cnam = np.asarray(self._cnames) if available(self._cnames) else smap(range(self.ncol), lambda x: f'[{x}]')
+        smtx = np.vstack([np.hstack([f'#<::{self.dtype.str}::>', cnam]), np.hstack([rnam.reshape((-1,1)), np.asarray(self._dmatx, dtype = str)])])
         if not withindex: return smtx
 
         if available(self._rindex):

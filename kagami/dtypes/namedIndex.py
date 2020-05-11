@@ -45,7 +45,7 @@ class NamedIndex(CoreType):
         if isinstance(value, NamedIndex):
             val = value._names
         elif iterable(value):
-            val = np.array(ll(value), dtype = object)
+            val = np.asarray(ll(value), dtype = object)
             if checkany(val, lambda x: not isstring(x)): raise TypeError('index names must be string')
         else:
             if arrayonly: raise TypeError('index names must be an array')
@@ -103,9 +103,10 @@ class NamedIndex(CoreType):
     @names.setter
     def names(self, value: Iterable[str]) -> None:
         if isinstance(value, NamedIndex):
-            self._names, self._nidct = value._names.copy(), value._nidct.copy(); return
-        self._names = self._parsevals(value, arrayonly = True)
-        self._reindex()
+            self._names, self._nidct = value._names.copy(), value._nidct.copy()
+        else:
+            self._names = self._parsevals(value, arrayonly = True).copy()
+            self._reindex()
 
     @property
     def size(self) -> int:

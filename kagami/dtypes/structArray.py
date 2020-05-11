@@ -67,9 +67,9 @@ class StructuredArray(CoreType):
         if not iterable(value): return value
 
         value = ll(value)
-        if not iterable(value[0]): return np.array(value)
+        if not iterable(value[0]): return np.asarray(value)
 
-        value = smap(value, lambda x: np.array(ll(x)))
+        value = smap(value, lambda x: np.asarray(ll(x)))
         if not len(set(smap(value, len))) == 1: raise ValueError('input arrays not in the same size')
         return value
 
@@ -102,7 +102,7 @@ class StructuredArray(CoreType):
                   checkall(self._arrs.keys(), lambda k: np.all(self._arrs[k] == other._arrs[k]) if self._arrs[k].dtype.kind != 'f' else
                                                         np.allclose(self._arrs[k], other._arrs[k]))
         else:
-            equ = np.array(self.arrays, dtype = object) == np.array(other, dtype = object)
+            equ = np.asarray(self.arrays, dtype = object) == np.asarray(other, dtype = object)
         return equ
 
     def __str__(self):
@@ -120,7 +120,7 @@ class StructuredArray(CoreType):
 
     # for numpy
     def __array__(self, dtype = None):
-        if available(dtype): return np.array(self.arrays, dtype = dtype)
+        if available(dtype): return np.asarray(self.arrays, dtype = dtype)
         arr = np.array([*zip(*self._arrs.values())],
                        dtype = [(n, v.dtype.str) for n,v in zip(self._arrs.keys(), self._arrs.values())])
         return arr
@@ -172,7 +172,7 @@ class StructuredArray(CoreType):
             if not isinstance(vals, np.ndarray): raise ValueError('input array not in 1-dimensional')
             if missing(narr._length): narr._length = vals.shape[0]
             elif narr._length != vals.shape[0]: raise ValueError('input array size not match')
-            narr._arrs[pos] = vals
+            narr._arrs[pos] = vals.copy()
         else:
             sids, aids = self._parseids(pos, axis = axis)
             if not isinstance(vals, list):
@@ -239,7 +239,7 @@ class StructuredArray(CoreType):
         _r = re.compile('<(.*)::([<>|]?[biufcmMOSUV]\\d*)>')
         nams, vals = array[:,0], array[:,1:]
         nams, vdts = np.vectorize(lambda x: (lambda v: v[0] if len(v) > 0 else '')(_r.findall(x)))(nams)
-        vals = smap(zip(vals,vdts), unpack(lambda v,d: np.array(v).astype(d) if d != '|b1' else v == 'True'))
+        vals = smap(zip(vals,vdts), unpack(lambda v,d: np.asarray(v).astype(d) if d != '|b1' else v == 'True'))
         return StructuredArray(zip(nams, vals))
 
     def tosarray(self) -> np.ndarray:
