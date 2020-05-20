@@ -16,10 +16,10 @@ COPY entrypoint.sh /usr/local/bin/
 
 # install python and dependencies and commonly used packages
 RUN ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && echo $TIMEZONE > /etc/timezone \
-#    # install R
-#    && apt-get update && apt-get install -y --no-install-recommends \
-#	   r-base \
-#	   r-base-dev \
+    # install R
+    && apt-get update && apt-get install -y --no-install-recommends \
+	   r-base \
+	   r-base-dev \
 	# install kagami and dependencies
     && pip install --upgrade --no-cache-dir pip \
     && pip install --no-cache-dir \
@@ -31,7 +31,6 @@ RUN ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && echo $TIMEZONE > /et
        pytest==5.3.2 \
        pytest-cov==2.8.1 \
        pytest-profiling==1.7.0 \
-#       rpy2==3.2.4 \
        $PACKAGE \
     # clean
     && apt-get purge -y \

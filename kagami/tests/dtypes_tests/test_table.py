@@ -55,6 +55,8 @@ def test_table_built_ins_item_oprtations():
 
     assert np.all(table == dm)
     assert np.all(table[1:,:-1] == dm[1:,:-1])
+    assert np.all(table[1] == np.arange(10)+10)
+    assert np.all(table[:,-1] == np.array([9,19,29,39,49]).reshape((-1,1)))
     assert np.all(table[[0,2,4]].rownames == ['row_0', 'row_2', 'row_4'])
     assert np.all(table[:,[1,3,5,7,9]].colnames == ['col_1', 'col_3', 'col_5', 'col_7', 'col_9'])
     assert np.all(table[[0,2],[1,5]].rowindex['type'] == ['a', 'b'])
@@ -65,8 +67,12 @@ def test_table_built_ins_item_oprtations():
     ctable = deepcopy(table)
     ctable['row_0'] = 0
     assert np.all(ctable[0] == np.zeros(10))
+    ctable['row_0'] = iter([1,2,3,4,5,6,7,8,9,10])
+    assert np.all(ctable[0] == np.arange(10)+1)
     ctable[:,'col_2'] = 1
-    assert np.all(ctable[:,2] == np.ones(5))
+    assert np.all(ctable[:,2] == np.ones((5,1)))
+    ctable[:,'col_2'] = np.array([5,4,3,2,1]).reshape((-1,1))
+    assert np.all(ctable[:,2] == (5-np.arange(5)).reshape((-1,1)))
     ctable[[1,2],[3,4]] = np.array([[5,6],[7,8]])
     assert np.all(ctable.values[np.ix_([1,2],[3,4])] == [[5,6],[7,8]])
     ctable[:] = dm

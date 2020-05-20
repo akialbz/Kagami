@@ -5,9 +5,10 @@
 
 # Kagami Library
 
-The Kagami library is a Python package to **reinvent the wheel** and make some developments easier. It's neither designed as user-friendly nor for the purpose for a broad public to use. It may include documents in the future. But nothing under plan yet.
-
-The Kagami library is under rapid development. Compatible between the major releases are not guaranteed. Be careful about the version required.
+The Kagami library is a Python package to support the development of novel computational biology algorithms. 
+It is currently under rapid development. Compatible between releases are not guaranteed. 
+Although the APIs are aimed to remain consistant within a major version. 
+Please note that there is no plan to include documents in the near future. 
 
 The Kagami library is distributed under the GNU Lesser General Public License v3.0.
 
@@ -51,6 +52,49 @@ docker pull albertaki/kagami-core:latest
 ```bash
 python -c "import kagami; kagami.test()"
 ```
+
+## Changelog
+
+*Version 3.0*
+- [x] Migrate to Python 3.7
+- [x] Add disk base for the Table 
+- [x] Add chunk mapping
+- [x] Add numpy style indexing parameters for CoreTypes
+- [x] Add attribute-like access to table index
+- [x] Add dataframe-like assignment to table values
+- [x] Add handy snippets and R-like functions
+- [x] Clean None and na usage in map functions
+- [x] Fix R wrapper init libraries multiple loading bug
+- [x] Fix R wrapper library loading warning suppression
+- [x] Update unit tests
+- [ ] `Future` Add auto adjust nthreads and nprocs by memory usage
+- [ ] `Future` Add CuPy and CuML compatible
+- [ ] `Future` Add node4j compatible
+- [ ] `Future` Add Spark / Apache Arrow compatible
+
+*Version 2.2*
+- [x] Add fixRepeat for NamedIndex and Table
+- [x] Improve Table repr
+- [x] Major refactor for package structure
+
+*Version 2.1*
+- [x] Add Dockerfile
+- [x] Add setup script
+- [x] Add level properties for factor type
+
+*Version 2.0*
+- [x] Add Factor CoreType
+- [x] Add NamedIndex CoreType
+- [x] Add StructuredArray CoreType
+- [x] Add Table CoreType
+- [x] Add HDF5 portals for StructuredArray and Table
+- [x] Add RData portal for Table
+- [x] Add Metadata class
+- [x] Add functional programming support
+- [x] Add BinWrapper
+- [x] Add license
+- [x] Update unit tests
+
 
 ## Citation
 
