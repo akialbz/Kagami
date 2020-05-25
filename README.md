@@ -5,10 +5,9 @@
 
 # Kagami Library
 
-The Kagami library is a Python package to support the development of novel computational biology algorithms. 
-It is currently under rapid development. Compatible between releases are not guaranteed. 
-Although the APIs are aimed to remain consistant within a major version. 
-Please note that there is no plan to include documents in the near future. 
+The Kagami library is a Python package to accelerate the development of novel computational biology algorithms. 
+It is currently under rapid growth. Although the APIs are aimed to remain consistent within a major version, compatible between releases are not guaranteed. 
+Please note that there is no plan to include documents anytime soon. 
 
 The Kagami library is distributed under the GNU Lesser General Public License v3.0.
 
@@ -98,6 +97,6 @@ python -c "import kagami; kagami.test()"
 
 ## Citation
 
-If you use Kagami and/or MOCA in a publication, we would appreciate citations: (coming soon)
+If you use Kagami, DarkFusion or MOCA in a publication, we would appreciate citations: (coming soon)
 
-<img src="https://i.imgur.com/XIjLVV0.png" alt="Kagami is part of Albert's scientific toolbox." width="80"/>
+<img src="https://i.imgur.com/p3207Et.png" alt="Kagami is part of Albert's scientific toolbox." width="100"/>
