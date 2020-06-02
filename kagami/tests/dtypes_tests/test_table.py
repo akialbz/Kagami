@@ -59,6 +59,7 @@ def test_table_built_ins_item_oprtations():
     assert np.all(table[:,-1] == np.array([9,19,29,39,49]).reshape((-1,1)))
     assert np.all(table[[0,2,4]].rownames == ['row_0', 'row_2', 'row_4'])
     assert np.all(table[:,[1,3,5,7,9]].colnames == ['col_1', 'col_3', 'col_5', 'col_7', 'col_9'])
+    assert np.all(table[:,NamedIndex(['col_2', 'col_4', 'col_6'])] == dm[:,[2,4,6]])
     assert np.all(table[[0,2],[1,5]].rowindex['type'] == ['a', 'b'])
     assert np.all(table[[False,False,True,True,False],1:5].colindex.gene == list(map(lambda x: 'gid_%d' % x, [1,2,3,4])))
     assert np.all(table[['row_1' ,'row_3'], ['col_2', 'col_4', 'col_6']] == dm[np.ix_([1,3],[2,4,6])])

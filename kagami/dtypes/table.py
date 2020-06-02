@@ -31,6 +31,8 @@ __all__ = ['Table']
 
 
 # table class
+_copy = lambda x: None if x is None else x.copy()
+
 class Table(CoreType):
     __slots__ = ('_dmatx', '_rnames', '_cnames', '_rindex', '_cindex', '_metas', '_memmap')
 
@@ -58,6 +60,7 @@ class Table(CoreType):
     # privates
     @staticmethod
     def _mapids(ids, names):
+        if isinstance(ids, NamedIndex): ids = np.array(ids)
         if not listable(ids): ids = [ids]
         if not checkany(ids, isstring): return ids
         if missing(names): raise KeyError('table names not set')
@@ -204,7 +207,7 @@ class Table(CoreType):
 
     @property
     def rownames(self):
-        return self._rnames.copy()
+        return _copy(self._rnames)
 
     @property
     def rows_(self):
@@ -218,7 +221,7 @@ class Table(CoreType):
 
     @property
     def colnames(self):
-        return self._cnames.copy()
+        return _copy(self._cnames)
 
     @property
     def cols_(self):
@@ -232,7 +235,7 @@ class Table(CoreType):
 
     @property
     def rowindex(self):
-        return self._rindex.copy()
+        return _copy(self._rindex)
 
     @property
     def ridx_(self):
@@ -246,7 +249,7 @@ class Table(CoreType):
 
     @property
     def colindex(self):
-        return self._cindex.copy()
+        return _copy(self._cindex)
 
     @ property
     def cidx_(self):
@@ -273,8 +276,8 @@ class Table(CoreType):
     @property
     def T(self):
         tab = Table(self._dmatx.T, metadata = self._metas)
-        tab._rnames, tab._cnames = self._cnames.copy(), self._rnames.copy()
-        tab._rindex, tab._cindex = self._cindex.copy(), self._rindex.copy()
+        tab._rnames, tab._cnames = _copy(self._cnames), _copy(self._rnames)
+        tab._rindex, tab._cindex = _copy(self._cindex), _copy(self._rindex)
         return tab
 
     @property
@@ -396,8 +399,8 @@ class Table(CoreType):
 
     def astype(self, dtype: Optional[Union[str, np.dtype, type]] = None) -> Table:
         ntab = Table(self._dmatx, dtype = optional(dtype, self.dtype), metadata = self._metas)
-        ntab._rnames, ntab._cnames = self._rnames.copy(), self._cnames.copy()
-        ntab._rindex, ntab._cindex = self._rindex.copy(), self._cindex.copy()
+        ntab._rnames, ntab._cnames = _copy(self._rnames), _copy(self._cnames)
+        ntab._rindex, ntab._cindex = _copy(self._rindex), _copy(self._cindex)
         return ntab
 
     # memory offload
