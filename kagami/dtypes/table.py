@@ -116,7 +116,7 @@ class Table(CoreType):
 
             if nci > 0: slns = [[f'<{k}>'] + _scol(cidx[k]) for k in cidx.names] + slns
             if nri > 0:
-                sidx = [['' * nci] + [f'<{k}>'] + _srow(ridx[k]) for k in ridx.names]
+                sidx = [[''] * nci + [f'<{k}>'] + _srow(ridx[k]) for k in ridx.names]
                 slns = [list(ix) + ln for ix,ln in zip(zip(*sidx), slns)]
 
             def _sfmt(lns, pos):

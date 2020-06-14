@@ -169,8 +169,8 @@ class NamedIndex(CoreType):
         if not listable(val): val = [val]
 
         nid = self if inline else self.copy()
-        nid._names = np.hstack([nid._names, val])
         for i,n in enumerate(val): nid._nidct[n] = nid.size + i
+        nid._names = np.hstack([nid._names, val])
 
         if len(nid._names) != len(nid._nidct): raise KeyError('index names not unique')
         return nid

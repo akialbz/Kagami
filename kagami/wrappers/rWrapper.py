@@ -29,8 +29,8 @@ __all__ = ['RWrapper']
 
 class RWrapper: # pragma: no cover
     # rpy2 delegates
-    null = robj.NULL
     robj = robj
+    null = robj.NULL
     r = robj.r
     RuntimeError = RRuntimeError
 
