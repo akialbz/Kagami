@@ -478,7 +478,7 @@ class Table(CoreType):
         if transposed: idm = idm.T
         return cls.fromsarray(idm, dtype = dtype, headerpos = headerpos)
 
-    def savecsv(self, fname: Union[str, Path], *, delimiter: str = ',', transpose:  bool = True, withindex: bool = True) -> bool:
+    def savecsv(self, fname: Union[str, Path], *, delimiter: str = ',', transpose: bool = True, withindex: bool = True) -> bool:
         odm = self.tosarray(withindex = withindex)
         if transpose: odm = odm.T
         tablePortal.save(odm, fname, delimiter = delimiter)
