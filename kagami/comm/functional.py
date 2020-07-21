@@ -67,8 +67,8 @@ def cmap(x: Union[Collection, np.ndarray], *funcs: Callable, nchunks: Optional[i
     xln = len(x)
     chk = min(optional(nchunks, cpu_count()), xln)
 
-    ids = pickmap(np.array_split(np.arange(xln), chk), lambda i: len(i) == 1, lambda i: [i])
-    pms = smap(ids, lambda i: itemgetter(*i)(x))
+    ids = np.array_split(np.arange(xln), chk)
+    pms = smap(ids, lambda i: (lambda v: [v] if len(i) == 1 else v)(itemgetter(*i)(x)))
     _func = lambda ps: smap(ps, *funcs)
 
     return collapse(tmap(pms, _func, nthreads = min(cpu_count(), chk)))
