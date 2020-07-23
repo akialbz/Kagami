@@ -1,7 +1,7 @@
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![Python 2.7](https://img.shields.io/badge/python-2.7-green.svg)](https://www.python.org/downloads/release/python-2715/)
 [![Python 3.7](https://img.shields.io/badge/python-3.7-green.svg)](https://www.python.org/downloads/release/python-375/)
 [![PyPI version](https://badge.fury.io/py/kagami.svg)](https://badge.fury.io/py/kagami)
-[![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 
 # Kagami Library
 
@@ -13,20 +13,18 @@ The Kagami library is distributed under the GNU Lesser General Public License v3
 
 ## Dependencies
 
-Kagami requires:
-
 - Python >= 3.7.5
 - numpy >= 1.17.4
 - rpy2 >= 3.2.4
 - requests >= 2.22.0
 - tables >= 3.6.1
 
-To use RWrapper, you will also need:
+For RWrapper:
 
 - rpy2 >= 3.2.4
 - R >= 3.6.1
 
-To use pytest, test coverage, and profiling you will also need:
+For pytest, test coverage, and profiling:
 
 - pytest >= 5.3.2
 - pytest-cov >= 2.8.1
@@ -54,7 +52,7 @@ python -c "import kagami; kagami.test()"
 
 ## Changelog
 
-*Version 3.0*
+#### version 3.0
 - [x] Migrate to Python 3.7
 - [x] Add disk base for the Table 
 - [x] Add chunk mapping
@@ -66,22 +64,18 @@ python -c "import kagami; kagami.test()"
 - [x] Fix R wrapper init libraries multiple loading bug
 - [x] Fix R wrapper library loading warning suppression
 - [x] Update unit tests
-- [ ] `Future` Add auto adjust nthreads and nprocs by memory usage
-- [ ] `Future` Add CuPy and CuML compatible
-- [ ] `Future` Add node4j compatible
-- [ ] `Future` Add Spark / Apache Arrow compatible
 
-*Version 2.2*
+#### Version 2.2
 - [x] Add fixRepeat for NamedIndex and Table
 - [x] Improve Table repr
 - [x] Major refactor for package structure
 
-*Version 2.1*
+#### Version 2.1
 - [x] Add Dockerfile
 - [x] Add setup script
 - [x] Add level properties for factor type
 
-*Version 2.0*
+#### Version 2.0
 - [x] Add Factor CoreType
 - [x] Add NamedIndex CoreType
 - [x] Add StructuredArray CoreType
