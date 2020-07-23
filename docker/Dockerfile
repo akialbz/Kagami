@@ -25,9 +25,9 @@ RUN ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && echo $TIMEZONE > /et
     && pip install --no-cache-dir \
        wheel \
        numpy==1.17.4 \
-       rpy2==3.2.4 \
        requests==2.22.0 \
        tables==3.6.1 \
+       rpy2==3.2.4 \
        pytest==5.3.2 \
        pytest-cov==2.8.1 \
        pytest-profiling==1.7.0 \

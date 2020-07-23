@@ -15,7 +15,6 @@ The Kagami library is distributed under the GNU Lesser General Public License v3
 
 - Python >= 3.7.5
 - numpy >= 1.17.4
-- rpy2 >= 3.2.4
 - requests >= 2.22.0
 - tables >= 3.6.1
 
