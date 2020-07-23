@@ -41,7 +41,7 @@ pip install kagami
 
 Using Docker:
 ```bash
-docker pull albertaki/kagami-core:latest
+docker pull envomics/kagami
 ```
 
 ### Testing
