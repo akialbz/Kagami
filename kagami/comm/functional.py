@@ -44,11 +44,13 @@ def unpack(func: Callable) -> Callable:
     def _wrap(x): return func(*x)
     return _wrap
 
-def imap(x: Iterable, *funcs: Callable) -> Iterator:
-    return functools.reduce(lambda v,f: map(f,v), funcs, x)
-
 def smap(x: Iterable, *funcs: Callable) -> List:
-    return l(imap(x, *funcs))
+    # remove depencency of map function to avoid error shallowing
+    # check: https://stackoverflow.com/questions/37362373/is-stopiteration-raised-in-the-mapping-function-of-python-3-map-handled-incorr
+    return functools.reduce(lambda v,f: [f(p) for p in v], funcs, x)
+
+def imap(x: Iterable, *funcs: Callable) -> Iterator:
+    return iter(smap(x, *funcs))
 
 def _mmap(x, func, ptype, nps):
     mpool = ptype(processes = nps)

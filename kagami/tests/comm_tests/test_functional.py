@@ -11,6 +11,7 @@ added: 11-20-2018
 
 
 import numpy as np
+import pytest
 from kagami.comm import *
 
 
@@ -41,6 +42,12 @@ def test_maps():
     assert np.allclose(tmap(iter(vals), _mp_pow, _mp_pow), np.power(vals, 4))
     assert np.allclose(pmap(iter(vals), _mp_pow, _mp_pow),   np.power(vals, 4))
     assert np.allclose(cmap(vals, _mp_pow, _mp_pow), np.power(vals, 4))
+
+    def _func(i):
+        if i%2 == 0: raise ValueError
+        return i
+    with pytest.raises(ValueError): _ = imap([1,2,3,4,5], _func)
+    with pytest.raises(ValueError): _ = smap([1,2,3,4,5], _func)
 
 def test_listconvs():
     assert l(imap([0,1,2], lambda x: x+1)) == [1,2,3]

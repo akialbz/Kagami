@@ -195,7 +195,7 @@ class NamedIndex(CoreType):
         return l(self._names.tolist())
 
     def tostring(self) -> bytes:
-        return self._names.tostring()
+        return self._names.tobytes()
 
     def copy(self) -> NamedIndex:
         nid = NamedIndex()

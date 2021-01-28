@@ -17,7 +17,7 @@ import numpy as np
 import tables as ptb
 from typing import Iterable, Sequence, Mapping, Union, Optional, Any
 from pathlib import Path
-from kagami.comm import ll, optional, missing, available, isstring, iterable, listable, checkany, paste, smap, collapse, checkInputFile, checkOutputFile, Metadata
+from kagami.comm import ll, optional, missing, available, isstring, iterable, listable, checkany, paste, imap, smap, collapse, checkInputFile, checkOutputFile, Metadata
 from kagami.portals import tablePortal
 from .coreType import CoreType, Indices, Indices2D
 from .namedIndex import NamedIndex
@@ -145,7 +145,7 @@ class Table(CoreType):
         self.delete(key, axis = None, inline = True)
 
     def __iter__(self):
-        return map(np.array, self._dmatx)
+        return imap(self._dmatx, np.array)
 
     def __contains__(self, item):
         return item in self._dmatx
