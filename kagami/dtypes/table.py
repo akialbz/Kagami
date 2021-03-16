@@ -457,8 +457,8 @@ class Table(CoreType):
         return Table(dmtx, dtype = dtype, rownames = rnam, colnames = cnam, rowindex = ridx, colindex = cidx)
 
     def tosarray(self, withindex: bool = True) -> np.ndarray:
-        rnam = np.asarray(self._rnames) if available(self._rnames) else smap(range(self.nrow), lambda x: f'[{x}]')
-        cnam = np.asarray(self._cnames) if available(self._cnames) else smap(range(self.ncol), lambda x: f'[{x}]')
+        rnam = np.asarray(self._rnames) if available(self._rnames) else np.array(smap(range(self.nrow), lambda x: f'[{x}]'))
+        cnam = np.asarray(self._cnames) if available(self._cnames) else np.array(smap(range(self.ncol), lambda x: f'[{x}]'))
         smtx = np.vstack([np.hstack([f'#<::{self.dtype.str}::>', cnam]), np.hstack([rnam.reshape((-1,1)), np.asarray(self._dmatx, dtype = str)])])
         if not withindex: return smtx
 
