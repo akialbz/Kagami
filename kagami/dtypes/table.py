@@ -545,9 +545,7 @@ class Table(CoreType):
         dm, rn, cn, ri, ci = (self._dmatx,   self._rnames, self._cnames, self._rindex, self._cindex) if not transpose else \
                              (self._dmatx.T, self._cnames, self._rnames, self._cindex, self._rindex)
 
-        dmtx = rw.asMatrix(dm)
-        if available(rn): dmtx.rows_names = rw.asVector(rn)
-        if available(cn): dmtx.cols_names = rw.asVector(cn)
+        dmtx = rw.asMatrix(dm, rownames = rn, colnames = cn)
         rw.assign(dmtx, dataobj)
 
         if available(ri): rw.assign(rw.r['data.frame'](**{k: rw.asVector(v) for k,v in ri.fields}), ridxobj)
