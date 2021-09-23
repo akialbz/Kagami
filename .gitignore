@@ -9,9 +9,6 @@ dist/
 kagami.egg-info/
 legacy/
 htmlcov/
-venv/
-venv2/
-venv3/
 
 # file types
 *.pyc
@@ -24,4 +21,3 @@ venv3/
 .buildversion
 
 # other files
-docker/kagami-*
