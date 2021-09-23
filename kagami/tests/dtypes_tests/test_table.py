@@ -277,6 +277,14 @@ def test_table_methods_converts():
     assert np.all(np.array(table.tolist(), dtype = str) == sdm[2:,3:])
     print(table.tostring(delimiter = '\t', transpose = True, withindex = True))
 
+    df = table.todataframe('idx')
+    assert np.all(np.array(df.index.get_level_values('type'))  == table.ridx_.type)
+    assert np.all(np.array(df.index.get_level_values('order')) == table.ridx_.order)
+    assert np.all(np.array(df.index.get_level_values('idx'))  == table.rows_)
+    assert np.all(np.array(df.columns.get_level_values('gene')) == table.cidx_.gene)
+    assert np.all(np.array(df.columns.get_level_values('idx')) == table.cols_)
+    assert np.all(np.isclose(df.to_numpy(), table.X_))
+
 def test_table_methods_offload():
     table = _create_table()
 

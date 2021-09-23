@@ -15,6 +15,7 @@ from __future__ import annotations
 import logging, os, re
 import numpy as np
 import tables as ptb
+import pandas as pd
 from typing import Iterable, Sequence, Mapping, Union, Optional, Any
 from pathlib import Path
 from kagami.comm import ll, optional, missing, available, isstring, iterable, listable, checkany, paste, imap, smap, collapse, checkInputFile, checkOutputFile, Metadata
@@ -393,6 +394,12 @@ class Table(CoreType):
         rlns = ['[' + rlns[0]] + \
                [' ' + ln for ln in rlns[1:]]
         return paste(rlns, sep = '\n') + ']'
+
+    def todataframe(self, idname: str = 'id') -> pd.DataFrame:
+        df = pd.DataFrame(self._dmatx.copy())
+        df.index   = pd.MultiIndex.from_arrays(self._rindex.arrays + [self._rnames], names = self._rindex.names.tolist() + [idname])
+        df.columns = pd.MultiIndex.from_arrays(self._cindex.arrays + [self._cnames], names = self._cindex.names.tolist() + [idname])
+        return df
 
     def copy(self) -> Table:
         return self.astype()
