@@ -13,6 +13,7 @@ added: 08-20-2018
 import os, pytest
 import pickle as pkl
 import numpy as np
+import pandas as pd
 from copy import deepcopy
 from kagami.comm import Metadata
 from kagami.dtypes import NamedIndex, Table
@@ -280,10 +281,17 @@ def test_table_methods_converts():
     df = table.todataframe('idx')
     assert np.all(np.array(df.index.get_level_values('type'))  == table.ridx_.type)
     assert np.all(np.array(df.index.get_level_values('order')) == table.ridx_.order)
-    assert np.all(np.array(df.index.get_level_values('idx'))  == table.rows_)
+    assert np.all(np.array(df.index.get_level_values('idx'))  == np.array(table.rows_))
     assert np.all(np.array(df.columns.get_level_values('gene')) == table.cidx_.gene)
-    assert np.all(np.array(df.columns.get_level_values('idx')) == table.cols_)
+    assert np.all(np.array(df.columns.get_level_values('idx')) == np.array(table.cols_))
     assert np.all(np.isclose(df.to_numpy(), table.X_))
+
+    assert isinstance(df.index,   pd.MultiIndex)
+    assert isinstance(df.columns, pd.MultiIndex)
+    table.ridx_ = table.cidx_ = None
+    df = table.todataframe('idx', simpleidx = True)
+    assert isinstance(df.index,   pd.Index)
+    assert isinstance(df.columns, pd.Index)
 
 def test_table_methods_offload():
     table = _create_table()

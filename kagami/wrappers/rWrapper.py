@@ -17,7 +17,6 @@ try:
     import rpy2.robjects.packages as rpkg
     from rpy2.rinterface_lib.embedded import RRuntimeError
     from rpy2.robjects import numpy2ri
-    if numpy2ri.original_converter is None: numpy2ri.activate()
 except ImportError:
     raise ImportError('rWrapper requires r environment and rpy2 package')
 from typing import Iterable, Union, Optional, Any
@@ -56,13 +55,7 @@ class RWrapper: # pragma: no cover
     @staticmethod
     def asVector(val: Iterable, names: Optional[Iterable] = None) -> robj.Vector:
         val = np.asarray(ll(val))
-        vect = {
-            'i': robj.IntVector, 'u': robj.IntVector,
-            'f': robj.FloatVector,
-            'b': robj.BoolVector,
-            'S': robj.StrVector, 'U': robj.StrVector,
-        }.get(val.dtype.kind, lambda x: None)(val)
-        if missing(vect): raise TypeError(f'unknown vector type [{val.dtype.kind}]')
+        vect = numpy2ri.numpy2rpy(val)
         if available(names): vect.names = robj.StrVector(np.asarray(ll(names), dtype = str))
         return vect
 
@@ -71,7 +64,7 @@ class RWrapper: # pragma: no cover
                  rownames: Optional[Iterable] = None, colnames: Optional[Iterable] = None) -> robj.Matrix:
         if not (isinstance(val, np.ndarray) and val.ndim == 2): val = np.asarray(smap(val,ll))
         if missing(nrow) and missing(ncol): nrow, ncol = val.shape
-        matx = robj.r.matrix(val, nrow = nrow, ncol = ncol)
+        matx = robj.r.matrix(numpy2ri.numpy2rpy(val), nrow = nrow, ncol = ncol)
         if available(rownames): matx.rownames = robj.StrVector(np.asarray(ll(rownames), dtype = str))
         if available(colnames): matx.colnames = robj.StrVector(np.asarray(ll(colnames), dtype = str))
         return matx

@@ -395,10 +395,12 @@ class Table(CoreType):
                [' ' + ln for ln in rlns[1:]]
         return paste(rlns, sep = '\n') + ']'
 
-    def todataframe(self, idname: str = 'id') -> pd.DataFrame:
+    def todataframe(self, idname: str = 'id', simpleidx: bool = False) -> pd.DataFrame:
         df = pd.DataFrame(self._dmatx.copy())
-        df.index   = pd.MultiIndex.from_arrays(self._rindex.arrays + [self._rnames], names = self._rindex.names.tolist() + [idname])
-        df.columns = pd.MultiIndex.from_arrays(self._cindex.arrays + [self._cnames], names = self._cindex.names.tolist() + [idname])
+        df.index   = pd.MultiIndex.from_arrays(self._rindex.arrays + [self._rnames], names = self._rindex.names.tolist() + [idname]) if available(self._rindex) else \
+                     pd.MultiIndex.from_arrays([self._rnames], names = [idname]) if not simpleidx else np.array(self._rnames)
+        df.columns = pd.MultiIndex.from_arrays(self._cindex.arrays + [self._cnames], names = self._cindex.names.tolist() + [idname]) if available(self._cindex) else \
+                     pd.MultiIndex.from_arrays([self._cnames], names = [idname]) if not simpleidx else np.array(self._cnames)
         return df
 
     def copy(self) -> Table:
@@ -535,7 +537,7 @@ class Table(CoreType):
         cn = None if cn is rw.null else np.array(cn)
 
         def _parseidx(iname):
-            idx = rw.r[iname]
+            idx = rw.robj.numpy2ri.rpy2py_list(rw.r[iname])
             return zip(idx.dtype.names, zip(*idx))
         ri = _parseidx(ridxobj) if available(ridxobj) else None
         ci = _parseidx(cidxobj) if available(cidxobj) else None
