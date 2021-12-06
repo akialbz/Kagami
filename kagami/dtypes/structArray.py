@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import os, re
 import numpy as np
+import pandas as pd
 import tables as tb
 from typing import List, Tuple, Iterable, Mapping, Union, Optional, Any
 from pathlib import Path
@@ -226,6 +227,10 @@ class StructuredArray(CoreType):
 
     def tostring(self) -> str:
         return str(self)
+
+    def tomultindex(self) -> pd.MultiIndex:
+        if self.size == 0: raise ValueError('unable to create MultiIndex from empty array')
+        return pd.MultiIndex.from_arrays(self.arrays, names = self.names.tolist())
 
     def copy(self) -> StructuredArray:
         narr = StructuredArray()
