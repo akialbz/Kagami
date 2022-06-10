@@ -15,14 +15,15 @@ import pickle as pkl
 import numpy as np
 import pandas as pd
 from copy import deepcopy
-from kagami.comm import Metadata
+from kagami.comm import smap, Metadata
 from kagami.dtypes import NamedIndex, Table
 
 
 # table
 def _create_table():
     table = Table(np.arange(50).reshape((5,10)), dtype = int,
-                  rownames = map(lambda x: 'row_%d' % x, range(5)), colnames = map(lambda x: 'col_%d' % x, range(10)),
+                  rownames = map(lambda x: 'row_%d' % x, range(5)),
+                  colnames = map(lambda x: 'col_%d' % x, range(10)),
                   rowindex = {'type': ['a', 'a', 'b', 'a', 'c'], 'order': [2, 1, 3, 5, 4]},
                   colindex = [('gene', map(lambda x: 'gid_%d' % x, range(10)))],
                   metadata = {'name': 'test_table', 'origin': None, 'extra': Metadata(val1 = 1, val2 = 2)})
@@ -246,6 +247,14 @@ def test_table_methods_manipulations():
     assert table[:,:2].insert(None, table[:,2:], axis = 1) == table
     with pytest.raises(IndexError): table.insert(None, table[:,2:], axis = 2)
 
+    ctable = deepcopy(table)
+    ctable.rows_ = None
+    ctable.cols_ = None
+    assert ctable[[0,3,4],:].insert(1, ctable[np.array([1,2])], axis = 0) == ctable
+    assert ctable[:,[0,1,4]].insert(2, ctable[:,np.array([2,3])], axis = 1) == ctable[:,:5]
+    assert ctable[:,:2].insert(None, ctable[:,2:], axis = 1) == ctable
+    with pytest.raises(IndexError): ctable.insert(None, ctable[:,2:], axis = 2)
+
     assert np.all(table.delete(-1, axis = 0).rownames == ['row_0', 'row_1', 'row_2', 'row_3'])
     assert np.all(table.delete([1,2], axis = 1).colnames == ['col_%d' % i for i in range(10) if i not in (1,2)])
     assert np.all(table.delete(slice(1,-1), axis = 1).colnames == ['col_0', 'col_9'])
@@ -292,6 +301,13 @@ def test_table_methods_converts():
     df = table.todataframe('idx', simpleidx = True)
     assert isinstance(df.index,   pd.Index)
     assert isinstance(df.columns, pd.Index)
+
+    ctable = deepcopy(table)
+    ctable.rows_ = None
+    ctable.cols_ = None
+    df = ctable.todataframe('idx')
+    assert np.all(np.array(df.index.get_level_values('idx'))  == np.array(smap(range(ctable.nrow), lambda x: f'[{x}]')))
+    assert np.all(np.array(df.columns.get_level_values('idx')) == np.array(smap(range(ctable.ncol), lambda x: f'[{x}]')))
 
 def test_table_methods_offload():
     table = _create_table()

@@ -396,11 +396,14 @@ class Table(CoreType):
         return paste(rlns, sep = '\n') + ']'
 
     def todataframe(self, idname: str = 'id', simpleidx: bool = False) -> pd.DataFrame:
+        rnam = np.asarray(self._rnames) if available(self._rnames) else np.array(smap(range(self.nrow), lambda x: f'[{x}]'))
+        cnam = np.asarray(self._cnames) if available(self._cnames) else np.array(smap(range(self.ncol), lambda x: f'[{x}]'))
+
         df = pd.DataFrame(self._dmatx.copy())
-        df.index   = pd.MultiIndex.from_arrays(self._rindex.arrays + [self._rnames], names = self._rindex.names.tolist() + [idname]) if available(self._rindex) else \
-                     pd.MultiIndex.from_arrays([self._rnames], names = [idname]) if not simpleidx else np.array(self._rnames)
-        df.columns = pd.MultiIndex.from_arrays(self._cindex.arrays + [self._cnames], names = self._cindex.names.tolist() + [idname]) if available(self._cindex) else \
-                     pd.MultiIndex.from_arrays([self._cnames], names = [idname]) if not simpleidx else np.array(self._cnames)
+        df.index   = pd.MultiIndex.from_arrays(self._rindex.arrays + [rnam], names = self._rindex.names.tolist() + [idname]) if available(self._rindex) else \
+                     pd.MultiIndex.from_arrays([rnam], names = [idname]) if not simpleidx else rnam
+        df.columns = pd.MultiIndex.from_arrays(self._cindex.arrays + [cnam], names = self._cindex.names.tolist() + [idname]) if available(self._cindex) else \
+                     pd.MultiIndex.from_arrays([cnam], names = [idname]) if not simpleidx else cnam
         return df
 
     def copy(self) -> Table:
