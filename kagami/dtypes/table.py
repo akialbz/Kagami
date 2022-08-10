@@ -61,9 +61,11 @@ class Table(CoreType):
     # privates
     @staticmethod
     def _mapids(ids, names):
-        if isinstance(ids, NamedIndex): ids = np.array(ids)
-        if not listable(ids): ids = [ids]
-        if not checkany(ids, isstring): return ids
+        if isinstance(ids, NamedIndex):
+            ids = np.array(ids)
+        else:
+            if not listable(ids): ids = [ids]
+            if not checkany(ids, isstring): return ids
         if missing(names): raise KeyError('table names not set')
         return names.idsof(ids, safe = False)
 
@@ -405,6 +407,7 @@ class Table(CoreType):
         df.columns = pd.MultiIndex.from_arrays(self._cindex.arrays + [cnam], names = self._cindex.names.tolist() + [idname]) if available(self._cindex) else \
                      pd.MultiIndex.from_arrays([cnam], names = [idname]) if not simpleidx else cnam
         return df
+    todf = todataframe # simplify
 
     def copy(self) -> Table:
         return self.astype()

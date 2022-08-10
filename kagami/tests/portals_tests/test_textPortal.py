@@ -37,7 +37,7 @@ def test_textlns_io():
     olns = _createlns()
     fn = Path('test_text_portal.txt')
 
-    textPortal.savelns(olns, fn, newline = True)
+    textPortal.savelns(olns, fn, newline = '\n')
     assert fn.is_file()
     ilns = textPortal.loadlns(fn, strip = False)
     assert checkall(zip(ilns, olns), unpack(lambda il, ol: il == ol))
