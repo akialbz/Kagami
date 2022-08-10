@@ -68,7 +68,7 @@ class StructuredArray(CoreType):
         if not iterable(value): return value
 
         value = ll(value)
-        if not iterable(value[0]): return np.asarray(value)
+        if len(value) == 0 or not iterable(value[0]): return np.asarray(value)
 
         value = smap(value, lambda x: np.asarray(ll(x)))
         if not len(set(smap(value, len))) == 1: raise ValueError('input arrays not in the same size')
