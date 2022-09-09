@@ -1,9 +1,11 @@
 #!/usr/bin/env python
-#  -*- coding: utf-8 -*-
+"""The Kagami packages"""
+
 
 import sys, setuptools, json
 from kagami import __version__, __version_name__
 from kagami.comm import drop
+
 
 def _parse_requires():
     with open('requirements.txt') as f: requirements = f.read().splitlines()
