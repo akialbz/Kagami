@@ -30,7 +30,7 @@ with open('README.md', 'r') as fh:
         author           = 'Albert Zhou',
         url              = 'https://github.com/akialbz/Kagami',
         packages         = setuptools.find_packages(),
-        description      = 'The Kagami library (%s)' % __version_name__,
+        description      = 'A framework to support functional programming for computational biology algorithm development',
         long_description = long_description,
         long_description_content_type = 'text/markdown',
         classifiers = [
