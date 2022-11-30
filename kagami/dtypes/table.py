@@ -303,6 +303,10 @@ class Table(CoreType):
     def ndim(self):
         return 2
 
+    @property
+    def df(self):
+        return self.todataframe(simpleidx = True)
+
      # publics
     def take(self, pos: Indices2D, axis: Optional[int] = 0) -> Table:
         rids, cids = self._parseids(pos, axis = axis)
@@ -407,7 +411,6 @@ class Table(CoreType):
         df.columns = pd.MultiIndex.from_arrays(self._cindex.arrays + [cnam], names = self._cindex.names.tolist() + [idname]) if available(self._cindex) else \
                      pd.MultiIndex.from_arrays([cnam], names = [idname]) if not simpleidx else cnam
         return df
-    todf = todataframe # simplify
 
     def copy(self) -> Table:
         return self.astype()

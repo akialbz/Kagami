@@ -301,6 +301,9 @@ def test_table_methods_converts():
     df = table.todataframe('idx', simpleidx = True)
     assert isinstance(df.index,   pd.Index)
     assert isinstance(df.columns, pd.Index)
+    df = table.df
+    assert isinstance(df.index,   pd.Index)
+    assert isinstance(df.columns, pd.Index)
 
     ctable = deepcopy(table)
     ctable.rows_ = None
