@@ -29,3 +29,12 @@ def test_checks():
 def test_validarg():
     assert validarg('a', ('a', 'b', 'c')) == 'a'
     with pytest.raises(ValueError): validarg('a', ('b', 'c'))
+
+def test_unique():
+    x = np.random.randint(-50, 50, size = 100)
+    ux, ucnt = np.unique(x, return_counts = True)
+    sx, scnt = unique(x, return_counts = True)
+    assert len(ux) == len(sx)
+    assert np.all(ux == np.sort(sx))
+    assert len(ucnt) == len(scnt)
+    assert np.all(ucnt == scnt[np.argsort(sx)])

@@ -18,9 +18,6 @@ def _build_version(verfile = '.buildversion'):
     return vers['main'] + '.' + str(vers['build'])
 
 reqs = _parse_requires()
-if "--no-rwrapper" in sys.argv:
-    reqs = drop(reqs, lambda x: x.startswith('rpy2'))
-    sys.argv.remove("--no-rwrapper")
 
 with open('README.md', 'r') as fh:
     long_description = fh.read()
