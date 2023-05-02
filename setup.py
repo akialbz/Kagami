@@ -2,9 +2,8 @@
 """The Kagami packages"""
 
 
-import sys, setuptools, json
-from kagami import __version__, __version_name__
-from kagami.comm import drop
+import setuptools, json
+from kagami import __version__
 
 
 def _parse_requires():

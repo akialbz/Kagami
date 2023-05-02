@@ -18,6 +18,5 @@ htmlcov/
 # hidden files
 .coverage
 .DS_Store
-.buildversion
 
 # other files
