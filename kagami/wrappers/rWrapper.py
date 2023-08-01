@@ -20,7 +20,7 @@ try:
 except ImportError:
     raise ImportError('rWrapper requires r environment and rpy2 package')
 from typing import Iterable, Union, Optional, Any
-from kagami.comm import l, ll, missing, available, smap, pickmap, iterable
+from kagami.comm import ll, missing, available, smap, pickmap, iterable
 
 
 __all__ = ['RWrapper']
