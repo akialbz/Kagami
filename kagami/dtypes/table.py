@@ -305,7 +305,7 @@ class Table(CoreType):
 
     @property
     def df(self):
-        return self.todataframe(simpleidx = True)
+        return self.todataframe(simpleidx = False)
 
      # publics
     def take(self, pos: Indices2D, axis: Optional[int] = 0) -> Table:
@@ -406,10 +406,10 @@ class Table(CoreType):
         cnam = np.asarray(self._cnames) if available(self._cnames) else np.array(smap(range(self.ncol), lambda x: f'[{x}]'))
 
         df = pd.DataFrame(self._dmatx.copy())
-        df.index   = pd.MultiIndex.from_arrays(self._rindex.arrays + [rnam], names = self._rindex.names.tolist() + [idname]) if available(self._rindex) else \
-                     pd.MultiIndex.from_arrays([rnam], names = [idname]) if not simpleidx else rnam
-        df.columns = pd.MultiIndex.from_arrays(self._cindex.arrays + [cnam], names = self._cindex.names.tolist() + [idname]) if available(self._cindex) else \
-                     pd.MultiIndex.from_arrays([cnam], names = [idname]) if not simpleidx else cnam
+        df.index   = rnam if simpleidx or missing(self._rindex) else \
+                     pd.MultiIndex.from_arrays(self._rindex.arrays + [rnam], names = self._rindex.names.tolist() + [idname])
+        df.columns = cnam if simpleidx or missing(self._cindex) else \
+                     pd.MultiIndex.from_arrays(self._cindex.arrays + [cnam], names = self._cindex.names.tolist() + [idname])
         return df
 
     def copy(self) -> Table:
