@@ -305,7 +305,7 @@ class Table(CoreType):
 
     @property
     def df(self):
-        return self.todataframe(simpleidx = False)
+        return self.todataframe(multidx = False)
 
      # publics
     def take(self, pos: Indices2D, axis: Optional[int] = 0) -> Table:
@@ -401,15 +401,17 @@ class Table(CoreType):
                [' ' + ln for ln in rlns[1:]]
         return paste(rlns, sep = '\n') + ']'
 
-    def todataframe(self, idname: str = 'id', simpleidx: bool = False) -> pd.DataFrame:
+    def todataframe(self, idname: str = 'id', multidx: bool = False) -> pd.DataFrame:
         rnam = np.asarray(self._rnames) if available(self._rnames) else np.array(smap(range(self.nrow), lambda x: f'[{x}]'))
         cnam = np.asarray(self._cnames) if available(self._cnames) else np.array(smap(range(self.ncol), lambda x: f'[{x}]'))
 
         df = pd.DataFrame(self._dmatx.copy())
-        df.index   = rnam if simpleidx or missing(self._rindex) else \
-                     pd.MultiIndex.from_arrays(self._rindex.arrays + [rnam], names = self._rindex.names.tolist() + [idname])
-        df.columns = cnam if simpleidx or missing(self._cindex) else \
-                     pd.MultiIndex.from_arrays(self._cindex.arrays + [cnam], names = self._cindex.names.tolist() + [idname])
+        def _pack_mulindex(nams, index):
+            ns,vs = (index.names.tolist(), index.arrays) if available(index) else ([],[])
+            return pd.MultiIndex.from_arrays(vs + [nams], names = ns + [idname])
+        df.index   = rnam if (not multidx) and missing(self._rindex) else _pack_mulindex(rnam, self._rindex)
+        df.columns = cnam if (not multidx) and missing(self._cindex) else _pack_mulindex(cnam, self._cindex)
+
         return df
 
     def copy(self) -> Table:
@@ -541,12 +543,14 @@ class Table(CoreType):
         checkInputFile(fname)
         rw.r.load(fname)
 
+        # import pdb; pdb.set_trace()
+
         dm, rn, cn = np.array(rw.r[dataobj]), rw.run(f'rownames({dataobj})'), rw.run(f'colnames({dataobj})') # stupid numpy conversion
         rn = None if rn is rw.null else np.array(rn)
         cn = None if cn is rw.null else np.array(cn)
 
         def _parseidx(iname):
-            idx = rw.robj.numpy2ri.rpy2py_list(rw.r[iname])
+            idx = rw.robj.numpy2ri.rpy2py_data_frame(rw.r[iname])
             return zip(idx.dtype.names, zip(*idx))
         ri = _parseidx(ridxobj) if available(ridxobj) else None
         ci = _parseidx(cidxobj) if available(cidxobj) else None
