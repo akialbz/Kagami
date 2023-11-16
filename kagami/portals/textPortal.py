@@ -42,6 +42,6 @@ def loadlns(fname: Union[str, Path], mode: str = 'r', strip: bool = True) -> Lis
 def savelns(lines: Iterable[str], fname: Union[str, Path], mode: str = 'w', newline: Optional[str] = '\n') -> bool:
     checkOutputFile(fname)
     lines = smap(lines, str)
-    if available(newline): lines = pickmap(lines, lambda x: x[-1] != newline, lambda x: x + newline)
+    if available(newline): lines = pickmap(lines, lambda x: x == '' or x[-1] != newline, lambda x: x + newline)
     with open(fname, mode) as ofile: ofile.writelines(lines)
     return os.path.isfile(fname)
