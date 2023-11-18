@@ -10,8 +10,8 @@ added: 12-19-2017
 """
 
 
-import warnings
-import numpy as np
+import warnings, numpy as np
+from kagami.comm import optional
 try:
     import rpy2.robjects as robj
     import rpy2.robjects.packages as rpkg
@@ -56,17 +56,28 @@ class RWrapper: # pragma: no cover
     def asVector(val: Iterable, names: Optional[Iterable] = None) -> robj.Vector:
         val = np.asarray(ll(val))
         vect = numpy2ri.numpy2rpy(val)
-        if available(names): vect.names = robj.StrVector(np.asarray(ll(names), dtype = str))
+        if available(names):
+            names = np.asarray(ll(names), dtype = str)
+            if len(names) != len(val): raise ValueError('values and names size not match')
+            vect.names = robj.StrVector(names)
         return vect
 
     @staticmethod
     def asMatrix(val: Iterable[Iterable], nrow: Optional[int] = None, ncol: Optional[int] = None,
                  rownames: Optional[Iterable] = None, colnames: Optional[Iterable] = None) -> robj.Matrix:
-        if not (isinstance(val, np.ndarray) and val.ndim == 2): val = np.asarray(smap(val,ll))
-        if missing(nrow) and missing(ncol): nrow, ncol = val.shape
+        if not isinstance(val, np.ndarray): val = np.array(smap(val,ll))
+        if not val.ndim == 2: raise ValueError('input data is not a 2-dimensional matrix')
+
+        if available(nrow) or available(ncol): val = val.reshape((optional(nrow,-1), optional(ncol,-1)))
+        nrow, ncol = val.shape
         matx = robj.r.matrix(numpy2ri.numpy2rpy(val), nrow = nrow, ncol = ncol)
-        if available(rownames): matx.rownames = robj.StrVector(np.asarray(ll(rownames), dtype = str))
-        if available(colnames): matx.colnames = robj.StrVector(np.asarray(ll(colnames), dtype = str))
+
+        def _wrap_nams(nams, nval):
+            nams = np.asarray(ll(nams), dtype = str)
+            if len(nams) != nval: raise ValueError('values and names size not match')
+            return robj.StrVector(nams)
+        if available(rownames): matx.rownames = _wrap_nams(rownames, nrow)
+        if available(colnames): matx.colnames = _wrap_nams(colnames, ncol)
         return matx
 
     @staticmethod
