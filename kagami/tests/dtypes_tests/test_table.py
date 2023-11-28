@@ -274,20 +274,28 @@ def test_table_methods_converts():
     assert ctable.dtype.kind == 'f'
     assert np.all(np.isclose(ctable.values, table.values))
 
+    idx = [[                           'gid_0', 'gid_1', 'gid_2', 'gid_3', 'gid_4', 'gid_5', 'gid_6', 'gid_7', 'gid_8', 'gid_9'],
+           [                           'col_0', 'col_1', 'col_2', 'col_3', 'col_4', 'col_5', 'col_6', 'col_7', 'col_8', 'col_9']]
+    dmx = [[    'a',     '2', 'row_0',     '0',     '1',     '2',     '3',     '4',     '5',     '6',     '7',     '8',     '9'],
+           [    'a',     '1', 'row_1',    '10',    '11',    '12',    '13',    '14',    '15',    '16',    '17',    '18',    '19'],
+           [    'b',     '3', 'row_2',    '20',    '21',    '22',    '23',    '24',    '25',    '26',    '27',    '28',    '29'],
+           [    'a',     '5', 'row_3',    '30',    '31',    '32',    '33',    '34',    '35',    '36',    '37',    '38',    '39'],
+           [    'c',     '4', 'row_4',    '40',    '41',    '42',    '43',    '44',    '45',    '46',    '47',    '48',    '49']]
+
     sdm = np.array(
-        [[           '',             '', '<gene::<U5>', 'gid_0', 'gid_1', 'gid_2', 'gid_3', 'gid_4', 'gid_5', 'gid_6', 'gid_7', 'gid_8', 'gid_9'],
-         ['<type::<U1>', '<order::<i8>',  '#<::<i8::>', 'col_0', 'col_1', 'col_2', 'col_3', 'col_4', 'col_5', 'col_6', 'col_7', 'col_8', 'col_9'],
-         [          'a',            '2',       'row_0',     '0',     '1',     '2',     '3',     '4',     '5',     '6',     '7',     '8',     '9'],
-         [          'a',            '1',       'row_1',    '10',    '11',    '12',    '13',    '14',    '15',    '16',    '17',    '18',    '19'],
-         [          'b',            '3',       'row_2',    '20',    '21',    '22',    '23',    '24',    '25',    '26',    '27',    '28',    '29'],
-         [          'a',            '5',       'row_3',    '30',    '31',    '32',    '33',    '34',    '35',    '36',    '37',    '38',    '39'],
-         [          'c',            '4',       'row_4',    '40',    '41',    '42',    '43',    '44',    '45',    '46',    '47',    '48',    '49']]
+        [[    '',      '', 'gene'] + idx[0],
+         ['type', 'order',    '#'] + idx[1]] + dmx
+    )
+    ddm = np.array(
+        [[           '',             '', '<gene::<U5>'] + idx[0],
+         ['<type::<U1>', '<order::<i8>',  '#<::<i8::>'] + idx[1]] + dmx
     )
 
-    assert np.all(table.tosarray() == sdm)
-    assert table == Table.fromsarray(sdm)
+    assert np.all(table.tosarray(withdtype = False) == sdm)
+    assert np.all(table.tosarray() == ddm)
+    assert table == Table.fromsarray(ddm)
 
-    assert np.all(np.array(table.tolist(), dtype = str) == sdm[2:,3:])
+    assert np.all(np.array(table.tolist(), dtype = str) == ddm[2:,3:])
     print(table.tostring(delimiter = '\t', transpose = True, withindex = True))
 
     df = table.todataframe('idx')

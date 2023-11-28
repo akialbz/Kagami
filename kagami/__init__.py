@@ -10,7 +10,7 @@ added: 03-18-2017
 """
 
 
-__version__ = '3.1'
+__version__ = '3.2'
 __version_name__ = 'Kaga'
 
 

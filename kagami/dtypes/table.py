@@ -476,29 +476,32 @@ class Table(CoreType):
         dmtx = array[rids+1:,cids+1:]
         return Table(dmtx, dtype = dtype, rownames = rnam, colnames = cnam, rowindex = ridx, colindex = cidx)
 
-    def tosarray(self, withindex: bool = True) -> np.ndarray:
+    def tosarray(self, withindex: bool = True, withdtype: bool = True) -> np.ndarray:
         rnam = np.asarray(self._rnames) if available(self._rnames) else np.array(smap(range(self.nrow), lambda x: f'[{x}]'))
         cnam = np.asarray(self._cnames) if available(self._cnames) else np.array(smap(range(self.ncol), lambda x: f'[{x}]'))
-        smtx = np.vstack([np.hstack([f'#<::{self.dtype.str}::>', cnam]), np.hstack([rnam.reshape((-1,1)), np.asarray(self._dmatx, dtype = str)])])
+        smtx = np.vstack([
+            np.hstack([f'#<::{self.dtype.str}::>' if withdtype else '#', cnam]),
+            np.hstack([rnam.reshape((-1,1)), np.asarray(self._dmatx, dtype = str)])
+        ])
         if not withindex: return smtx
 
         if available(self._rindex):
-            ridx = self._rindex.tosarray()
+            ridx = self._rindex.tosarray(withdtype = withdtype)
             smtx = np.hstack([ridx.T, smtx])
         if available(self._cindex):
-            cidx = self._cindex.tosarray()
+            cidx = self._cindex.tosarray(withdtype = withdtype)
             if available(self._rindex): cidx = np.hstack([np.tile([''], (self._cindex.size, self._rindex.size)), cidx])
             smtx = np.vstack([cidx, smtx])
         return smtx
 
     @classmethod
-    def loadcsv(cls,  fname: Union[str, Path], *, delimiter: str = ',', transposed: bool = True,
+    def loadcsv(cls,  fname: Union[str, Path], *, delimiter: str = ',', transposed: bool = False,
                 dtype: Optional[Union[str, type, np.ndarray.dtype]] = None, headerpos: Optional[Union[Sequence[int], np.ndarray]] = None) -> Table:
         idm = np.array(tablePortal.load(fname, delimiter = delimiter))
         if transposed: idm = idm.T
         return cls.fromsarray(idm, dtype = dtype, headerpos = headerpos)
 
-    def savecsv(self, fname: Union[str, Path], *, delimiter: str = ',', transpose: bool = True, withindex: bool = True) -> bool:
+    def savecsv(self, fname: Union[str, Path], *, delimiter: str = ',', transpose: bool = False, withindex: bool = True) -> bool:
         odm = self.tosarray(withindex = withindex)
         if transpose: odm = odm.T
         tablePortal.save(odm, fname, delimiter = delimiter)

@@ -247,8 +247,12 @@ class StructuredArray(CoreType):
         vals = smap(zip(vals,vdts), unpack(lambda v,d: np.asarray(v).astype(d) if d != '|b1' else v == 'True'))
         return StructuredArray(zip(nams, vals))
 
-    def tosarray(self) -> np.ndarray:
-        return np.array([np.r_[[f'<{k}::{v.dtype.str}>'], v.astype(str)] for k,v in self._arrs.items()])
+    def tosarray(self, withdtype: bool = True) -> np.ndarray:
+        vals = np.array([
+            np.r_[[f'<{k}::{v.dtype.str}>' if withdtype else str(k)], v.astype(str)]
+            for k,v in self._arrs.items()
+        ])
+        return vals
 
     @classmethod
     def loadcsv(cls, fname: Union[str, Path], delimiter: str = ',', transposed: bool = True) -> StructuredArray:

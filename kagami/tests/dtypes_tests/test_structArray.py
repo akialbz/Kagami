@@ -15,6 +15,7 @@ import pickle as pkl
 import numpy as np
 from pathlib import Path
 from copy import deepcopy
+from kagami.comm import smap
 from kagami.dtypes import NamedIndex, StructuredArray
 
 
@@ -185,6 +186,8 @@ def test_structArray_methods_copy():
 
 def test_structArray_portals():
     arr = _create_structArray()
+
+    assert np.all(arr.tosarray(withdtype = False) == np.array([[k]+smap(vs,str) for k,vs in arr.fields]))
 
     fname = Path('test_structArray.csv')
     arr.savecsv(fname)
