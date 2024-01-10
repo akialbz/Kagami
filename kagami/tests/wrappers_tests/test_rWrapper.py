@@ -17,7 +17,7 @@ try:
     rpy_available = True
 except ImportError:
     rpy_available = False
-from kagami.wrappers import RWrapper
+if rpy_available: from kagami.wrappers import RWrapper
 
 
 @pytest.mark.skipif(not rpy_available, reason = 'rpy2 not installed')
