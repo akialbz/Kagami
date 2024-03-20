@@ -53,7 +53,8 @@ def listPath(path: Union[str, Path], *, recursive: bool = False, fileonly: bool 
     if fileonly and dironly: logging.warning('nothing to expect after excluding both dirs and files')
 
     if isstring(path): path = Path(path)
-    if missing(globptn): globptn = ('**/' if recursive else '') + optional(prefix, '') + '*' + optional(suffix, '')
+    if missing(globptn): globptn = optional(prefix, '') + '*' + optional(suffix, '')
+    if recursive: globptn = '**/' + globptn
     fds = l(path.glob(globptn))
 
     if fileonly: fds = pick(fds, lambda x: x.is_file())
