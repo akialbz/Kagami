@@ -10,6 +10,7 @@ added: 11-14-2018
 """
 
 
+import sys
 import numpy as np
 import pickle as pkl
 from collections import defaultdict, OrderedDict
@@ -36,7 +37,11 @@ def test_types():
     assert not ismapping([]) and not ismapping(()) and not ismapping(iter([]))
 
     assert hashable('a') and hashable(())
-    assert not hashable([]) and not hashable(slice(None))
+    assert not hashable([])
+    if sys.version_info[1] < 12:
+        assert not hashable(slice(None))
+    else:
+        assert hashable(slice(None)) # from 3.12 slice is hashable
 
     assert iterable([]) and iterable(np.arange(3)) and iterable({}) and iterable(iter(range(5))) and not iterable('abc')
     assert listable([]) and listable(np.arange(3)) and not listable({}) and not listable(iter(range(5))) and not listable('abc')
