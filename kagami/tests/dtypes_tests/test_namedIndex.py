@@ -10,7 +10,7 @@ added: 08-23-2018
 """
 
 
-import os, pytest
+import pytest
 import pickle as pkl
 import numpy as np
 from string import ascii_lowercase

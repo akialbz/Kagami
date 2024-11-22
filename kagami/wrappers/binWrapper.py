@@ -10,11 +10,10 @@ added: 01-25-2016
 """
 
 
-import logging
+import logging, shutil
 from pathlib import Path
 from typing import Tuple, List, Iterable, Sequence, Optional, Union
 from subprocess import Popen, PIPE, TimeoutExpired
-from distutils.spawn import find_executable
 from kagami.comm import ll, optional, missing, available, smap, pmap, tmap, partial, paste
 
 
@@ -57,7 +56,7 @@ class BinaryWrapper:
     # methods
     @staticmethod
     def which(binary: Union[str, Path]) -> Optional[str]:
-        return find_executable(binary)
+        return shutil.which(binary)
 
     @staticmethod
     def reachable(binary: Union[str, Path]) -> bool:

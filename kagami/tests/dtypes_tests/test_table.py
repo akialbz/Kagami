@@ -358,7 +358,7 @@ def test_table_methods_portals():
     if os.path.isfile(fname + '.hdf'): os.remove(fname + '.hdf')
 
     try: import rpy2
-    except ImportError as e: return # Skip if rpy2 is not installed
+    except ImportError: return # Skip if rpy2 is not installed
     table.saverdata(fname + '.rdata', dataobj = 'data', ridxobj = 'row.index', cidxobj = 'col.index')
     ltable = Table.loadrdata(fname + '.rdata', dataobj = 'data', ridxobj = 'row.index', cidxobj = 'col.index')
     print(ltable)

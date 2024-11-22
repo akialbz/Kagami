@@ -18,8 +18,10 @@ from kagami.portals import webPortal
 
 
 def _connected():
-    try: urlopen('https://httpbin.org/', timeout = 1); return True
-    except URLError: return False
+    try:
+        urlopen('https://httpbin.org/', timeout = 1); return True
+    except (TimeoutError, URLError):
+        return False
 
 @pytest.mark.skipif(not _connected(), reason = 'no connection to internet')
 def test_get_io():
@@ -31,7 +33,7 @@ def test_get_io():
     ret = webPortal.get('https://httpbin.org/no-such-website', tries = 3)
     assert missing(ret)
 
-    ret = webPortal.get('http://no-such-website.com', tries = 3)
+    ret = webPortal.get('https://no-such-website.com', tries = 3)
     assert missing(ret)
 
 @pytest.mark.skipif(not _connected(), reason = 'no connection to internet')
@@ -44,5 +46,5 @@ def test_post_io():
     ret = webPortal.post('https://httpbin.org/no-such-website', tries = 3)
     assert missing(ret)
 
-    ret = webPortal.post('http://no-such-website.com', tries = 3)
+    ret = webPortal.post('https://no-such-website.com', tries = 3)
     assert missing(ret)
