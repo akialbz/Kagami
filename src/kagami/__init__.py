@@ -10,7 +10,8 @@ added: 03-18-2017
 """
 
 
-__version__ = '3.2'
+from importlib.metadata import version
+__version__ = version('kagami')
 __version_name__ = 'Kaga'
 
 

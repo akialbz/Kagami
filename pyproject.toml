@@ -1,0 +1,61 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kagami"
+dynamic = ["version"]
+dependencies = [
+    "numpy>=1.26.4",
+    "pandas>=2.2.3",
+    "requests>=2.32.3",
+    "tables>=3.10.1",
+]
+authors = [
+    { name = "Albert Zhou" }
+]
+requires-python = ">=3.10"
+description = "A framework to support functional programming for computational biology algorithm development"
+readme = "README.md"
+license = {text = "LGPL-3.0-or-later"}
+classifiers = [
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Software Development :: Libraries",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    "Operating System :: POSIX",
+]
+
+[project.urls]
+Homepage = "https://github.com/akialbz/Kagami"
+
+[tool.hatch.version]
+source = 'vcs'
+
+[tool.hatch.build.targets.wheel]
+packages = ['src/kagami']
+
+[dependency-groups]
+dev = [
+    "coverage>=7.10.2",
+    "hatch-vcs>=0.4.0",
+    "pytest>=8.4.1",
+]
+
+[project.optional-dependencies]
+rwrapper = ["rpy2>=3.5.16"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["src/kagami/tests"]
+
+[tool.coverage.run]
+source = ["kagami"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.coverage.html]
+directory = "htmlcov"

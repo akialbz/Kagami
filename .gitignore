@@ -4,11 +4,8 @@ __pycache__/
 .vscode/
 .pytest_cache/
 .hypothesis/
-venv/
-build/
+.venv/
 dist/
-kagami.egg-info/
-legacy/
 htmlcov/
 
 # file types
@@ -21,3 +18,4 @@ htmlcov/
 .DS_Store
 
 # other files
+uv.lock
