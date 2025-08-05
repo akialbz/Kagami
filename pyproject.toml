@@ -6,15 +6,15 @@ build-backend = "hatchling.build"
 name = "kagami"
 dynamic = ["version"]
 dependencies = [
-    "numpy>=1.26.4",
-    "pandas>=2.2.3",
-    "requests>=2.32.3",
+    "numpy>=1.23.5,<2.0.0",
+    "pandas>=2.3.0",
+    "requests>=2.32.4",
     "tables>=3.10.1",
 ]
 authors = [
     { name = "Albert Zhou" }
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 description = "A framework to support functional programming for computational biology algorithm development"
 readme = "README.md"
 license = {text = "LGPL-3.0-or-later"}
@@ -39,11 +39,15 @@ packages = ['src/kagami']
 dev = [
     "coverage>=7.10.2",
     "hatch-vcs>=0.4.0",
+    "hypothesis>=6.137.1",
+    "pooch>=1.8.2",
     "pytest>=8.4.1",
 ]
 
 [project.optional-dependencies]
-rwrapper = ["rpy2>=3.5.16"]
+rwrapper = [
+    "rpy2>=3.0.0,<3.6",
+]
 
 [tool.pytest.ini_options]
 addopts = "-ra"

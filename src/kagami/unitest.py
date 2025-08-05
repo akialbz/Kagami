@@ -29,22 +29,22 @@ def test(kind = 'self', *, capture = True, cov = False, covReport = False, profi
         import numpy; numpy.test(kind)
         print('\n\n')
 
-        print('testing scipy ...')
         try:
+            print('testing scipy ...')
             import scipy
             scipy.test(kind)
+            print('\n\n')
         except ImportError:
             pass
-        print('\n\n')
 
-        print('testing rpy2 ...')
         try:
+            print('testing rpy2 ...')
             import rpy2
             # pytest.main(["--pyargs",  "rpy2.tests"])
             pytest.main(["--pyargs",  "rpy2.tests", "-k", "not test_timeR2Pandas"]) # rpy2 3.4.5 not compatible with latest pandas datetimes
+            print('\n\n')
         except ImportError:
             pass
-        print('\n\n')
 
         print('finished dependencies-testing\n\n')
 

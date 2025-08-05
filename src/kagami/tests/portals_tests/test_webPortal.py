@@ -25,7 +25,9 @@ def _connected():
 
 @pytest.mark.skipif(not _connected(), reason = 'no connection to internet')
 def test_get_io():
-    ret = json.loads(webPortal.get('https://httpbin.org/get', params = {'b': 'bb'}, headers = {'a': 'aa'}))
+    ret = json.loads(
+        webPortal.get('https://httpbin.org/get', params = {'b': 'bb'}, headers = {'a': 'aa'}, timeout = 1)
+    )
     assert ret['args'] == {'b': 'bb'}
     assert ret['headers']['A'] == 'aa' and ret['headers']['Host'] == 'httpbin.org'
     assert ret['url'] == 'https://httpbin.org/get?b=bb'
@@ -38,7 +40,9 @@ def test_get_io():
 
 @pytest.mark.skipif(not _connected(), reason = 'no connection to internet')
 def test_post_io():
-    ret = json.loads(webPortal.post('https://httpbin.org/post', params = {'b': 'bb'}, headers = {'a': 'aa'}))
+    ret = json.loads(
+        webPortal.post('https://httpbin.org/post', params = {'b': 'bb'}, headers = {'a': 'aa'}, timeout = 1)
+    )
     assert ret['args'] == {'b': 'bb'}
     assert ret['headers']['A'] == 'aa' and ret['headers']['Host'] == 'httpbin.org'
     assert ret['url'] == 'https://httpbin.org/post?b=bb'
