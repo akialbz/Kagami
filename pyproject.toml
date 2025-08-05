@@ -36,9 +36,12 @@ source = 'vcs'
 packages = ['src/kagami']
 
 [dependency-groups]
+build = [
+    "hatch-vcs>=0.5.0",
+    "hatchling>=1.27.0",
+]
 dev = [
     "coverage>=7.10.2",
-    "hatch-vcs>=0.4.0",
     "hypothesis>=6.137.1",
     "pooch>=1.8.2",
     "pytest>=8.4.1",
