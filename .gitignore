@@ -1,22 +1,24 @@
-# folders
-__pycache__/
-.idea/
-.vscode/
+# file types
+*~
+*.pyc
+*.pyd
+*.swp
+*.swo
+*.icloud
+
+# dev system
 .pytest_cache/
 .hypothesis/
 .venv/
 dist/
 htmlcov/
-
-# file types
-*.pyc
-*.icloud
-*.swp
-
-# hidden files
-.coverage
-.DS_Store
 .python-version
-
-# other files
+.coverage
 uv.lock
+
+# misc
+__pycache__/
+.idea/
+.vscode/
+.DS_Store
+.cache

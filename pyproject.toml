@@ -7,7 +7,7 @@ name = "kagami"
 dynamic = ["version"]
 dependencies = [
     "numpy>=1.23.5,<2.0.0",
-    "pandas>=2.3.0",
+    "pandas>=2.2.3",
     "requests>=2.32.4",
     "tables>=3.10.1",
 ]
