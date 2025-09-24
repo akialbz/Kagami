@@ -34,6 +34,7 @@ class RWrapper: # pragma: no cover
     RuntimeError = RRuntimeError
 
     def __init__(self, *libraries: Union[str, Iterable[str]], mute: bool = True):
+        numpy2ri.activate()
         self.library(*libraries, mute = mute)
 
     # methods
